@@ -497,6 +497,7 @@ $border-color: rgba(255, 255, 255, 0.08);
     max-width: 100%;
     border-radius: 24px 24px 0 0;
     border-bottom: none;
+    padding: 40px 24px 24px;
     padding: 40px 24px calc(24px + env(safe-area-inset-bottom));
     transform: translateY(100%);
     background-color: rgba(10, 11, 14, 0.85);
