@@ -5,6 +5,8 @@ export class CardModal {
   private overlayEl!: HTMLDivElement;
   private formInstance!: CardForm;
   private readonly options: CardFormOptions;
+  private static openModalCount = 0;
+  private static savedBodyOverflow = '';
 
   constructor(options: CardFormOptions) {
     this.options = options;
@@ -73,12 +75,27 @@ export class CardModal {
   }
 
   public open(): void {
+    if (this.overlayEl.classList.contains('active')) return;
+
+    if (CardModal.openModalCount === 0) {
+      CardModal.savedBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    CardModal.openModalCount += 1;
     this.overlayEl.classList.add('active');
     document.addEventListener('keydown', this.handleEscape);
   }
 
   public close(): void {
+    if (!this.overlayEl.classList.contains('active')) return;
+
     this.overlayEl.classList.remove('active');
+    if (CardModal.openModalCount > 0) {
+      CardModal.openModalCount -= 1;
+      if (CardModal.openModalCount === 0) {
+        document.body.style.overflow = CardModal.savedBodyOverflow;
+      }
+    }
     document.removeEventListener('keydown', this.handleEscape);
   }
 
