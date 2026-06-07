@@ -5,6 +5,7 @@ export class CardModal {
   private overlayEl!: HTMLDivElement;
   private formInstance!: CardForm;
   private readonly options: CardFormOptions;
+  private savedBodyOverflow: string = '';
 
   constructor(options: CardFormOptions) {
     this.options = options;
@@ -73,12 +74,15 @@ export class CardModal {
   }
 
   public open(): void {
+    this.savedBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     this.overlayEl.classList.add('active');
     document.addEventListener('keydown', this.handleEscape);
   }
 
   public close(): void {
     this.overlayEl.classList.remove('active');
+    document.body.style.overflow = this.savedBodyOverflow;
     document.removeEventListener('keydown', this.handleEscape);
   }
 

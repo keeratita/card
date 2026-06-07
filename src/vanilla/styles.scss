@@ -261,12 +261,12 @@ $border-color: rgba(255, 255, 255, 0.08);
 
 .ios-input {
   flex-grow: 1;
+  min-width: 0;
   background: none;
   border: none;
   color: $text-primary;
   font-size: 15px;
   outline: none;
-  width: 100%;
   font-family: inherit;
 
   &::placeholder {
@@ -430,12 +430,14 @@ $border-color: rgba(255, 255, 255, 0.08);
   -webkit-backdrop-filter: blur(25px);
   z-index: 1000;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
   padding: 20px;
+  box-sizing: border-box;
 
   &.active {
     opacity: 1;
@@ -454,6 +456,8 @@ $border-color: rgba(255, 255, 255, 0.08);
   max-width: 440px;
   box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
   position: relative;
+  flex-shrink: 0;
+  margin: auto;
   transform: scale(0.9) translateY(20px);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -484,12 +488,16 @@ $border-color: rgba(255, 255, 255, 0.08);
   .modal-overlay {
     align-items: flex-end;
     padding: 0;
+    overflow-y: visible;
   }
 
   .modal-content {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
     border-radius: 24px 24px 0 0;
     border-bottom: none;
-    padding: 40px 24px 24px;
+    padding: 40px 24px calc(24px + env(safe-area-inset-bottom));
     transform: translateY(100%);
     background-color: rgba(10, 11, 14, 0.85);
 
