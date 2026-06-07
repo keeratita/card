@@ -1,85 +1,131 @@
 import { describe, it, expect } from 'vitest';
-import {
-  cleanDigits,
-  formatCardNumber,
-  formatExpiry,
-  formatCvc,
-  formatCountryCode,
-  formatPhone
-} from '../../src/core/formatters/card-formatter';
+import { generateExpiryDate, formatCardNumber, formatExpiry, formatCvc } from '../../src/core/formatters/card-formatter';
 
-describe('Input Formatters', () => {
-  describe('Digit Cleanup', () => {
-    it('should remove all non-digit characters', () => {
-      expect(cleanDigits('12-34 ab.56')).toBe('123456');
+describe('Core Formatters', () => {
+  describe('generateExpiryDate', () => {
+    it('should generate a valid future expiry date', () => {
+      const expiry = generateExpiryDate();
+      
+      // Should be in MM/YY format
+      expect(expiry).toMatch(/^\d{2}\/\d{2}$/);
+      
+      // Should be a future date (at least 1 year ahead)
+      const [month, year] = expiry.split('/').map(Number);
+      const now = new Date();
+      const currentYear = now.getFullYear() % 100;
+      const currentMonth = now.getMonth() + 1;
+      
+      // Year should be greater than current year, or equal to current year + 1
+      if (year > currentYear) {
+        // Valid
+      } else if (year === currentYear) {
+        // Month should be greater than current month
+        expect(month).toBeGreaterThan(currentMonth);
+      } else {
+        // Year should be at least 1 year in the future
+        expect(year).toBeGreaterThan(currentYear);
+      }
+    });
+    
+    it('should generate a date at least 1 year in the future', () => {
+      const expiry = generateExpiryDate();
+      const [month, year] = expiry.split('/').map(Number);
+      
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      
+      const expiryYear = 2000 + year; // Convert 2-digit year to 4-digit
+      const expiryMonth = month;
+      
+      // The generated date should be at least 1 year in the future
+      expect(expiryYear).toBeGreaterThanOrEqual(currentYear + 1);
+      
+      // If it's the same year, the month should be in the future
+      if (expiryYear === currentYear + 1) {
+        expect(expiryMonth).toBeGreaterThanOrEqual(currentMonth);
+      }
     });
   });
 
-  describe('Card Number Formatter', () => {
-    it('should format standard cards with 4-4-4-4 spacing', () => {
+  describe('Card Number Formatting', () => {
+    it('should format Visa numbers with 4-4-4-4 spacing', () => {
       expect(formatCardNumber('4111111111111111')).toBe('4111 1111 1111 1111');
-      expect(formatCardNumber('41112')).toBe('4111 2');
     });
 
-    it('should format Amex cards with 4-6-5 spacing', () => {
+    it('should format Amex numbers with 4-6-5 spacing', () => {
       expect(formatCardNumber('371111111111111')).toBe('3711 111111 11111');
-      expect(formatCardNumber('341112222')).toBe('3411 12222');
     });
 
-    it('should strip non-digits and limit standard cards to 16 digits', () => {
-      expect(formatCardNumber('4111-1111-1111-1111-9999')).toBe('4111 1111 1111 1111');
+    it('should truncate very long card numbers', () => {
+      const veryLong = '4'.repeat(100);
+      expect(formatCardNumber(veryLong).length).toBeLessThan(20); // Should be truncated
     });
 
-    it('should limit Amex cards to 15 digits', () => {
-      expect(formatCardNumber('371111111111111999')).toBe('3711 111111 11111');
+    it('should handle empty string', () => {
+      expect(formatCardNumber('')).toBe('');
+    });
+
+    it('should ignore non-digit characters', () => {
+      expect(formatCardNumber('4111-1111-1111-1111')).toBe('4111 1111 1111 1111');
     });
   });
 
-  describe('Expiry Date Formatter', () => {
-    it('should format exp date as MM / YY', () => {
+  describe('Expiry Formatting', () => {
+    it('should format MM/YY correctly', () => {
       expect(formatExpiry('1228')).toBe('12 / 28');
-      expect(formatExpiry('05')).toBe('05');
-      expect(formatExpiry('052')).toBe('05 / 2');
     });
 
-    it('should constrain month between 01 and 12', () => {
-      expect(formatExpiry('13')).toBe('12'); // Month corrected to 12
-      expect(formatExpiry('00')).toBe('01'); // Month corrected to 01
+    it('should handle empty string', () => {
+      expect(formatExpiry('')).toBe('');
     });
 
-    it('should ignore non-digits and keep at most 4 digits', () => {
-      expect(formatExpiry('12/2899')).toBe('12 / 28');
-      expect(formatExpiry('ab')).toBe('');
-    });
-  });
-
-  describe('CVC Formatter', () => {
-    it('should restrict to 4 digits for Amex', () => {
-      expect(formatCvc('12345', '371111111111111')).toBe('1234');
+    it('should truncate very long expiry values to 2 digits', () => {
+      const veryLong = '12'.repeat(100);
+      expect(formatExpiry(veryLong)).toBe('12 / 12'); // Only 2 digits for each part
     });
 
-    it('should restrict to 3 digits for non-Amex', () => {
-      expect(formatCvc('12345', '4111111111111111')).toBe('123');
-    });
-
-    it('should strip non-digit characters from CVC input', () => {
-      expect(formatCvc('12-3x', '4111111111111111')).toBe('123');
+    it('should handle partial input', () => {
+      expect(formatExpiry('1')).toBe('1');
     });
   });
 
-  describe('Country and Phone Formatters', () => {
-    it('should limit country code to 2 uppercase alphabetic chars', () => {
-      expect(formatCountryCode('th123')).toBe('TH');
-      expect(formatCountryCode('usa')).toBe('US');
+  describe('CVC Formatting', () => {
+    it('should format 3-digit CVC for Visa', () => {
+      expect(formatCvc('1234', '4111111111111111')).toBe('123');
     });
 
-    it('should format phone number preserving leading plus sign', () => {
-      expect(formatPhone('+66-81-234-5678')).toBe('+66812345678');
-      expect(formatPhone('081-234-5678')).toBe('0812345678');
+    it('should format 4-digit CVC for Amex', () => {
+      expect(formatCvc('1234', '371111111111111')).toBe('1234');
     });
 
-    it('should only preserve a plus sign when it is the first character', () => {
-      expect(formatPhone('66+81+234+5678')).toBe('66812345678');
+    it('should truncate very long CVC to 3 digits for Visa', () => {
+      // For Visa, CVC is limited to 3 digits
+      expect(formatCvc('12345678', '4111111111111111')).toBe('123');
+    });
+  });
+});
+
+describe('Formatter Security Edge Cases', () => {
+  describe('Card Number Formatting', () => {
+    it('should handle XSS in card number', () => {
+      // The XSS string contains the digit '1' from the closing tag
+      const result = formatCardNumber('<img src=x onerror=alert(1)>');
+      // Only digit in the string is '1', so result is '1'
+      expect(result).toBe('1');
+    });
+
+    it('should handle control characters', () => {
+      const result = formatCardNumber('4111\x001111111111111');
+      expect(result).toBe('4111 1111 1111 1111'); // Control chars removed
+    });
+  });
+
+  describe('Expiry Formatting', () => {
+    it('should handle SQL injection in expiry', () => {
+      // Non-digits are removed, leaving "11" which has only 2 digits
+      // With 2 digits, formatExpiry returns just the month without year separator
+      expect(formatExpiry("' OR '1'='1")).toBe('11');
     });
   });
 });

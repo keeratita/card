@@ -56,6 +56,30 @@ export function formatCountryCode(value: string): string {
     .substring(0, 2)
     .toUpperCase();
 }
+
+/**
+ * Generates a valid future expiry date in MM/YY format based on the current date.
+ * The expiry date will be at least 1 year in the future to ensure validity.
+ */
+export function generateExpiryDate(): string {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth is 0-indexed
+  
+  // Generate expiry date at least 1 year in the future
+  const expiryYear = currentYear + 1;
+  // For simplicity, use the same month, but if it's December, we'll use January of next year
+  let expiryMonth = currentMonth;
+  if (currentMonth === 12) {
+    expiryMonth = 1;
+  }
+  
+  // Format as MM/YY (e.g. 06/27 for June 2027)
+  const monthStr = expiryMonth.toString().padStart(2, '0');
+  const yearStr = (expiryYear % 100).toString().padStart(2, '0');
+  
+  return `${monthStr}/${yearStr}`;
+}
 export function formatPhone(value: string): string {
   // Strip non-numbers except leading '+'
   const hasPlus = value.startsWith('+');

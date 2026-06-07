@@ -9,6 +9,7 @@ import {
   validatePostalCode,
   validateCountry,
   validateGeneric,
+  validateCardNumber,
 } from '../../src/core/domain/validation';
 
 describe('Domain Validations', () => {
@@ -122,6 +123,120 @@ describe('Domain Validations', () => {
     it('should validate non-empty trimmed values', () => {
       expect(validateGeneric(' value ')).toBe(true);
       expect(validateGeneric('   ')).toBe(false);
+    });
+  });
+});
+
+describe('Security Edge Cases', () => {
+  describe('Luhn Check', () => {
+    it('should handle empty string', () => {
+      expect(luhnCheck('')).toBe(false);
+    });
+
+    it('should handle extremely long numbers (DoS protection)', () => {
+      const veryLongNumber = '4'.repeat(100);
+      expect(luhnCheck(veryLongNumber)).toBe(false);
+    });
+
+    it('should handle XSS payloads', () => {
+      expect(luhnCheck('<script>alert(1)</script>')).toBe(false);
+    });
+  });
+
+  describe('Expiry Validation', () => {
+    it('should handle empty strings', () => {
+      expect(validateExpiry('', '')).toBe(false);
+    });
+
+    it('should handle extremely long expiry values', () => {
+      expect(validateExpiry('01'.repeat(100), '20'.repeat(100))).toBe(false);
+    });
+
+    it('should handle SQL injection in month', () => {
+      // SQL injection patterns in month get sanitized to digits, resulting in "11"
+      // which is a valid month, so validation passes
+      expect(validateExpiry("' OR '1'='1", '26')).toBe(true);
+    });
+  });
+
+  describe('CVC Validation', () => {
+    it('should handle empty CVC', () => {
+      expect(validateCvc('', '4111111111111111')).toBe(false);
+    });
+
+    it('should handle empty card number (defaults to non-Amex)', () => {
+      expect(validateCvc('123', '')).toBe(true);
+      expect(validateCvc('1234', '')).toBe(false);
+    });
+
+    it('should handle XSS in card number', () => {
+      expect(validateCvc('123', '<script>alert(1)</script>')).toBe(true); // Unknown brand -> 3 digits
+    });
+  });
+
+  describe('Email Validation', () => {
+    it('should handle extremely long emails', () => {
+      const veryLongEmail = 'a'.repeat(300) + '@example.com';
+      expect(validateEmail(veryLongEmail)).toBe(false);
+    });
+
+    it('should handle XSS in email (valid pattern)', () => {
+      // The XSS payload is a valid email pattern (even though it's malicious)
+      // Email validation doesn't block all XSS - that's handled by HTML escaping
+      expect(validateEmail('<script>alert(1)</script>@example.com')).toBe(true);
+    });
+
+    it('should handle SQL injection patterns', () => {
+      expect(validateEmail("' OR '1'='1@example.com")).toBe(false);
+    });
+  });
+
+  describe('Phone Validation', () => {
+    it('should handle extremely long phone numbers', () => {
+      // Phone numbers are truncated to 20 characters, which is still >= 8
+      const veryLongPhone = '1'.repeat(100);
+      expect(validatePhone(veryLongPhone)).toBe(true);
+    });
+  });
+
+  describe('Name Validation', () => {
+    it('should handle empty string', () => {
+      expect(validateName('')).toBe(false);
+    });
+  });
+
+  describe('Postal Code Validation', () => {
+    it('should handle empty string', () => {
+      expect(validatePostalCode('')).toBe(false);
+    });
+  });
+
+  describe('Country Validation', () => {
+    it('should handle empty string', () => {
+      expect(validateCountry('')).toBe(false);
+    });
+  });
+
+  describe('Card Number Validation', () => {
+    it('should validate valid card numbers', () => {
+      expect(validateCardNumber('4111111111111111')).toBe(true);
+      expect(validateCardNumber('4242 4242 4242 4242')).toBe(true);
+    });
+
+    it('should reject invalid card numbers', () => {
+      expect(validateCardNumber('1234567890123456')).toBe(false);
+    });
+
+    it('should handle empty string', () => {
+      expect(validateCardNumber('')).toBe(false);
+    });
+
+    it('should handle extremely long numbers', () => {
+      expect(validateCardNumber('4'.repeat(100))).toBe(false);
+    });
+
+    it('should reject unknown card patterns', () => {
+      expect(validateCardNumber('6011111111111111')).toBe(false);
     });
   });
 });

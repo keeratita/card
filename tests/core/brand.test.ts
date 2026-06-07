@@ -26,4 +26,33 @@ describe('Card Brand Detection', () => {
     expect(detectCardBrand('6011111111111111')).toBe('unknown');
     expect(detectCardBrand('')).toBe('unknown');
   });
+
+  it('should return unknown for null input', () => {
+    // @ts-ignore - testing edge case
+    expect(detectCardBrand(null)).toBe('unknown');
+  });
+
+  it('should return unknown for undefined input', () => {
+    // @ts-ignore - testing edge case
+    expect(detectCardBrand(undefined)).toBe('unknown');
+  });
+
+  it('should handle XSS payloads', () => {
+    expect(detectCardBrand('<script>alert(1)</script>')).toBe('unknown');
+    expect(detectCardBrand('<img src=x onerror=alert(1)>')).toBe('unknown');
+  });
+
+  it('should handle extremely long card numbers (DoS protection)', () => {
+    const veryLong = '4'.repeat(1000);
+    expect(detectCardBrand(veryLong)).toBe('visa');
+  });
+
+  it('should handle numbers with letters mixed in', () => {
+    expect(detectCardBrand('4111a11111111111')).toBe('visa');
+  });
+
+  it('should handle numbers with special characters', () => {
+    expect(detectCardBrand('4111-1111-1111-1111')).toBe('visa');
+    expect(detectCardBrand('4111_1111_1111_1111')).toBe('visa');
+  });
 });

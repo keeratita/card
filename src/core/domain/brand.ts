@@ -1,7 +1,22 @@
 export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'jcb' | 'unknown';
 
+/**
+ * Detects the credit card brand based on the card number.
+ * Returns 'unknown' for invalid inputs, empty strings, or unrecognized patterns.
+ */
 export function detectCardBrand(cardNumber: string): CardBrand {
-  const cleanNumber = cardNumber.replace(/\D/g, '');
+  // Handle null, undefined, or non-string inputs gracefully
+  if (!cardNumber || typeof cardNumber !== 'string') {
+    return 'unknown';
+  }
+  
+  // Truncate to prevent DoS with extremely long inputs
+  const cleanNumber = cardNumber.replace(/\D/g, '').slice(0, 19);
+
+  // Empty or too short numbers are unknown
+  if (cleanNumber.length < 6) {
+    return 'unknown';
+  }
 
   if (/^4/.test(cleanNumber)) {
     return 'visa';
