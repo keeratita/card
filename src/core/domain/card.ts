@@ -3,17 +3,17 @@ export type { Token };
 
 export interface Card {
   number: string;
-  expMonth: string;     // MM format (e.g. "12")
-  expYear: string;      // YY or YYYY format (e.g. "28" or "2028")
-  cvc: string;          // CVC/CVV code
-  name: string;         // Cardholder name
+  expMonth: string; // MM format (e.g. "12")
+  expYear: string; // YY or YYYY format (e.g. "28" or "2028")
+  cvc: string; // CVC/CVV code
+  name: string; // Cardholder name
   // Billing details
   addressLine1?: string;
   addressLine2?: string;
   city?: string;
   state?: string;
   postalCode?: string;
-  country?: string;     // 2-letter ISO country code
+  country?: string; // 2-letter ISO country code
   phone?: string;
   email?: string;
 }

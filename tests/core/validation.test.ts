@@ -8,7 +8,7 @@ import {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric
+  validateGeneric,
 } from '../../src/core/domain/validation';
 
 describe('Domain Validations', () => {

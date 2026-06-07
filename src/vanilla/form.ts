@@ -1,6 +1,10 @@
 import { Card, CardFormOptions, OptionalCardField } from '../core/domain/card';
 import { detectCardBrand } from '../core/domain/brand';
-import { formatCardNumber, formatExpiry, formatCvc } from '../core/formatters/card-formatter';
+import {
+  formatCardNumber,
+  formatExpiry,
+  formatCvc,
+} from '../core/formatters/card-formatter';
 import {
   luhnCheck,
   validateExpiry,
@@ -10,7 +14,7 @@ import {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric
+  validateGeneric,
 } from '../core/domain/validation';
 import { escapeHtml, sanitizeOptionalFields } from './internal/security';
 
@@ -19,27 +23,70 @@ const BRAND_LOGOS: Record<string, string> = {
   visa: `<svg viewBox="0 0 24 24"><path fill="#0a84ff" d="M12.8 15.6h1.7l1-6.5h-1.7zm5.5-6.5c-.4-.1-.9-.2-1.4-.2-1.5 0-2.6.8-2.6 1.9 0 .8.8 1.3 1.3 1.6.6.3.8.5.8.7 0 .4-.5.6-1 .6-.6 0-1.1-.2-1.6-.4l-.2-.1-.3 1.8c.5.2 1.4.4 2.2.4 1.6 0 2.6-.8 2.6-2 0-.7-.4-1.2-1.4-1.7-.6-.3-.9-.5-.9-.7 0-.3.3-.5.8-.5.5 0 .9.1 1.2.3l.1.1.3-1.8zM9.5 9.1h-1.6c-.5 0-.9.3-1.1.7L4 15.6h1.8l.4-1h2.2l.2 1H10l-.5-6.5zm-2.7 4.1.8-2.3.5 2.3H6.8zm7.9-4.1h-1.4c-.4 0-.8.2-.9.6l-2.6 5.8h1.8l.4-1h2.2l.2 1H16l-1.3-6.4z"/></svg>`,
   mastercard: `<svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="6" fill="#ff453a" opacity="0.95"/><circle cx="15" cy="12" r="6" fill="#ff9f0a" opacity="0.95"/></svg>`,
   amex: `<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#0a84ff"/><path fill="#fff" d="M4 17h1.6l.8-2.3h2.3l.8 2.3H11l-2.7-7H7.7L4 17zm3.6-4.2.7-2.1.7 2.1H7.6zm5 4.2h1.5v-4.1l1.8 4.1h1.3l1.8-4.1v4.1h1.5v-7h-1.8l-2.1 4.8-2.1-4.8h-1.8v7z"/></svg>`,
-  jcb: `<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#0b4e9f"/><path fill="#ff453a" d="M4 7h16v10H4z"/><path fill="#fff" d="M7 15h1.5v-4.1l1.8 4.1h1.3l1.8-4.1v4.1H15v-7h-1.8l-2.1 4.8-2.1-4.8H7v7z"/></svg>`
+  jcb: `<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#0b4e9f"/><path fill="#ff453a" d="M4 7h16v10H4z"/><path fill="#fff" d="M7 15h1.5v-4.1l1.8 4.1h1.3l1.8-4.1v4.1H15v-7h-1.8l-2.1 4.8-2.1-4.8H7v7z"/></svg>`,
 };
 
 const DEFAULT_CARD_LOGO = `<svg viewBox="0 0 48 48"><path fill="#8e8e93" d="M37,40H11c-1.65,0-3-1.35-3-3V11c0-1.65,1.35-3,3-3h26c1.65,0,3,1.35,3,3v26C40,38.65,38.65,40,37,40z"/><path fill="#2c2c2e" d="M8,14h32v4H8V14z"/></svg>`;
 
-const FIELD_METADATA: Record<OptionalCardField, { label: string; placeholder: string; type: string; autocomplete: string }> = {
-  addressLine1: { label: 'Address', placeholder: 'Street address', type: 'text', autocomplete: 'address-line1' },
-  addressLine2: { label: 'Apt, Suite', placeholder: 'Apt, Suite, Unit (optional)', type: 'text', autocomplete: 'address-line2' },
-  city: { label: 'City', placeholder: 'City', type: 'text', autocomplete: 'address-level2' },
-  state: { label: 'State', placeholder: 'State or Province', type: 'text', autocomplete: 'address-level1' },
-  postalCode: { label: 'Postal Code', placeholder: 'Postal/ZIP Code', type: 'text', autocomplete: 'postal-code' },
-  country: { label: 'Country', placeholder: 'Country Code (e.g. US, TH)', type: 'text', autocomplete: 'country' },
-  phone: { label: 'Phone', placeholder: '+668 1234 567', type: 'tel', autocomplete: 'tel' },
-  email: { label: 'Email', placeholder: 'name@example.com', type: 'email', autocomplete: 'email' }
+const FIELD_METADATA: Record<
+  OptionalCardField,
+  { label: string; placeholder: string; type: string; autocomplete: string }
+> = {
+  addressLine1: {
+    label: 'Address',
+    placeholder: 'Street address',
+    type: 'text',
+    autocomplete: 'address-line1',
+  },
+  addressLine2: {
+    label: 'Apt, Suite',
+    placeholder: 'Apt, Suite, Unit (optional)',
+    type: 'text',
+    autocomplete: 'address-line2',
+  },
+  city: {
+    label: 'City',
+    placeholder: 'City',
+    type: 'text',
+    autocomplete: 'address-level2',
+  },
+  state: {
+    label: 'State',
+    placeholder: 'State or Province',
+    type: 'text',
+    autocomplete: 'address-level1',
+  },
+  postalCode: {
+    label: 'Postal Code',
+    placeholder: 'Postal/ZIP Code',
+    type: 'text',
+    autocomplete: 'postal-code',
+  },
+  country: {
+    label: 'Country',
+    placeholder: 'Country Code (e.g. US, TH)',
+    type: 'text',
+    autocomplete: 'country',
+  },
+  phone: {
+    label: 'Phone',
+    placeholder: '+668 1234 567',
+    type: 'tel',
+    autocomplete: 'tel',
+  },
+  email: {
+    label: 'Email',
+    placeholder: 'name@example.com',
+    type: 'email',
+    autocomplete: 'email',
+  },
 };
 
 const PRESET_FIELDS: Record<string, OptionalCardField[]> = {
   none: [],
   us: ['postalCode'],
   billing: ['addressLine1', 'city', 'state', 'postalCode', 'country'],
-  contact: ['email', 'phone']
+  contact: ['email', 'phone'],
 };
 
 export class CardForm {
@@ -51,7 +98,9 @@ export class CardForm {
     if (typeof container === 'string') {
       const el = document.querySelector(container);
       if (!el) {
-        throw new Error(`Container element not found for selector: ${container}`);
+        throw new Error(
+          `Container element not found for selector: ${container}`,
+        );
       }
       this.element = el as HTMLElement;
     } else {
@@ -61,7 +110,7 @@ export class CardForm {
     this.options = {
       preset: 'none',
       submitButtonText: 'Pay Now',
-      ...options
+      ...options,
     };
 
     if (!this.options.submitButtonText) {
@@ -80,15 +129,18 @@ export class CardForm {
 
   private render(): void {
     this.element.innerHTML = '';
-    
+
     const containerWrapper = document.createElement('div');
     containerWrapper.className = 'kg-card-container';
 
     // Renders the 3D card layout
-    const cardLabelText = this.options.cardLabel || this.options.adapter.name.toUpperCase();
+    const cardLabelText =
+      this.options.cardLabel || this.options.adapter.name.toUpperCase();
     const safeCardLabelText = escapeHtml(cardLabelText);
-    const safeSubmitButtonText = escapeHtml(this.options.submitButtonText || 'Pay Now');
-    
+    const safeSubmitButtonText = escapeHtml(
+      this.options.submitButtonText || 'Pay Now',
+    );
+
     containerWrapper.innerHTML = `
       <div class="card-perspective">
         <div class="card-inner credit-card-element">
@@ -212,14 +264,20 @@ export class CardForm {
     `;
 
     this.element.appendChild(containerWrapper);
-    this.formEl = containerWrapper.querySelector('.payment-form-el') as HTMLFormElement;
+    this.formEl = containerWrapper.querySelector(
+      '.payment-form-el',
+    ) as HTMLFormElement;
 
     // Inject optional fields dynamically before the Cardholder Name row
-    const groupedList = containerWrapper.querySelector('.ios-grouped-list') as HTMLElement;
-    const cardholderRow = containerWrapper.querySelector('.row-name') as HTMLElement;
+    const groupedList = containerWrapper.querySelector(
+      '.ios-grouped-list',
+    ) as HTMLElement;
+    const cardholderRow = containerWrapper.querySelector(
+      '.row-name',
+    ) as HTMLElement;
     const activeFields = this.getActiveFields();
 
-    activeFields.forEach(field => {
+    activeFields.forEach((field) => {
       const row = this.createDynamicRow(field);
       groupedList.insertBefore(row, cardholderRow);
     });
@@ -257,11 +315,21 @@ export class CardForm {
   }
 
   private bindEvents(): void {
-    const numInput = this.formEl.querySelector('.card-number-input') as HTMLInputElement;
-    const expInput = this.formEl.querySelector('.card-expiry-input') as HTMLInputElement;
-    const cvcInput = this.formEl.querySelector('.card-cvc-input') as HTMLInputElement;
-    const nameInput = this.formEl.querySelector('.card-name-input') as HTMLInputElement;
-    const cardInner = this.element.querySelector('.credit-card-element') as HTMLElement;
+    const numInput = this.formEl.querySelector(
+      '.card-number-input',
+    ) as HTMLInputElement;
+    const expInput = this.formEl.querySelector(
+      '.card-expiry-input',
+    ) as HTMLInputElement;
+    const cvcInput = this.formEl.querySelector(
+      '.card-cvc-input',
+    ) as HTMLInputElement;
+    const nameInput = this.formEl.querySelector(
+      '.card-name-input',
+    ) as HTMLInputElement;
+    const cardInner = this.element.querySelector(
+      '.credit-card-element',
+    ) as HTMLElement;
 
     // Card formatting & previews
     numInput.addEventListener('input', (e) => {
@@ -273,12 +341,16 @@ export class CardForm {
       const brand = detectCardBrand(val);
       target.maxLength = brand === 'amex' ? 17 : 19;
 
-      const numPreview = this.element.querySelector('.card-num-preview') as HTMLElement;
+      const numPreview = this.element.querySelector(
+        '.card-num-preview',
+      ) as HTMLElement;
       if (numPreview) {
         numPreview.innerText = formatted || '•••• •••• •••• ••••';
       }
 
-      const logoContainer = this.element.querySelector('.card-brand-logo') as HTMLElement;
+      const logoContainer = this.element.querySelector(
+        '.card-brand-logo',
+      ) as HTMLElement;
       if (logoContainer) {
         logoContainer.innerHTML = BRAND_LOGOS[brand] || DEFAULT_CARD_LOGO;
       }
@@ -292,7 +364,9 @@ export class CardForm {
       target.value = formatted;
       target.maxLength = 7;
 
-      const expPreview = this.element.querySelector('.card-expiry-preview') as HTMLElement;
+      const expPreview = this.element.querySelector(
+        '.card-expiry-preview',
+      ) as HTMLElement;
       if (expPreview) {
         expPreview.innerText = formatted || 'MM/YY';
       }
@@ -305,7 +379,9 @@ export class CardForm {
       const formatted = formatCvc(target.value, numInput.value);
       target.value = formatted;
 
-      const cvcPreview = this.element.querySelector('.card-cvc-preview') as HTMLElement;
+      const cvcPreview = this.element.querySelector(
+        '.card-cvc-preview',
+      ) as HTMLElement;
       if (cvcPreview) {
         cvcPreview.innerText = '•'.repeat(formatted.length) || '•••';
       }
@@ -315,7 +391,9 @@ export class CardForm {
 
     nameInput.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
-      const preview = this.element.querySelector('.card-holder-preview') as HTMLElement;
+      const preview = this.element.querySelector(
+        '.card-holder-preview',
+      ) as HTMLElement;
       if (preview) {
         preview.innerText = target.value.toUpperCase() || 'CARDHOLDER NAME';
       }
@@ -323,8 +401,10 @@ export class CardForm {
     });
 
     // Optional fields listener to clear invalid outline on input
-    this.getActiveFields().forEach(field => {
-      const input = this.formEl.querySelector(`.card-${field}-input`) as HTMLInputElement;
+    this.getActiveFields().forEach((field) => {
+      const input = this.formEl.querySelector(
+        `.card-${field}-input`,
+      ) as HTMLInputElement;
       input?.addEventListener('input', () => {
         input.closest('.ios-input-row')?.classList.remove('invalid');
       });
@@ -344,8 +424,10 @@ export class CardForm {
     expInput.addEventListener('focus', removeFlip);
     nameInput.addEventListener('focus', removeFlip);
 
-    this.getActiveFields().forEach(field => {
-      const input = this.formEl.querySelector(`.card-${field}-input`) as HTMLInputElement;
+    this.getActiveFields().forEach((field) => {
+      const input = this.formEl.querySelector(
+        `.card-${field}-input`,
+      ) as HTMLInputElement;
       input?.addEventListener('focus', removeFlip);
     });
 
@@ -355,8 +437,10 @@ export class CardForm {
     cvcInput.addEventListener('blur', () => this.validateField('card-cvc'));
     nameInput.addEventListener('blur', () => this.validateField('card-name'));
 
-    this.getActiveFields().forEach(field => {
-      const input = this.formEl.querySelector(`.card-${field}-input`) as HTMLInputElement;
+    this.getActiveFields().forEach((field) => {
+      const input = this.formEl.querySelector(
+        `.card-${field}-input`,
+      ) as HTMLInputElement;
       input?.addEventListener('blur', () => this.validateField(field));
     });
 
@@ -369,10 +453,17 @@ export class CardForm {
 
   private validateField(fieldId: string): boolean {
     let el: HTMLInputElement | null;
-    if (fieldId === 'card-number' || fieldId === 'card-expiry' || fieldId === 'card-cvc' || fieldId === 'card-name') {
+    if (
+      fieldId === 'card-number' ||
+      fieldId === 'card-expiry' ||
+      fieldId === 'card-cvc' ||
+      fieldId === 'card-name'
+    ) {
       el = this.formEl.querySelector(`.${fieldId}-input`) as HTMLInputElement;
     } else {
-      el = this.formEl.querySelector(`.card-${fieldId}-input`) as HTMLInputElement;
+      el = this.formEl.querySelector(
+        `.card-${fieldId}-input`,
+      ) as HTMLInputElement;
     }
 
     if (!el) return true;
@@ -394,7 +485,9 @@ export class CardForm {
       }
     } else if (fieldId === 'card-cvc') {
       const cleanCvc = val.replace(/\D/g, '');
-      const numInput = this.formEl.querySelector('.card-number-input') as HTMLInputElement;
+      const numInput = this.formEl.querySelector(
+        '.card-number-input',
+      ) as HTMLInputElement;
       isValid = validateCvc(cleanCvc, numInput.value);
     } else if (fieldId === 'card-name') {
       isValid = validateName(val);
@@ -425,11 +518,13 @@ export class CardForm {
     if (!this.validateField('card-cvc')) isFormValid = false;
     if (!this.validateField('card-name')) isFormValid = false;
 
-    this.getActiveFields().forEach(field => {
+    this.getActiveFields().forEach((field) => {
       if (!this.validateField(field)) isFormValid = false;
     });
 
-    const errorMsg = this.formEl.querySelector('.validation-error-msg') as HTMLElement;
+    const errorMsg = this.formEl.querySelector(
+      '.validation-error-msg',
+    ) as HTMLElement;
     if (!isFormValid) {
       if (errorMsg) {
         errorMsg.innerText = 'Please correct the invalid fields above.';
@@ -442,7 +537,9 @@ export class CardForm {
       errorMsg.style.display = 'none';
     }
 
-    const submitBtn = this.formEl.querySelector('.submit-btn') as HTMLButtonElement;
+    const submitBtn = this.formEl.querySelector(
+      '.submit-btn',
+    ) as HTMLButtonElement;
     const spinner = this.formEl.querySelector('.btn-spinner') as HTMLElement;
     const btnText = this.formEl.querySelector('.btn-text') as HTMLElement;
 
@@ -451,10 +548,18 @@ export class CardForm {
     spinner.style.display = 'block';
     btnText.innerText = 'Tokenizing card...';
 
-    const numInput = this.formEl.querySelector('.card-number-input') as HTMLInputElement;
-    const expInput = this.formEl.querySelector('.card-expiry-input') as HTMLInputElement;
-    const cvcInput = this.formEl.querySelector('.card-cvc-input') as HTMLInputElement;
-    const nameInput = this.formEl.querySelector('.card-name-input') as HTMLInputElement;
+    const numInput = this.formEl.querySelector(
+      '.card-number-input',
+    ) as HTMLInputElement;
+    const expInput = this.formEl.querySelector(
+      '.card-expiry-input',
+    ) as HTMLInputElement;
+    const cvcInput = this.formEl.querySelector(
+      '.card-cvc-input',
+    ) as HTMLInputElement;
+    const nameInput = this.formEl.querySelector(
+      '.card-name-input',
+    ) as HTMLInputElement;
 
     const cleanExp = expInput.value.replace(/\D/g, '');
     const expMonth = cleanExp.substring(0, 2);
@@ -465,12 +570,14 @@ export class CardForm {
       expMonth,
       expYear,
       cvc: cvcInput.value.replace(/\D/g, ''),
-      name: nameInput.value.trim()
+      name: nameInput.value.trim(),
     };
 
     // Populate optional fields
-    this.getActiveFields().forEach(field => {
-      const input = this.formEl.querySelector(`.card-${field}-input`) as HTMLInputElement;
+    this.getActiveFields().forEach((field) => {
+      const input = this.formEl.querySelector(
+        `.card-${field}-input`,
+      ) as HTMLInputElement;
       if (input && cardData) {
         cardData[field] = input.value;
       }
@@ -478,7 +585,7 @@ export class CardForm {
 
     try {
       const token = await this.options.adapter.tokenize(cardData);
-      
+
       // Dereference Card Data immediately for security
       cardData = null;
 
@@ -504,27 +611,36 @@ export class CardForm {
 
       // Disable form inputs
       const allInputs = this.formEl.querySelectorAll('input, button');
-      allInputs.forEach(el => {
+      allInputs.forEach((el) => {
         el.setAttribute('disabled', 'true');
       });
 
       // Display Status Panel
-      const statusPanel = this.element.querySelector('.token-status') as HTMLElement;
-      const tokenDetail = this.element.querySelector('.token-detail') as HTMLElement;
+      const statusPanel = this.element.querySelector(
+        '.token-status',
+      ) as HTMLElement;
+      const tokenDetail = this.element.querySelector(
+        '.token-detail',
+      ) as HTMLElement;
       if (statusPanel && tokenDetail) {
         statusPanel.style.display = 'flex';
-        
+
         let detailsHtml = `
           <strong>Gateway:</strong> ${escapeHtml(this.options.adapter.name)}<br>
           <strong>Card Brand:</strong> ${escapeHtml((detectCardBrand(numInput.value) || 'unknown').toUpperCase())}<br>
           <strong>Token ID:</strong> <code>${escapeHtml(token.id)}</code>
         `;
 
-        this.getActiveFields().forEach(f => {
-          const input = this.formEl.querySelector(`.card-${f}-input`) as HTMLInputElement;
+        this.getActiveFields().forEach((f) => {
+          const input = this.formEl.querySelector(
+            `.card-${f}-input`,
+          ) as HTMLInputElement;
           if (input) {
             const meta = FIELD_METADATA[f];
-            const labelText = f === 'postalCode' && this.options.preset === 'us' ? 'ZIP Code' : meta.label;
+            const labelText =
+              f === 'postalCode' && this.options.preset === 'us'
+                ? 'ZIP Code'
+                : meta.label;
             detailsHtml += `<br><strong>${escapeHtml(labelText)}:</strong> ${escapeHtml(input.value)}`;
           }
         });
@@ -532,7 +648,6 @@ export class CardForm {
         tokenDetail.innerHTML = detailsHtml;
         statusPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
-
     } catch (err: any) {
       // Clean up sensitive variables
       cardData = null;
@@ -543,22 +658,28 @@ export class CardForm {
       btnText.innerText = this.options.submitButtonText || 'Pay Now';
 
       if (errorMsg) {
-        errorMsg.innerText = err.message || 'Payment processing failed. Please try again.';
+        errorMsg.innerText =
+          err.message || 'Payment processing failed. Please try again.';
         errorMsg.style.display = 'block';
 
-        const listEl = this.formEl.querySelector('.ios-grouped-list') as HTMLElement;
+        const listEl = this.formEl.querySelector(
+          '.ios-grouped-list',
+        ) as HTMLElement;
         if (listEl) {
-          listEl.animate([
-            { transform: 'translateX(0px)' },
-            { transform: 'translateX(-6px)' },
-            { transform: 'translateX(6px)' },
-            { transform: 'translateX(-6px)' },
-            { transform: 'translateX(6px)' },
-            { transform: 'translateX(0px)' }
-          ], {
-            duration: 400,
-            easing: 'ease-in-out'
-          });
+          listEl.animate(
+            [
+              { transform: 'translateX(0px)' },
+              { transform: 'translateX(-6px)' },
+              { transform: 'translateX(6px)' },
+              { transform: 'translateX(-6px)' },
+              { transform: 'translateX(6px)' },
+              { transform: 'translateX(0px)' },
+            ],
+            {
+              duration: 400,
+              easing: 'ease-in-out',
+            },
+          );
         }
       }
 

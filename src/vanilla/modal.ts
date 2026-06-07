@@ -17,23 +17,23 @@ export class CardModal {
     // Create overlay container
     this.overlayEl = document.createElement('div');
     this.overlayEl.className = 'modal-overlay';
-    
+
     // Create modal dialog content area
     const contentEl = document.createElement('div');
     contentEl.className = 'modal-content';
     contentEl.setAttribute('role', 'dialog');
     contentEl.setAttribute('aria-modal', 'true');
     contentEl.setAttribute('aria-label', 'Credit Card Checkout');
-    
+
     // Create close button
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close-btn';
     closeBtn.textContent = '×';
     closeBtn.setAttribute('aria-label', 'Close checkout modal');
-    
+
     // Placeholder to render the CardForm inside
     const formPlaceholder = document.createElement('div');
-    
+
     contentEl.appendChild(closeBtn);
     contentEl.appendChild(formPlaceholder);
     this.overlayEl.appendChild(contentEl);
@@ -53,7 +53,7 @@ export class CardModal {
         setTimeout(() => {
           this.close();
         }, 1500);
-      }
+      },
     };
 
     this.formInstance = new CardForm(formPlaceholder, interceptedOptions);

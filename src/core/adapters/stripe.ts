@@ -1,5 +1,10 @@
 import { Card, PaymentGateway, Token } from '../domain/card';
-import { ApiValidationError, NetworkError, PaymentGatewayError, toFormUrlEncoded } from './base';
+import {
+  ApiValidationError,
+  NetworkError,
+  PaymentGatewayError,
+  toFormUrlEncoded,
+} from './base';
 
 export interface StripeAdapterOptions {
   publicKey: string;
@@ -33,8 +38,10 @@ export class StripeAdapter implements PaymentGateway {
     };
 
     // Optional Billing details mapping
-    if (card.addressLine1) payload['card[address_line1]'] = card.addressLine1.trim();
-    if (card.addressLine2) payload['card[address_line2]'] = card.addressLine2.trim();
+    if (card.addressLine1)
+      payload['card[address_line1]'] = card.addressLine1.trim();
+    if (card.addressLine2)
+      payload['card[address_line2]'] = card.addressLine2.trim();
     if (card.city) payload['card[address_city]'] = card.city.trim();
     if (card.state) payload['card[address_state]'] = card.state.trim();
     if (card.postalCode) payload['card[address_zip]'] = card.postalCode.trim();
@@ -44,7 +51,7 @@ export class StripeAdapter implements PaymentGateway {
       const response = await fetch('https://api.stripe.com/v1/tokens', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.publicKey}`,
+          Authorization: `Bearer ${this.publicKey}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: toFormUrlEncoded(payload),
@@ -53,7 +60,8 @@ export class StripeAdapter implements PaymentGateway {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMsg = data.error?.message || 'Tokenization failed via Stripe API.';
+        const errorMsg =
+          data.error?.message || 'Tokenization failed via Stripe API.';
         const errorCode = data.error?.code || 'tokenization_failed';
         throw new ApiValidationError(errorMsg, errorCode, data);
       }
@@ -68,8 +76,10 @@ export class StripeAdapter implements PaymentGateway {
         throw error;
       }
       throw new NetworkError(
-        error instanceof Error ? error.message : 'Network connection to Stripe failed.',
-        error
+        error instanceof Error
+          ? error.message
+          : 'Network connection to Stripe failed.',
+        error,
       );
     }
   }

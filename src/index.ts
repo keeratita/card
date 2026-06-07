@@ -2,7 +2,13 @@
 // No AI identity exists in this file.
 
 // Domain Core
-export type { Card, OptionalCardField, CardFormPreset, PaymentGateway, CardFormOptions } from './core/domain/card';
+export type {
+  Card,
+  OptionalCardField,
+  CardFormPreset,
+  PaymentGateway,
+  CardFormOptions,
+} from './core/domain/card';
 export type { Token } from './core/domain/token';
 export type { CardBrand } from './core/domain/brand';
 export { detectCardBrand } from './core/domain/brand';
@@ -17,7 +23,7 @@ export {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric
+  validateGeneric,
 } from './core/domain/validation';
 
 // Input Formatters
@@ -27,11 +33,15 @@ export {
   formatExpiry,
   formatCvc,
   formatCountryCode,
-  formatPhone
+  formatPhone,
 } from './core/formatters/card-formatter';
 
 // REST Gateway Adapters
-export { PaymentGatewayError, NetworkError, ApiValidationError } from './core/adapters/base';
+export {
+  PaymentGatewayError,
+  NetworkError,
+  ApiValidationError,
+} from './core/adapters/base';
 export { StripeAdapter } from './core/adapters/stripe';
 export type { StripeAdapterOptions } from './core/adapters/stripe';
 export { OmiseAdapter } from './core/adapters/omise';

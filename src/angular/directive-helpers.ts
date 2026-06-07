@@ -1,4 +1,8 @@
-import { formatCardNumber, formatExpiry, formatCvc } from '../core/formatters/card-formatter';
+import {
+  formatCardNumber,
+  formatExpiry,
+  formatCvc,
+} from '../core/formatters/card-formatter';
 
 /**
  * Normalizes input element caret position and updates value with credit card layout format.
@@ -7,12 +11,14 @@ export function handleCardNumberInput(inputEl: HTMLInputElement): void {
   const selectionStart = inputEl.selectionStart;
   const formatted = formatCardNumber(inputEl.value);
   inputEl.value = formatted;
-  
+
   if (selectionStart !== null) {
     // Attempt cursor correction if user deletes/adds digits in middle of input
-    const preCursorChars = inputEl.value.substring(0, selectionStart).replace(/\D/g, '').length;
+    const preCursorChars = inputEl.value
+      .substring(0, selectionStart)
+      .replace(/\D/g, '').length;
     let postCursorChars = 0;
-    
+
     let index = 0;
     while (index < formatted.length && postCursorChars < preCursorChars) {
       if (/\d/.test(formatted[index])) {
@@ -20,7 +26,7 @@ export function handleCardNumberInput(inputEl: HTMLInputElement): void {
       }
       index++;
     }
-    
+
     const newCursorPosition = index;
     inputEl.setSelectionRange(newCursorPosition, newCursorPosition);
   }
@@ -37,7 +43,10 @@ export function handleExpiryInput(inputEl: HTMLInputElement): void {
 /**
  * Updates value of input element with standard CVC bounds.
  */
-export function handleCvcInput(inputEl: HTMLInputElement, cardNumber: string): void {
+export function handleCvcInput(
+  inputEl: HTMLInputElement,
+  cardNumber: string,
+): void {
   const formatted = formatCvc(inputEl.value, cardNumber);
   inputEl.value = formatted;
 }

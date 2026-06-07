@@ -1,4 +1,13 @@
-import { luhnCheck, validateExpiry, validateCvc, validateName, validateEmail, validatePhone, validatePostalCode, validateCountry } from '../core/domain/validation';
+import {
+  luhnCheck,
+  validateExpiry,
+  validateCvc,
+  validateName,
+  validateEmail,
+  validatePhone,
+  validatePostalCode,
+  validateCountry,
+} from '../core/domain/validation';
 
 export interface AbstractControl {
   value: any;
@@ -18,7 +27,7 @@ export function creditCardValidator(): ValidatorFn {
     if (!control || !control.value) return null;
     const clean = String(control.value).replace(/\D/g, '');
     const isValid = luhnCheck(clean);
-    return isValid ? null : { 'creditCard': { value: control.value } };
+    return isValid ? null : { creditCard: { value: control.value } };
   };
 }
 
@@ -30,12 +39,12 @@ export function expiryValidator(): ValidatorFn {
     if (!control || !control.value) return null;
     const val = String(control.value).replace(/\D/g, '');
     if (val.length !== 4) {
-      return { 'expiryInvalid': { value: control.value } };
+      return { expiryInvalid: { value: control.value } };
     }
     const month = val.substring(0, 2);
     const year = val.substring(2, 4);
     const isValid = validateExpiry(month, year);
-    return isValid ? null : { 'expiryInvalid': { value: control.value } };
+    return isValid ? null : { expiryInvalid: { value: control.value } };
   };
 }
 
@@ -47,17 +56,21 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const cvc = String(control.value).replace(/\D/g, '');
-    
+
     let cardNumber = '';
-    if (cardNumberControlPath && control.root && typeof control.root.get === 'function') {
+    if (
+      cardNumberControlPath &&
+      control.root &&
+      typeof control.root.get === 'function'
+    ) {
       const cardNumCtrl = control.root.get(cardNumberControlPath);
       if (cardNumCtrl) {
         cardNumber = String(cardNumCtrl.value || '');
       }
     }
-    
+
     const isValid = validateCvc(cvc, cardNumber);
-    return isValid ? null : { 'cvcInvalid': { value: control.value } };
+    return isValid ? null : { cvcInvalid: { value: control.value } };
   };
 }
 
@@ -68,7 +81,7 @@ export function cardholderNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const isValid = validateName(String(control.value));
-    return isValid ? null : { 'cardholderNameInvalid': { value: control.value } };
+    return isValid ? null : { cardholderNameInvalid: { value: control.value } };
   };
 }
 
@@ -79,7 +92,7 @@ export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const isValid = validateEmail(String(control.value));
-    return isValid ? null : { 'emailInvalid': { value: control.value } };
+    return isValid ? null : { emailInvalid: { value: control.value } };
   };
 }
 
@@ -90,7 +103,7 @@ export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const isValid = validatePhone(String(control.value));
-    return isValid ? null : { 'phoneInvalid': { value: control.value } };
+    return isValid ? null : { phoneInvalid: { value: control.value } };
   };
 }
 
@@ -101,7 +114,7 @@ export function postalCodeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const isValid = validatePostalCode(String(control.value));
-    return isValid ? null : { 'postalCodeInvalid': { value: control.value } };
+    return isValid ? null : { postalCodeInvalid: { value: control.value } };
   };
 }
 
@@ -112,6 +125,6 @@ export function countryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const isValid = validateCountry(String(control.value));
-    return isValid ? null : { 'countryInvalid': { value: control.value } };
+    return isValid ? null : { countryInvalid: { value: control.value } };
   };
 }

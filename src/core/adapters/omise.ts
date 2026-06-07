@@ -1,5 +1,10 @@
 import { Card, PaymentGateway, Token } from '../domain/card';
-import { ApiValidationError, NetworkError, PaymentGatewayError, toFormUrlEncoded } from './base';
+import {
+  ApiValidationError,
+  NetworkError,
+  PaymentGatewayError,
+  toFormUrlEncoded,
+} from './base';
 
 export interface OmiseAdapterOptions {
   publicKey: string;
@@ -45,11 +50,11 @@ export class OmiseAdapter implements PaymentGateway {
     try {
       // Basic Authentication where username is public key and password is empty
       const basicAuth = btoa(`${this.publicKey}:`);
-      
+
       const response = await fetch('https://vault.omise.co/tokens', {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${basicAuth}`,
+          Authorization: `Basic ${basicAuth}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: toFormUrlEncoded(payload),
@@ -73,8 +78,10 @@ export class OmiseAdapter implements PaymentGateway {
         throw error;
       }
       throw new NetworkError(
-        error instanceof Error ? error.message : 'Network connection to Omise failed.',
-        error
+        error instanceof Error
+          ? error.message
+          : 'Network connection to Omise failed.',
+        error,
       );
     }
   }

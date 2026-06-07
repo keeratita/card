@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Card, PaymentGateway, Token } from '../core/domain/card';
 import { detectCardBrand } from '../core/domain/brand';
-import { formatCardNumber, formatExpiry, formatCvc } from '../core/formatters/card-formatter';
+import {
+  formatCardNumber,
+  formatExpiry,
+  formatCvc,
+} from '../core/formatters/card-formatter';
 import {
   luhnCheck,
   validateExpiry,
@@ -10,7 +14,7 @@ import {
   validateEmail,
   validatePhone,
   validatePostalCode,
-  validateCountry
+  validateCountry,
 } from '../core/domain/validation';
 
 export interface CardFormValues {
@@ -41,7 +45,7 @@ export function useCardForm(params: UseCardFormParams) {
     expiry: '',
     cvc: '',
     name: '',
-    ...params.initialValues
+    ...params.initialValues,
   });
 
   const [errors, setErrors] = useState<Record<string, string | null>>({});
@@ -65,14 +69,14 @@ export function useCardForm(params: UseCardFormParams) {
       formattedValue = formatCvc(value, values.number);
     }
 
-    setValues(prev => ({
+    setValues((prev) => ({
       ...prev,
-      [name]: formattedValue
+      [name]: formattedValue,
     }));
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: null
+      [name]: null,
     }));
   };
 
@@ -95,7 +99,10 @@ export function useCardForm(params: UseCardFormParams) {
       if (cleanExp.length !== 4) {
         isValid = false;
       } else {
-        isValid = validateExpiry(cleanExp.substring(0, 2), cleanExp.substring(2, 4));
+        isValid = validateExpiry(
+          cleanExp.substring(0, 2),
+          cleanExp.substring(2, 4),
+        );
       }
     } else if (name === 'cvc') {
       const cleanCvc = value.replace(/\D/g, '');
@@ -114,9 +121,9 @@ export function useCardForm(params: UseCardFormParams) {
       isValid = value.trim().length > 0;
     }
 
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: isValid ? null : `Invalid ${name}`
+      [name]: isValid ? null : `Invalid ${name}`,
     }));
 
     return isValid;
@@ -140,8 +147,13 @@ export function useCardForm(params: UseCardFormParams) {
 
     // Validate active optional fields
     let areOptionalValid = true;
-    Object.keys(values).forEach(key => {
-      if (key !== 'number' && key !== 'expiry' && key !== 'cvc' && key !== 'name') {
+    Object.keys(values).forEach((key) => {
+      if (
+        key !== 'number' &&
+        key !== 'expiry' &&
+        key !== 'cvc' &&
+        key !== 'name'
+      ) {
         const val = (values as any)[key] || '';
         const isValid = validateField(key, val);
         if (!isValid) {
@@ -150,7 +162,13 @@ export function useCardForm(params: UseCardFormParams) {
       }
     });
 
-    if (!isNumValid || !isExpValid || !isCvcValid || !isNameValid || !areOptionalValid) {
+    if (
+      !isNumValid ||
+      !isExpValid ||
+      !isCvcValid ||
+      !isNameValid ||
+      !areOptionalValid
+    ) {
       setPaymentError('Please correct the invalid fields.');
       return;
     }
@@ -167,19 +185,25 @@ export function useCardForm(params: UseCardFormParams) {
       expMonth,
       expYear,
       cvc: values.cvc.replace(/\D/g, ''),
-      name: values.name.trim()
+      name: values.name.trim(),
     };
 
     // Populate optional fields
-    Object.keys(values).forEach(key => {
-      if (key !== 'number' && key !== 'expiry' && key !== 'cvc' && key !== 'name' && cardData) {
+    Object.keys(values).forEach((key) => {
+      if (
+        key !== 'number' &&
+        key !== 'expiry' &&
+        key !== 'cvc' &&
+        key !== 'name' &&
+        cardData
+      ) {
         (cardData as any)[key] = (values as any)[key];
       }
     });
 
     try {
       const token = await params.adapter.tokenize(cardData);
-      
+
       // Dereference Card Data immediately for security
       cardData = null;
 
@@ -220,6 +244,6 @@ export function useCardForm(params: UseCardFormParams) {
     handleBlur,
     handleCvcFocus,
     handleCvcBlur,
-    handleSubmit
+    handleSubmit,
   };
 }

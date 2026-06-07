@@ -1,12 +1,16 @@
 import { Directive, ElementRef, HostListener, Input } from '@angular/core';
-import { handleCardNumberInput, handleExpiryInput, handleCvcInput } from './directive-helpers';
+import {
+  handleCardNumberInput,
+  handleExpiryInput,
+  handleCvcInput,
+} from './directive-helpers';
 
 /**
  * Angular directive to automatically format card numbers with correct spacing (e.g. 4-6-5 for Amex, 4-4-4-4 for standard).
  */
 @Directive({
   selector: '[kgCardNumber]',
-  standalone: true
+  standalone: true,
 })
 export class CardNumberDirective {
   constructor(private el: ElementRef<HTMLInputElement>) {}
@@ -22,7 +26,7 @@ export class CardNumberDirective {
  */
 @Directive({
   selector: '[kgCardExpiry]',
-  standalone: true
+  standalone: true,
 })
 export class CardExpiryDirective {
   constructor(private el: ElementRef<HTMLInputElement>) {}
@@ -38,7 +42,7 @@ export class CardExpiryDirective {
  */
 @Directive({
   selector: '[kgCardCvc]',
-  standalone: true
+  standalone: true,
 })
 export class CardCvcDirective {
   /**

@@ -7,13 +7,13 @@ export function cleanDigits(value: string): string {
 export function formatCardNumber(value: string): string {
   const clean = cleanDigits(value);
   const brand = detectCardBrand(clean);
-  
+
   if (brand === 'amex') {
     // Amex layout: 4-6-5 digits spacing
     const parts = [
       clean.substring(0, 4),
       clean.substring(4, 10),
-      clean.substring(10, 15)
+      clean.substring(10, 15),
     ].filter(Boolean);
     return parts.join(' ');
   } else {
@@ -29,19 +29,19 @@ export function formatCardNumber(value: string): string {
 export function formatExpiry(value: string): string {
   const clean = cleanDigits(value).substring(0, 4);
   if (clean.length === 0) return '';
-  
+
   let month = clean.substring(0, 2);
   if (month.length === 2) {
     const m = parseInt(month, 10);
     if (m < 1) month = '01';
     if (m > 12) month = '12';
   }
-  
+
   const year = clean.substring(2, 4);
   if (clean.length > 2) {
     return `${month} / ${year}`;
   }
-  
+
   return month;
 }
 export function formatCvc(value: string, cardNumber: string): string {
@@ -51,7 +51,10 @@ export function formatCvc(value: string, cardNumber: string): string {
   return clean.substring(0, limit);
 }
 export function formatCountryCode(value: string): string {
-  return value.replace(/[^a-zA-Z]/g, '').substring(0, 2).toUpperCase();
+  return value
+    .replace(/[^a-zA-Z]/g, '')
+    .substring(0, 2)
+    .toUpperCase();
 }
 export function formatPhone(value: string): string {
   // Strip non-numbers except leading '+'

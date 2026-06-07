@@ -7,17 +7,15 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       'no-console': 'warn',
-      'no-debugger': 'error'
-    }
+      'no-debugger': 'error',
+    },
   },
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'examples/**',
-      'tsup.config.ts'
-    ]
-  }
+    ignores: ['dist/**', 'node_modules/**', 'examples/**', 'tsup.config.ts'],
+  },
 );

@@ -8,7 +8,7 @@ const OPTIONAL_FIELD_MAP: Record<OptionalCardField, true> = {
   postalCode: true,
   country: true,
   phone: true,
-  email: true
+  email: true,
 };
 
 export function escapeHtml(value: string): string {
@@ -24,7 +24,9 @@ export function isOptionalCardField(value: string): value is OptionalCardField {
   return Object.hasOwn(OPTIONAL_FIELD_MAP, value);
 }
 
-export function sanitizeOptionalFields(fields: readonly string[]): OptionalCardField[] {
+export function sanitizeOptionalFields(
+  fields: readonly string[],
+): OptionalCardField[] {
   const uniqueFields = new Set<OptionalCardField>();
 
   fields.forEach((field) => {
