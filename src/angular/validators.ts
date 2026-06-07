@@ -10,14 +10,14 @@ import {
 } from '../core/domain/validation';
 
 export interface AbstractControl {
-  value: any;
-  root: any;
+  value: unknown;
+  root: { get(path: string): AbstractControl | null } | null;
   get(path: string): AbstractControl | null;
 }
 
-export type ValidationErrors = { [key: string]: any };
+export type ValidationErrors = Record<string, unknown>;
 
-export type ValidatorFn = (control: any) => ValidationErrors | null;
+export type ValidatorFn = (control: AbstractControl) => ValidationErrors | null;
 
 /**
  * Validates that the credit card number passes Luhn's algorithm.

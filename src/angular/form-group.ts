@@ -1,5 +1,6 @@
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { CardFormPreset, OptionalCardField } from '../core/domain/card';
+import { resolveActiveFields } from '../core/domain/optional-fields';
 import {
   creditCardValidator,
   expiryValidator,
@@ -10,13 +11,6 @@ import {
   postalCodeValidator,
   countryValidator,
 } from './validators';
-
-const PRESET_FIELDS: Record<CardFormPreset, OptionalCardField[]> = {
-  none: [],
-  us: ['postalCode'],
-  billing: ['addressLine1', 'city', 'state', 'postalCode', 'country'],
-  contact: ['email', 'phone'],
-};
 
 export interface CardFormGroupConfig {
   preset?: CardFormPreset;
@@ -31,14 +25,10 @@ export function createCardFormGroup(
   config: CardFormGroupConfig = {},
 ): FormGroup {
   const preset = config.preset || 'none';
-  const fieldsFromPreset = PRESET_FIELDS[preset] || [];
-  const fieldsFromConfig = config.fields || [];
-  const activeOptionalFields = Array.from(
-    new Set([...fieldsFromPreset, ...fieldsFromConfig]),
-  );
+  const activeOptionalFields = resolveActiveFields(preset, config.fields || []);
 
   // Core required fields
-  const group: Record<string, any> = {
+  const group: Record<string, FormControl<unknown>> = {
     number: new FormControl('', [Validators.required, creditCardValidator()]),
     expiry: new FormControl('', [Validators.required, expiryValidator()]),
     cvc: new FormControl('', [Validators.required, cvcValidator('number')]),

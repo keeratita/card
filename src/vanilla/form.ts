@@ -1,4 +1,11 @@
 import { Card, CardFormOptions, OptionalCardField } from '../core/domain/card';
+import {
+  FIELD_METADATA,
+  getFieldDisplayText,
+  resolveActiveFields,
+} from '../core/domain/optional-fields';
+import { getCardLogoSvg } from '../core/domain/card-brand-logos';
+import { CARD_FORM_TEXT_EN } from '../lang/en';
 import { detectCardBrand } from '../core/domain/brand';
 import {
   formatCardNumber,
@@ -16,78 +23,7 @@ import {
   validateCountry,
   validateGeneric,
 } from '../core/domain/validation';
-import { escapeHtml, sanitizeOptionalFields } from './internal/security';
-
-// Vector inline SVGs for premium look without external dependencies
-const BRAND_LOGOS: Record<string, string> = {
-  visa: `<svg viewBox="0 0 24 24"><path fill="#0a84ff" d="M12.8 15.6h1.7l1-6.5h-1.7zm5.5-6.5c-.4-.1-.9-.2-1.4-.2-1.5 0-2.6.8-2.6 1.9 0 .8.8 1.3 1.3 1.6.6.3.8.5.8.7 0 .4-.5.6-1 .6-.6 0-1.1-.2-1.6-.4l-.2-.1-.3 1.8c.5.2 1.4.4 2.2.4 1.6 0 2.6-.8 2.6-2 0-.7-.4-1.2-1.4-1.7-.6-.3-.9-.5-.9-.7 0-.3.3-.5.8-.5.5 0 .9.1 1.2.3l.1.1.3-1.8zM9.5 9.1h-1.6c-.5 0-.9.3-1.1.7L4 15.6h1.8l.4-1h2.2l.2 1H10l-.5-6.5zm-2.7 4.1.8-2.3.5 2.3H6.8zm7.9-4.1h-1.4c-.4 0-.8.2-.9.6l-2.6 5.8h1.8l.4-1h2.2l.2 1H16l-1.3-6.4z"/></svg>`,
-  mastercard: `<svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="6" fill="#ff453a" opacity="0.95"/><circle cx="15" cy="12" r="6" fill="#ff9f0a" opacity="0.95"/></svg>`,
-  amex: `<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#0a84ff"/><path fill="#fff" d="M4 17h1.6l.8-2.3h2.3l.8 2.3H11l-2.7-7H7.7L4 17zm3.6-4.2.7-2.1.7 2.1H7.6zm5 4.2h1.5v-4.1l1.8 4.1h1.3l1.8-4.1v4.1h1.5v-7h-1.8l-2.1 4.8-2.1-4.8h-1.8v7z"/></svg>`,
-  jcb: `<svg viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#0b4e9f"/><path fill="#ff453a" d="M4 7h16v10H4z"/><path fill="#fff" d="M7 15h1.5v-4.1l1.8 4.1h1.3l1.8-4.1v4.1H15v-7h-1.8l-2.1 4.8-2.1-4.8H7v7z"/></svg>`,
-};
-
-const DEFAULT_CARD_LOGO = `<svg viewBox="0 0 48 48"><path fill="#8e8e93" d="M37,40H11c-1.65,0-3-1.35-3-3V11c0-1.65,1.35-3,3-3h26c1.65,0,3,1.35,3,3v26C40,38.65,38.65,40,37,40z"/><path fill="#2c2c2e" d="M8,14h32v4H8V14z"/></svg>`;
-
-const FIELD_METADATA: Record<
-  OptionalCardField,
-  { label: string; placeholder: string; type: string; autocomplete: string }
-> = {
-  addressLine1: {
-    label: 'Address',
-    placeholder: 'Street address',
-    type: 'text',
-    autocomplete: 'address-line1',
-  },
-  addressLine2: {
-    label: 'Apt, Suite',
-    placeholder: 'Apt, Suite, Unit (optional)',
-    type: 'text',
-    autocomplete: 'address-line2',
-  },
-  city: {
-    label: 'City',
-    placeholder: 'City',
-    type: 'text',
-    autocomplete: 'address-level2',
-  },
-  state: {
-    label: 'State',
-    placeholder: 'State or Province',
-    type: 'text',
-    autocomplete: 'address-level1',
-  },
-  postalCode: {
-    label: 'Postal Code',
-    placeholder: 'Postal/ZIP Code',
-    type: 'text',
-    autocomplete: 'postal-code',
-  },
-  country: {
-    label: 'Country',
-    placeholder: 'Country Code (e.g. US, TH)',
-    type: 'text',
-    autocomplete: 'country',
-  },
-  phone: {
-    label: 'Phone',
-    placeholder: '+668 1234 567',
-    type: 'tel',
-    autocomplete: 'tel',
-  },
-  email: {
-    label: 'Email',
-    placeholder: 'name@example.com',
-    type: 'email',
-    autocomplete: 'email',
-  },
-};
-
-const PRESET_FIELDS: Record<string, OptionalCardField[]> = {
-  none: [],
-  us: ['postalCode'],
-  billing: ['addressLine1', 'city', 'state', 'postalCode', 'country'],
-  contact: ['email', 'phone'],
-};
+import { escapeHtml } from './internal/security';
 
 export class CardForm {
   private readonly element: HTMLElement;
@@ -109,12 +45,12 @@ export class CardForm {
 
     this.options = {
       preset: 'none',
-      submitButtonText: 'Pay Now',
+      submitButtonText: CARD_FORM_TEXT_EN.submitDefault,
       ...options,
     };
 
     if (!this.options.submitButtonText) {
-      this.options.submitButtonText = 'Pay Now';
+      this.options.submitButtonText = CARD_FORM_TEXT_EN.submitDefault;
     }
 
     this.render();
@@ -122,9 +58,8 @@ export class CardForm {
 
   private getActiveFields(): OptionalCardField[] {
     const preset = this.options.preset || 'none';
-    const fieldsFromPreset = PRESET_FIELDS[preset] || [];
     const fieldsFromOptions = this.options.fields || [];
-    return sanitizeOptionalFields([...fieldsFromPreset, ...fieldsFromOptions]);
+    return resolveActiveFields(preset, fieldsFromOptions);
   }
 
   private render(): void {
@@ -138,7 +73,7 @@ export class CardForm {
       this.options.cardLabel || this.options.adapter.name.toUpperCase();
     const safeCardLabelText = escapeHtml(cardLabelText);
     const safeSubmitButtonText = escapeHtml(
-      this.options.submitButtonText || 'Pay Now',
+      this.options.submitButtonText || CARD_FORM_TEXT_EN.submitDefault,
     );
 
     containerWrapper.innerHTML = `
@@ -150,18 +85,18 @@ export class CardForm {
               <div class="card-chip"></div>
                 <div class="card-type-label card-gateway-label">${safeCardLabelText}</div>
             </div>
-            <div class="card-number-display card-num-preview">•••• •••• •••• ••••</div>
+            <div class="card-number-display card-num-preview">${escapeHtml(CARD_FORM_TEXT_EN.cardNumberPlaceholder)}</div>
             <div class="card-footer">
               <div class="card-meta-block">
-                <span class="card-meta-label">Cardholder</span>
-                <span class="card-meta-value card-holder-preview">CARDHOLDER NAME</span>
+                <span class="card-meta-label">${escapeHtml(CARD_FORM_TEXT_EN.cardholder)}</span>
+                <span class="card-meta-value card-holder-preview">${escapeHtml(CARD_FORM_TEXT_EN.cardholderPreviewFallback)}</span>
               </div>
               <div class="card-meta-block">
-                <span class="card-meta-label">Expires</span>
-                <span class="card-meta-value card-expiry-preview">MM/YY</span>
+                <span class="card-meta-label">${escapeHtml(CARD_FORM_TEXT_EN.expires)}</span>
+                <span class="card-meta-value card-expiry-preview">${escapeHtml(CARD_FORM_TEXT_EN.expiryPlaceholder)}</span>
               </div>
               <div class="brand-logo card-brand-logo">
-                ${DEFAULT_CARD_LOGO}
+                ${getCardLogoSvg('')}
               </div>
             </div>
           </div>
@@ -170,9 +105,9 @@ export class CardForm {
           <div class="card-back">
             <div class="card-magnetic-strip"></div>
             <div class="card-signature-area">
-              <span class="card-meta-label" style="margin-left: 4px;">Security Code</span>
+              <span class="card-meta-label" style="margin-left: 4px;">${escapeHtml(CARD_FORM_TEXT_EN.securityCode)}</span>
               <div class="card-signature-strip">
-                <div class="card-cvc-display card-cvc-preview">•••</div>
+                <div class="card-cvc-display card-cvc-preview">${escapeHtml(CARD_FORM_TEXT_EN.cvcPlaceholder)}</div>
               </div>
             </div>
           </div>
@@ -181,17 +116,17 @@ export class CardForm {
 
       <!-- Form Inputs Group -->
       <div>
-        <h3 class="form-section-header">Payment Method</h3>
+        <h3 class="form-section-header">${escapeHtml(CARD_FORM_TEXT_EN.paymentMethod)}</h3>
         <form class="payment-form-el">
           <div class="ios-grouped-list">
             <!-- Card Number Row -->
             <div class="ios-input-row row-number">
-              <label class="ios-label" for="card-number">Card Number</label>
+              <label class="ios-label" for="card-number">${escapeHtml(CARD_FORM_TEXT_EN.cardNumber)}</label>
               <input 
                 type="text" 
                 id="card-number"
                 class="ios-input card-number-input" 
-                placeholder="•••• •••• •••• ••••"
+                placeholder="${escapeHtml(CARD_FORM_TEXT_EN.cardNumberPlaceholder)}"
                 inputmode="numeric"
                 autocomplete="cc-number"
                 required
@@ -201,12 +136,12 @@ export class CardForm {
             <!-- Expiry & CVC row wrapper -->
             <div class="ios-input-row-half">
               <div class="ios-input-row row-expiry">
-                <label class="ios-label" for="card-expiry" style="width: 55px;">Expires</label>
+                <label class="ios-label" for="card-expiry" style="width: 55px;">${escapeHtml(CARD_FORM_TEXT_EN.expires)}</label>
                 <input 
                   type="text" 
                   id="card-expiry"
                   class="ios-input card-expiry-input" 
-                  placeholder="MM/YY"
+                  placeholder="${escapeHtml(CARD_FORM_TEXT_EN.expiryPlaceholder)}"
                   inputmode="numeric"
                   autocomplete="cc-exp"
                   required
@@ -214,12 +149,12 @@ export class CardForm {
               </div>
               
               <div class="ios-input-row row-cvc">
-                <label class="ios-label" for="card-cvc" style="width: 50px;">CVC</label>
+                <label class="ios-label" for="card-cvc" style="width: 50px;">${escapeHtml(CARD_FORM_TEXT_EN.cvc)}</label>
                 <input 
                   type="password" 
                   id="card-cvc"
                   class="ios-input card-cvc-input" 
-                  placeholder="•••"
+                  placeholder="${escapeHtml(CARD_FORM_TEXT_EN.cvcPlaceholder)}"
                   inputmode="numeric"
                   maxlength="4"
                   autocomplete="cc-csc"
@@ -230,19 +165,19 @@ export class CardForm {
 
             <!-- Anchor point for optional fields. Cardholder Name is last in list. -->
             <div class="ios-input-row row-name">
-              <label class="ios-label" for="card-name">Cardholder</label>
+              <label class="ios-label" for="card-name">${escapeHtml(CARD_FORM_TEXT_EN.cardholder)}</label>
               <input 
                 type="text" 
                 id="card-name"
                 class="ios-input card-name-input" 
-                placeholder="Full Name"
+                placeholder="${escapeHtml(CARD_FORM_TEXT_EN.cardholderPlaceholder)}"
                 autocomplete="cc-name"
                 required
               >
             </div>
           </div>
           
-          <div class="error-text validation-error-msg">Please correct the invalid fields above.</div>
+          <div class="error-text validation-error-msg">${escapeHtml(CARD_FORM_TEXT_EN.validationError)}</div>
 
           <button type="submit" class="pay-btn submit-btn" style="margin-top: 28px;">
             <div class="spinner btn-spinner"></div>
@@ -257,7 +192,7 @@ export class CardForm {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle;">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          Tokenized Successfully
+          ${escapeHtml(CARD_FORM_TEXT_EN.tokenizedSuccessfully)}
         </div>
         <div class="status-detail token-detail"></div>
       </div>
@@ -290,15 +225,12 @@ export class CardForm {
     const row = document.createElement('div');
     row.className = `ios-input-row row-${fieldKey}`;
 
-    let labelText = meta.label;
-    let placeholderText = meta.placeholder;
-
-    if (fieldKey === 'postalCode' && this.options.preset === 'us') {
-      labelText = 'ZIP Code';
-      placeholderText = '12345';
-    }
-    const safeLabelText = escapeHtml(labelText);
-    const safePlaceholderText = escapeHtml(placeholderText);
+    const { label, placeholder } = getFieldDisplayText(
+      fieldKey,
+      this.options.preset || 'none',
+    );
+    const safeLabelText = escapeHtml(label);
+    const safePlaceholderText = escapeHtml(placeholder);
 
     row.innerHTML = `
       <label class="ios-label" for="card-${fieldKey}">${safeLabelText}</label>
@@ -345,14 +277,15 @@ export class CardForm {
         '.card-num-preview',
       ) as HTMLElement;
       if (numPreview) {
-        numPreview.innerText = formatted || '•••• •••• •••• ••••';
+        numPreview.innerText =
+          formatted || CARD_FORM_TEXT_EN.cardNumberPlaceholder;
       }
 
       const logoContainer = this.element.querySelector(
         '.card-brand-logo',
       ) as HTMLElement;
       if (logoContainer) {
-        logoContainer.innerHTML = BRAND_LOGOS[brand] || DEFAULT_CARD_LOGO;
+        logoContainer.innerHTML = getCardLogoSvg(brand);
       }
 
       target.closest('.ios-input-row')?.classList.remove('invalid');
@@ -368,7 +301,7 @@ export class CardForm {
         '.card-expiry-preview',
       ) as HTMLElement;
       if (expPreview) {
-        expPreview.innerText = formatted || 'MM/YY';
+        expPreview.innerText = formatted || CARD_FORM_TEXT_EN.expiryPlaceholder;
       }
 
       target.closest('.ios-input-row')?.classList.remove('invalid');
@@ -383,7 +316,8 @@ export class CardForm {
         '.card-cvc-preview',
       ) as HTMLElement;
       if (cvcPreview) {
-        cvcPreview.innerText = '•'.repeat(formatted.length) || '•••';
+        cvcPreview.innerText =
+          '•'.repeat(formatted.length) || CARD_FORM_TEXT_EN.cvcPlaceholder;
       }
 
       target.closest('.ios-input-row')?.classList.remove('invalid');
@@ -395,7 +329,9 @@ export class CardForm {
         '.card-holder-preview',
       ) as HTMLElement;
       if (preview) {
-        preview.innerText = target.value.toUpperCase() || 'CARDHOLDER NAME';
+        preview.innerText =
+          target.value.toUpperCase() ||
+          CARD_FORM_TEXT_EN.cardholderPreviewFallback;
       }
       target.closest('.ios-input-row')?.classList.remove('invalid');
     });
@@ -527,7 +463,7 @@ export class CardForm {
     ) as HTMLElement;
     if (!isFormValid) {
       if (errorMsg) {
-        errorMsg.innerText = 'Please correct the invalid fields above.';
+        errorMsg.innerText = CARD_FORM_TEXT_EN.validationError;
         errorMsg.style.display = 'block';
       }
       return;
@@ -546,7 +482,7 @@ export class CardForm {
     // --- PHASE 1: TOKENIZATION ---
     submitBtn.disabled = true;
     spinner.style.display = 'block';
-    btnText.innerText = 'Tokenizing card...';
+    btnText.innerText = CARD_FORM_TEXT_EN.tokenizing;
 
     const numInput = this.formEl.querySelector(
       '.card-number-input',
@@ -590,7 +526,7 @@ export class CardForm {
       cardData = null;
 
       // --- PHASE 2: PROCESSING (BACKEND VERIFICATION) ---
-      btnText.innerText = 'Processing Payment...';
+      btnText.innerText = CARD_FORM_TEXT_EN.processing;
 
       if (this.options.onSubmit) {
         const result = this.options.onSubmit({ token });
@@ -606,7 +542,7 @@ export class CardForm {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align: middle; margin-right: 4px;">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
-        Payment Success!
+        ${escapeHtml(CARD_FORM_TEXT_EN.paymentSuccess)}
       `;
 
       // Disable form inputs
@@ -626,9 +562,9 @@ export class CardForm {
         statusPanel.style.display = 'flex';
 
         let detailsHtml = `
-          <strong>Gateway:</strong> ${escapeHtml(this.options.adapter.name)}<br>
-          <strong>Card Brand:</strong> ${escapeHtml((detectCardBrand(numInput.value) || 'unknown').toUpperCase())}<br>
-          <strong>Token ID:</strong> <code>${escapeHtml(token.id)}</code>
+          <strong>${escapeHtml(CARD_FORM_TEXT_EN.gateway)}:</strong> ${escapeHtml(this.options.adapter.name)}<br>
+          <strong>${escapeHtml(CARD_FORM_TEXT_EN.cardBrand)}:</strong> ${escapeHtml((detectCardBrand(numInput.value) || 'unknown').toUpperCase())}<br>
+          <strong>${escapeHtml(CARD_FORM_TEXT_EN.tokenId)}:</strong> <code>${escapeHtml(token.id)}</code>
         `;
 
         this.getActiveFields().forEach((f) => {
@@ -636,30 +572,30 @@ export class CardForm {
             `.card-${f}-input`,
           ) as HTMLInputElement;
           if (input) {
-            const meta = FIELD_METADATA[f];
-            const labelText =
-              f === 'postalCode' && this.options.preset === 'us'
-                ? 'ZIP Code'
-                : meta.label;
-            detailsHtml += `<br><strong>${escapeHtml(labelText)}:</strong> ${escapeHtml(input.value)}`;
+            const { label } = getFieldDisplayText(
+              f,
+              this.options.preset || 'none',
+            );
+            detailsHtml += `<br><strong>${escapeHtml(label)}:</strong> ${escapeHtml(input.value)}`;
           }
         });
 
         tokenDetail.innerHTML = detailsHtml;
         statusPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Clean up sensitive variables
       cardData = null;
 
       // --- ERROR ROLLBACK ---
       spinner.style.display = 'none';
       submitBtn.disabled = false;
-      btnText.innerText = this.options.submitButtonText || 'Pay Now';
+      btnText.innerText =
+        this.options.submitButtonText || CARD_FORM_TEXT_EN.submitDefault;
 
       if (errorMsg) {
-        errorMsg.innerText =
-          err.message || 'Payment processing failed. Please try again.';
+        const errMessage = err instanceof Error ? err.message : '';
+        errorMsg.innerText = errMessage || CARD_FORM_TEXT_EN.paymentFailed;
         errorMsg.style.display = 'block';
 
         const listEl = this.formEl.querySelector(
@@ -684,7 +620,7 @@ export class CardForm {
       }
 
       if (this.options.onError) {
-        this.options.onError(err);
+        this.options.onError(err as Error);
       }
     }
   }
