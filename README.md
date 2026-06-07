@@ -4,6 +4,11 @@ A lightweight, framework-agnostic TypeScript library that provides a secure, pre
 
 No SDK scripts or CDNs are required. The package uses direct browser-to-vault REST APIs, ensuring absolute control over performance, accessibility, and visual aesthetics.
 
+## Live Demo
+
+- Home: https://keeratita.github.io/card/
+- Vanilla demo: https://keeratita.github.io/card/examples/vanilla/index.html
+
 ---
 
 ## Features
@@ -35,7 +40,10 @@ Make sure to install React (for hook integrations) if compiling framework wrappe
 Add the stylesheet to your HTML page header:
 
 ```html
-<link rel="stylesheet" href="node_modules/@keeratita/card/dist/vanilla/styles.css">
+<link
+  rel="stylesheet"
+  href="node_modules/@keeratita/card/dist/vanilla/styles.css"
+/>
 ```
 
 #### A. Inline Form Mode
@@ -51,7 +59,9 @@ import { StripeAdapter } from '@keeratita/card';
 import { CardForm } from '@keeratita/card/vanilla';
 
 // Initialize the gateway adapter
-const stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_your_stripe_key' });
+const stripeAdapter = new StripeAdapter({
+  publicKey: 'pk_test_your_stripe_key',
+});
 
 // Instantiate the form controller
 const form = new CardForm('#inline-payment-form', {
@@ -63,7 +73,7 @@ const form = new CardForm('#inline-payment-form', {
     // Phase 2: Send token.id to your backend checkout API
     const response = await fetch('/api/charge', {
       method: 'POST',
-      body: JSON.stringify({ tokenId: token.id })
+      body: JSON.stringify({ tokenId: token.id }),
     });
     if (!response.ok) {
       throw new Error('Transaction declined from backend API.');
@@ -71,7 +81,7 @@ const form = new CardForm('#inline-payment-form', {
   },
   onError: (error) => {
     console.error('Validation or API vault failure: ', error.message);
-  }
+  },
 });
 ```
 
@@ -83,7 +93,9 @@ Instantiate a overlay dialog popup that dynamically slides up:
 import { OmiseAdapter } from '@keeratita/card';
 import { CardModal } from '@keeratita/card/vanilla';
 
-const omiseAdapter = new OmiseAdapter({ publicKey: 'pkey_test_your_omise_key' });
+const omiseAdapter = new OmiseAdapter({
+  publicKey: 'pkey_test_your_omise_key',
+});
 
 const checkoutModal = new CardModal({
   adapter: omiseAdapter,
@@ -91,7 +103,7 @@ const checkoutModal = new CardModal({
   onSubmit: async ({ token }) => {
     // Direct secure submit to your backend payment processing API
     await processPayment(token);
-  }
+  },
 });
 
 // Open checkout popup drawer
@@ -123,15 +135,15 @@ export default function CheckoutPage() {
     await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tokenId: token.id })
+      body: JSON.stringify({ tokenId: token.id }),
     });
   };
 
   return (
     <CardForm
       adapter={stripeAdapter}
-      preset="billing"
-      submitButtonText="Pay $29.99"
+      preset='billing'
+      submitButtonText='Pay $29.99'
       onSubmit={handleCheckout}
       onError={(error) => console.error('Checkout error:', error.message)}
     />
@@ -164,37 +176,39 @@ export default function CustomCheckoutForm() {
     handleBlur,
     handleCvcFocus,
     handleCvcBlur,
-    handleSubmit
+    handleSubmit,
   } = useCardForm({
     adapter: stripeAdapter,
     onSubmit: async ({ token }) => {
       // Backend transaction API verify
       await chargeCard(token.id);
-    }
+    },
   });
 
   return (
     <form onSubmit={handleSubmit}>
       {/* Dynamic 3D Card Preview container */}
       <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
-        <div className="card-num-preview">{values.number || '•••• •••• •••• ••••'}</div>
-        <div className="card-brand">{brand.toUpperCase()}</div>
+        <div className='card-num-preview'>
+          {values.number || '•••• •••• •••• ••••'}
+        </div>
+        <div className='card-brand'>{brand.toUpperCase()}</div>
       </div>
 
       {/* Form Fields */}
       <input
-        type="text"
-        name="number"
+        type='text'
+        name='number'
         value={values.number}
         onChange={handleChange}
         onBlur={handleBlur}
-        placeholder="Card Number"
+        placeholder='Card Number'
       />
       {errors.number && <span>{errors.number}</span>}
 
       <input
-        type="password"
-        name="cvc"
+        type='password'
+        name='cvc'
         value={values.cvc}
         onChange={handleChange}
         onFocus={handleCvcFocus}
@@ -202,13 +216,17 @@ export default function CustomCheckoutForm() {
           handleBlur(e);
           handleCvcBlur();
         }}
-        placeholder="CVC"
+        placeholder='CVC'
       />
 
-      <button type="submit" disabled={isTokenizing || isProcessing}>
-        {isTokenizing ? 'Tokenizing...' : isProcessing ? 'Processing...' : 'Pay'}
+      <button type='submit' disabled={isTokenizing || isProcessing}>
+        {isTokenizing
+          ? 'Tokenizing...'
+          : isProcessing
+            ? 'Processing...'
+            : 'Pay'}
       </button>
-      {paymentError && <div className="error">{paymentError}</div>}
+      {paymentError && <div className='error'>{paymentError}</div>}
     </form>
   );
 }
@@ -229,7 +247,7 @@ import { createCardFormGroup } from '@keeratita/card/angular';
 
 @Component({
   selector: 'app-checkout',
-  templateUrl: './checkout.component.html'
+  templateUrl: './checkout.component.html',
 })
 export class CheckoutComponent {
   checkoutForm: FormGroup;
@@ -247,11 +265,15 @@ Or configure fields manually using the individual validator helpers:
 ```typescript
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { creditCardValidator, expiryValidator, cvcValidator } from '@keeratita/card/angular';
+import {
+  creditCardValidator,
+  expiryValidator,
+  cvcValidator,
+} from '@keeratita/card/angular';
 
 @Component({
   selector: 'app-checkout',
-  templateUrl: './checkout.component.html'
+  templateUrl: './checkout.component.html',
 })
 export class CheckoutComponent {
   checkoutForm: FormGroup;
@@ -260,7 +282,7 @@ export class CheckoutComponent {
     this.checkoutForm = this.fb.group({
       cardNumber: ['', [Validators.required, creditCardValidator()]],
       expiry: ['', [Validators.required, expiryValidator()]],
-      cvc: ['', [Validators.required, cvcValidator('cardNumber')]] // cross-validates against cardNumber control
+      cvc: ['', [Validators.required, cvcValidator('cardNumber')]], // cross-validates against cardNumber control
     });
   }
 }
@@ -272,7 +294,11 @@ The package exports pre-built standalone input masking directives out-of-the-box
 
 ```typescript
 import { Component } from '@angular/core';
-import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@keeratita/card/angular';
+import {
+  CardNumberDirective,
+  CardExpiryDirective,
+  CardCvcDirective,
+} from '@keeratita/card/angular';
 
 @Component({
   selector: 'app-checkout',
@@ -286,8 +312,13 @@ import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@kee
     <input type="text" kgCardExpiry placeholder="MM/YY" />
 
     <!-- CVC formatting dynamically restricted based on card brand -->
-    <input type="password" kgCardCvc [kgCardCvcNumber]="cardNumber" placeholder="•••" />
-  `
+    <input
+      type="password"
+      kgCardCvc
+      [kgCardCvcNumber]="cardNumber"
+      placeholder="•••"
+    />
+  `,
 })
 export class CheckoutComponent {
   cardNumber = '';
@@ -300,15 +331,15 @@ export class CheckoutComponent {
 
 ### Form Configurations (`CardFormOptions`)
 
-| Attribute | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `adapter` | `PaymentGateway` | Yes | `StripeAdapter` or `OmiseAdapter` |
-| `preset` | `CardFormPreset` | No | `'none' \| 'us' \| 'billing' \| 'contact'` (default: `'none'`) |
-| `fields` | `OptionalCardField[]` | No | Array of optional elements to render |
-| `cardLabel` | `string` | No | Overrides gateway text displayed in preview top-right |
-| `submitButtonText` | `string` | No | Custom submit button label (default: `'Pay Now'`) |
-| `onSubmit` | `Function` | No | Callback triggered after token retrieval; supports async Promises |
-| `onError` | `Function` | No | Hook fired on validation errors or request failures |
+| Attribute          | Type                  | Required | Description                                                       |
+| :----------------- | :-------------------- | :------- | :---------------------------------------------------------------- |
+| `adapter`          | `PaymentGateway`      | Yes      | `StripeAdapter` or `OmiseAdapter`                                 |
+| `preset`           | `CardFormPreset`      | No       | `'none' \| 'us' \| 'billing' \| 'contact'` (default: `'none'`)    |
+| `fields`           | `OptionalCardField[]` | No       | Array of optional elements to render                              |
+| `cardLabel`        | `string`              | No       | Overrides gateway text displayed in preview top-right             |
+| `submitButtonText` | `string`              | No       | Custom submit button label (default: `'Pay Now'`)                 |
+| `onSubmit`         | `Function`            | No       | Callback triggered after token retrieval; supports async Promises |
+| `onError`          | `Function`            | No       | Hook fired on validation errors or request failures               |
 
 ### Optional Fields presets (`CardFormPreset`)
 
