@@ -26,7 +26,7 @@ export class CardModal {
     // Create close button
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close-btn';
-    closeBtn.innerHTML = '&times;';
+    closeBtn.textContent = '×';
     closeBtn.setAttribute('aria-label', 'Close checkout modal');
     
     // Placeholder to render the CardForm inside

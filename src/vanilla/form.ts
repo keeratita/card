@@ -12,6 +12,7 @@ import {
   validateCountry,
   validateGeneric
 } from '../core/domain/validation';
+import { escapeHtml, sanitizeOptionalFields } from './internal/security';
 
 // Vector inline SVGs for premium look without external dependencies
 const BRAND_LOGOS: Record<string, string> = {
@@ -74,9 +75,7 @@ export class CardForm {
     const preset = this.options.preset || 'none';
     const fieldsFromPreset = PRESET_FIELDS[preset] || [];
     const fieldsFromOptions = this.options.fields || [];
-    // Combine unique optional fields
-    const set = new Set<OptionalCardField>([...fieldsFromPreset, ...fieldsFromOptions]);
-    return Array.from(set);
+    return sanitizeOptionalFields([...fieldsFromPreset, ...fieldsFromOptions]);
   }
 
   private render(): void {
@@ -87,6 +86,8 @@ export class CardForm {
 
     // Renders the 3D card layout
     const cardLabelText = this.options.cardLabel || this.options.adapter.name.toUpperCase();
+    const safeCardLabelText = escapeHtml(cardLabelText);
+    const safeSubmitButtonText = escapeHtml(this.options.submitButtonText || 'Pay Now');
     
     containerWrapper.innerHTML = `
       <div class="card-perspective">
@@ -95,7 +96,7 @@ export class CardForm {
           <div class="card-front">
             <div class="card-header">
               <div class="card-chip"></div>
-              <div class="card-type-label card-gateway-label">${cardLabelText}</div>
+                <div class="card-type-label card-gateway-label">${safeCardLabelText}</div>
             </div>
             <div class="card-number-display card-num-preview">•••• •••• •••• ••••</div>
             <div class="card-footer">
@@ -193,7 +194,7 @@ export class CardForm {
 
           <button type="submit" class="pay-btn submit-btn" style="margin-top: 28px;">
             <div class="spinner btn-spinner"></div>
-            <span class="btn-text">${this.options.submitButtonText}</span>
+            <span class="btn-text">${safeSubmitButtonText}</span>
           </button>
         </form>
       </div>
@@ -238,14 +239,16 @@ export class CardForm {
       labelText = 'ZIP Code';
       placeholderText = '12345';
     }
+    const safeLabelText = escapeHtml(labelText);
+    const safePlaceholderText = escapeHtml(placeholderText);
 
     row.innerHTML = `
-      <label class="ios-label" for="card-${fieldKey}">${labelText}</label>
+      <label class="ios-label" for="card-${fieldKey}">${safeLabelText}</label>
       <input 
         type="${meta.type}" 
         id="card-${fieldKey}"
         class="ios-input card-${fieldKey}-input" 
-        placeholder="${placeholderText}"
+        placeholder="${safePlaceholderText}"
         autocomplete="${meta.autocomplete}"
         required
       >
@@ -512,9 +515,9 @@ export class CardForm {
         statusPanel.style.display = 'flex';
         
         let detailsHtml = `
-          <strong>Gateway:</strong> ${this.options.adapter.name}<br>
-          <strong>Card Brand:</strong> ${(detectCardBrand(numInput.value) || 'unknown').toUpperCase()}<br>
-          <strong>Token ID:</strong> <code>${token.id}</code>
+          <strong>Gateway:</strong> ${escapeHtml(this.options.adapter.name)}<br>
+          <strong>Card Brand:</strong> ${escapeHtml((detectCardBrand(numInput.value) || 'unknown').toUpperCase())}<br>
+          <strong>Token ID:</strong> <code>${escapeHtml(token.id)}</code>
         `;
 
         this.getActiveFields().forEach(f => {
@@ -522,7 +525,7 @@ export class CardForm {
           if (input) {
             const meta = FIELD_METADATA[f];
             const labelText = f === 'postalCode' && this.options.preset === 'us' ? 'ZIP Code' : meta.label;
-            detailsHtml += `<br><strong>${labelText}:</strong> ${input.value}`;
+            detailsHtml += `<br><strong>${escapeHtml(labelText)}:</strong> ${escapeHtml(input.value)}`;
           }
         });
 

@@ -7,7 +7,8 @@ import {
   validateEmail,
   validatePhone,
   validatePostalCode,
-  validateCountry
+  validateCountry,
+  validateGeneric
 } from '../../src/core/domain/validation';
 
 describe('Domain Validations', () => {
@@ -21,6 +22,10 @@ describe('Domain Validations', () => {
     it('should reject invalid card numbers', () => {
       expect(luhnCheck('49927398717')).toBe(false);
       expect(luhnCheck('12345')).toBe(false); // too short
+    });
+
+    it('should ignore non-digit separators in card numbers', () => {
+      expect(luhnCheck('4242-4242-4242-4242')).toBe(true);
     });
   });
 
@@ -51,6 +56,10 @@ describe('Domain Validations', () => {
       expect(validateExpiry('00', '26')).toBe(false);
       expect(validateExpiry('06', '2')).toBe(false); // Invalid year length
     });
+
+    it('should normalize non-digit characters in month and year', () => {
+      expect(validateExpiry('06/', '26x')).toBe(true);
+    });
   });
 
   describe('CVC Validation', () => {
@@ -62,6 +71,10 @@ describe('Domain Validations', () => {
     it('should validate 4-digit CVC for Amex cards', () => {
       expect(validateCvc('1234', '371111111111111')).toBe(true); // Amex
       expect(validateCvc('123', '371111111111111')).toBe(false);
+    });
+
+    it('should ignore non-digits in CVC input', () => {
+      expect(validateCvc('12-3', '4111111111111111')).toBe(true);
     });
   });
 
@@ -98,6 +111,17 @@ describe('Domain Validations', () => {
     it('should validate 2-letter ISO country code', () => {
       expect(validateCountry('US')).toBe(true);
       expect(validateCountry('THA')).toBe(false);
+    });
+
+    it('should trim country code input before validation', () => {
+      expect(validateCountry(' TH ')).toBe(true);
+    });
+  });
+
+  describe('Generic Validation', () => {
+    it('should validate non-empty trimmed values', () => {
+      expect(validateGeneric(' value ')).toBe(true);
+      expect(validateGeneric('   ')).toBe(false);
     });
   });
 });

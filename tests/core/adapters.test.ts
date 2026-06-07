@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StripeAdapter } from '../../src/core/adapters/stripe';
 import { OmiseAdapter } from '../../src/core/adapters/omise';
 import { Card } from '../../src/core/domain/card';
@@ -24,15 +24,23 @@ describe('Payment Gateway Adapters', () => {
     vi.restoreAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe('StripeAdapter', () => {
     const adapter = new StripeAdapter({ publicKey: 'pk_test_stripe_key' });
+
+    it('should require a Stripe public key', () => {
+      expect(() => new StripeAdapter({ publicKey: '' })).toThrow('Stripe public key is required.');
+    });
 
     it('should correctly format request body and headers for Stripe API', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ id: 'tok_test_123', object: 'token' })
       });
-      globalThis.fetch = fetchMock;
+      vi.stubGlobal('fetch', fetchMock);
 
       const token = await adapter.tokenize(card);
 
@@ -59,27 +67,54 @@ describe('Payment Gateway Adapters', () => {
       expect(bodyParams.get('card[address_country]')).toBe('US');
     });
 
+    it('should include optional second address line when provided', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'tok_test_789', object: 'token' })
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await adapter.tokenize({
+        ...card,
+        addressLine2: 'Apt 6C'
+      });
+
+      const [, requestInit] = fetchMock.mock.calls[0];
+      const bodyParams = new URLSearchParams(requestInit.body);
+      expect(bodyParams.get('card[address_line2]')).toBe('Apt 6C');
+    });
+
     it('should throw ApiValidationError if Stripe tokenization fails', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: false,
         json: async () => ({
           error: { message: 'Incorrect card number', code: 'incorrect_number' }
         })
-      });
+      }));
 
       await expect(adapter.tokenize(card)).rejects.toThrow(ApiValidationError);
+    });
+
+    it('should throw NetworkError on fetch exception from Stripe', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Stripe unavailable')));
+
+      await expect(adapter.tokenize(card)).rejects.toThrow(NetworkError);
     });
   });
 
   describe('OmiseAdapter', () => {
     const adapter = new OmiseAdapter({ publicKey: 'pkey_test_omise_key' });
 
+    it('should require an Omise public key', () => {
+      expect(() => new OmiseAdapter({ publicKey: '' })).toThrow('Omise public key is required.');
+    });
+
     it('should correctly format request body and basic auth headers for Omise API', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ id: 'tokn_test_456', object: 'token' })
       });
-      globalThis.fetch = fetchMock;
+      vi.stubGlobal('fetch', fetchMock);
 
       const token = await adapter.tokenize(card);
 
@@ -110,20 +145,37 @@ describe('Payment Gateway Adapters', () => {
       expect(bodyParams.get('card[email]')).toBe('john@example.com');
     });
 
+    it('should include optional street2 field when provided', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'tokn_test_999', object: 'token' })
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await adapter.tokenize({
+        ...card,
+        addressLine2: 'Floor 4'
+      });
+
+      const [, requestInit] = fetchMock.mock.calls[0];
+      const bodyParams = new URLSearchParams(requestInit.body);
+      expect(bodyParams.get('card[street2]')).toBe('Floor 4');
+    });
+
     it('should throw ApiValidationError if Omise tokenization fails', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: false,
         json: async () => ({
           message: 'Invalid security code',
           code: 'invalid_security_code'
         })
-      });
+      }));
 
       await expect(adapter.tokenize(card)).rejects.toThrow(ApiValidationError);
     });
 
     it('should throw NetworkError on fetch exception', async () => {
-      globalThis.fetch = vi.fn().mockRejectedValue(new Error('Connection failure'));
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Connection failure')));
 
       await expect(adapter.tokenize(card)).rejects.toThrow(NetworkError);
     });
