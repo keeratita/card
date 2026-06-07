@@ -1,0 +1,99 @@
+{
+  "name": "@keeratita/card",
+  "version": "1.0.0",
+  "description": "Translucent iOS-style credit card input form and direct REST tokenization package for Stripe and Omise.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./vanilla": {
+      "types": "./dist/vanilla/index.d.ts",
+      "import": "./dist/vanilla/index.mjs",
+      "require": "./dist/vanilla/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.mjs",
+      "require": "./dist/react/index.js"
+    },
+    "./angular": {
+      "types": "./dist/angular/index.d.ts",
+      "import": "./dist/angular/index.mjs",
+      "require": "./dist/angular/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup && sass src/vanilla/styles.scss dist/vanilla/styles.css",
+    "build:core": "tsup src/index.ts --format cjs,esm --dts --out-dir dist",
+    "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css",
+    "build:react": "tsup src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
+    "build:angular": "tsup src/angular/index.ts --format cjs,esm --dts --out-dir dist/angular",
+    "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "credit-card",
+    "tokenization",
+    "stripe",
+    "omise",
+    "ios-style",
+    "glassmorphism",
+    "clean-architecture"
+  ],
+  "author": "Keerati Tansawatcharoen <keerati.tansawatcharoen@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keeratita/card.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keeratita/card/issues"
+  },
+  "homepage": "https://github.com/keeratita/card#readme",
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/core": ">=14.0.0",
+    "@angular/forms": ">=14.0.0",
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "@angular/core": {
+      "optional": true
+    },
+    "@angular/forms": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@angular/core": "^21.2.16",
+    "@angular/forms": "^21.2.16",
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^18.2.55",
+    "eslint": "^10.4.1",
+    "sass": "^1.71.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.60.1",
+    "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "esbuild": "0.27.7",
+    "vite": "6.4.3"
+  }
+}
