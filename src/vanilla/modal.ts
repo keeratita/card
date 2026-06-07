@@ -74,6 +74,8 @@ export class CardModal {
   }
 
   public open(): void {
+    if (this.overlayEl.classList.contains('active')) return;
+
     this.savedBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     this.overlayEl.classList.add('active');
@@ -81,6 +83,8 @@ export class CardModal {
   }
 
   public close(): void {
+    if (!this.overlayEl.classList.contains('active')) return;
+
     this.overlayEl.classList.remove('active');
     document.body.style.overflow = this.savedBodyOverflow;
     document.removeEventListener('keydown', this.handleEscape);
