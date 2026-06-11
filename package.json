@@ -31,9 +31,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && sass src/vanilla/styles.scss dist/vanilla/styles.css",
+    "build": "tsup && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:core": "tsup src/index.ts --format cjs,esm --dts --out-dir dist",
-    "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css",
+    "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:react": "tsup src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
     "build:angular": "tsup src/angular/index.ts --format cjs,esm --dts --out-dir dist/angular",
     "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
