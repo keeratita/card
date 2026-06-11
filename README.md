@@ -33,6 +33,19 @@ Make sure to install React (for hook integrations) if compiling framework wrappe
 
 ---
 
+## 🎨 CSS Stylesheet Options
+
+The package includes two stylesheet versions:
+
+| File | Size | Description |
+|------|------|-------------|
+| `styles.css` | ~10KB | Uncompressed development version with source maps |
+| `styles.min.css` | ~8.2KB | Minified production version with source maps |
+
+For production deployments, use `styles.min.css` for better performance (~18% smaller file size).
+
+---
+
 ## 🚀 Quick Start & Integration Guides
 
 ### 1. Vanilla JavaScript Integration
@@ -40,9 +53,16 @@ Make sure to install React (for hook integrations) if compiling framework wrappe
 Add the stylesheet to your HTML page header:
 
 ```html
+<!-- Development (uncompressed) -->
 <link
   rel="stylesheet"
   href="node_modules/@keeratita/card/dist/vanilla/styles.css"
+/>
+
+<!-- Production (minified) - Recommended for production -->
+<link
+  rel="stylesheet"
+  href="node_modules/@keeratita/card/dist/vanilla/styles.min.css"
 />
 ```
 
