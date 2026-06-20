@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@keeratita/card - React Examples</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        background-color: #fafbfc;
+        min-height: 100vh;
+      }
+      .container {
+        min-height: 100vh;
+        display: flex;
+      }
+      .sidebar {
+        width: 220px;
+        background-color: #f6f8fa;
+        border-right: 1px solid #e1e4e8;
+        padding: 24px 16px;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+      .sidebar-header {
+        padding: 0 8px 20px 8px;
+        border-bottom: 1px solid #e1e4e8;
+        margin-bottom: 16px;
+      }
+      .sidebar-header h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #24292e;
+      }
+      .sidebar-header p {
+        margin: 4px 0 0 0;
+        font-size: 12px;
+        color: #586069;
+      }
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .nav button {
+        padding: 8px 12px;
+        text-align: left;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.15s ease;
+        color: #586069;
+        background-color: transparent;
+        white-space: nowrap;
+      }
+      .nav button.active {
+        color: #0366d6;
+        background-color: #f1f8ff;
+      }
+      .main {
+        flex: 1;
+        padding: 40px 48px;
+        overflow-y: auto;
+        background-color: #fafbfc;
+      }
+      .content {
+        max-width: 800px;
+      }
+      .content-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 32px;
+        border: 1px solid #e1e4e8;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+      #root {
+        min-height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h1>Card Form</h1>
+          <p>React Examples</p>
+        </div>
+        <nav class="nav" id="navMenu">
+          <button data-example="home" class="active">Intro</button>
+          <button data-example="basic">Basic Form</button>
+          <button data-example="presets">Presets</button>
+          <button data-example="validation">Validators</button>
+          <button data-example="multistep">Multi-Step</button>
+          <button data-example="preview">Live Preview</button>
+          <button data-example="omise">Omise Adapter</button>
+          <button data-example="dark-theme">Dark Theme</button>
+          <button data-example="corporate">Corporate</button>
+          <button data-example="gradient">Gradient</button>
+          <button data-example="minimal">Minimal</button>
+          <button data-example="flip-card">Flip Card</button>
+          <button data-example="country-dropdown">Country Dropdown</button>
+        </nav>
+      </aside>
+      <main class="main">
+        <div id="root"></div>
+      </main>
+    </div>
+    <script type="module" src="/main.jsx"></script>
+    <script>
+      // Simple navigation handler
+      const buttons = document.querySelectorAll('.nav button');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          window.location.hash = btn.dataset.example;
+        });
+      });
+    </script>
+  </body>
+</html>

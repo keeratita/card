@@ -4,7 +4,17 @@ import {
   NetworkError,
   PaymentGatewayError,
   toFormUrlEncoded,
+  enforceHttps,
 } from './base';
+import { sanitizeInput } from '../formatters/sanitize';
+import {
+  validateCardNumber,
+  validateExpiry,
+  validateCvc,
+  validateName,
+  validateEmail,
+  validatePhone,
+} from '../domain/validation';
 
 export interface OmiseAdapterOptions {
   publicKey: string;
@@ -21,13 +31,6 @@ const MAX_POSTAL_CODE_LENGTH = 20;
 const MAX_COUNTRY_LENGTH = 3;
 const MAX_PHONE_LENGTH = 20;
 const MAX_EMAIL_LENGTH = 254;
-
-// Sanitize input: remove dangerous characters that could be used for injection
-function sanitizeInput(value: string): string {
-  // Remove null bytes and other dangerous control characters
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
-}
 
 // Base64 encoding using standard browser API (btoa)
 // This library targets browser environments where btoa is available
@@ -52,6 +55,53 @@ export class OmiseAdapter implements PaymentGateway {
   }
 
   async tokenize(card: Card): Promise<Token> {
+    // Enforce HTTPS to prevent man-in-the-middle attacks
+    enforceHttps();
+
+    // Domain-level validation before sending to gateway
+    if (!validateCardNumber(card.number)) {
+      throw new ApiValidationError(
+        'Invalid card number.',
+        'invalid_card_number',
+        card,
+      );
+    }
+    if (!validateExpiry(card.expMonth, card.expYear)) {
+      throw new ApiValidationError(
+        'Card has expired or has an invalid expiry date.',
+        'invalid_expiry',
+        card,
+      );
+    }
+    if (!validateCvc(card.cvc, card.number)) {
+      throw new ApiValidationError(
+        'Invalid CVC.',
+        'invalid_cvc',
+        card,
+      );
+    }
+    if (!validateName(card.name)) {
+      throw new ApiValidationError(
+        'Invalid cardholder name.',
+        'invalid_name',
+        card,
+      );
+    }
+    if (card.email && !validateEmail(card.email)) {
+      throw new ApiValidationError(
+        'Invalid email address.',
+        'invalid_email',
+        card,
+      );
+    }
+    if (card.phone && !validatePhone(card.phone)) {
+      throw new ApiValidationError(
+        'Invalid phone number.',
+        'invalid_phone',
+        card,
+      );
+    }
+
     // Sanitize and validate card number
     const cleanNumber = card.number
       .replace(/\D/g, '')
@@ -115,6 +165,9 @@ export class OmiseAdapter implements PaymentGateway {
       // Basic Authentication where username is public key and password is empty
       const basicAuth = base64Encode(`${this.publicKey}:`);
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('https://vault.omise.co/tokens', {
         method: 'POST',
         headers: {
@@ -122,7 +175,10 @@ export class OmiseAdapter implements PaymentGateway {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: toFormUrlEncoded(payload),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const data = await response.json();
 
@@ -140,6 +196,12 @@ export class OmiseAdapter implements PaymentGateway {
     } catch (error) {
       if (error instanceof PaymentGatewayError) {
         throw error;
+      }
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new NetworkError(
+          'Request to Omise timed out.',
+          error,
+        );
       }
       throw new NetworkError(
         error instanceof Error

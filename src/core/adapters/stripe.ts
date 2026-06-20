@@ -4,27 +4,35 @@ import {
   NetworkError,
   PaymentGatewayError,
   toFormUrlEncoded,
+  enforceHttps,
 } from './base';
+import { sanitizeInput } from '../formatters/sanitize';
+import {
+  validateCardNumber,
+  validateExpiry,
+  validateCvc,
+  validateName,
+} from '../domain/validation';
+import {
+  MAX_CARD_NUMBER_LENGTH,
+  MAX_CVC_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_ADDRESS_LINE_LENGTH,
+  MAX_CITY_LENGTH,
+  MAX_STATE_LENGTH,
+  MAX_POSTAL_CODE_LENGTH,
+  MAX_COUNTRY_LENGTH,
+} from '../constants';
 
 export interface StripeAdapterOptions {
+  /**
+   * The Stripe API key.
+   *
+   * Note: When calling the Stripe Tokens API directly from the browser,
+   * you use a public key (`pk_test_...` or `pk_live_...`). Never
+   * expose your secret API key (`sk_...`) in client-side code.
+   */
   publicKey: string;
-}
-
-// Maximum allowed lengths for card data fields
-const MAX_CARD_NUMBER_LENGTH = 19;
-const MAX_CVC_LENGTH = 4;
-const MAX_NAME_LENGTH = 100;
-const MAX_ADDRESS_LINE_LENGTH = 200;
-const MAX_CITY_LENGTH = 100;
-const MAX_STATE_LENGTH = 100;
-const MAX_POSTAL_CODE_LENGTH = 20;
-const MAX_COUNTRY_LENGTH = 3;
-
-// Sanitize input: remove dangerous characters that could be used for injection
-function sanitizeInput(value: string): string {
-  // Remove null bytes and other dangerous control characters
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
 export class StripeAdapter implements PaymentGateway {
@@ -39,9 +47,42 @@ export class StripeAdapter implements PaymentGateway {
   }
 
   async tokenize(card: Card): Promise<Token> {
+    // Enforce HTTPS to prevent man-in-the-middle attacks
+    enforceHttps();
+
+    // Domain-level validation before sending to gateway
+    if (!validateCardNumber(card.number)) {
+      throw new ApiValidationError(
+        'Invalid card number.',
+        'invalid_card_number',
+        card,
+      );
+    }
+    if (!validateExpiry(card.expMonth, card.expYear)) {
+      throw new ApiValidationError(
+        'Card has expired or has an invalid expiry date.',
+        'invalid_expiry',
+        card,
+      );
+    }
+    if (!validateCvc(card.cvc, card.number)) {
+      throw new ApiValidationError(
+        'Invalid CVC.',
+        'invalid_cvc',
+        card,
+      );
+    }
+    if (!validateName(card.name)) {
+      throw new ApiValidationError(
+        'Invalid cardholder name.',
+        'invalid_name',
+        card,
+      );
+    }
+
     // Sanitize and validate card number
     const cleanNumber = card.number.replace(/\D/g, '').slice(0, MAX_CARD_NUMBER_LENGTH);
-    
+
     // Sanitize and validate expiry
     const rawExpYear = card.expYear.replace(/\D/g, '').slice(0, 4);
     let expYear = rawExpYear;
@@ -73,6 +114,9 @@ export class StripeAdapter implements PaymentGateway {
       payload['card[address_country]'] = sanitizeInput(card.country).trim().toUpperCase().slice(0, MAX_COUNTRY_LENGTH);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('https://api.stripe.com/v1/tokens', {
         method: 'POST',
         headers: {
@@ -80,7 +124,10 @@ export class StripeAdapter implements PaymentGateway {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: toFormUrlEncoded(payload),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const data = await response.json();
 
@@ -99,6 +146,12 @@ export class StripeAdapter implements PaymentGateway {
     } catch (error) {
       if (error instanceof PaymentGatewayError) {
         throw error;
+      }
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new NetworkError(
+          'Request to Stripe timed out.',
+          error,
+        );
       }
       throw new NetworkError(
         error instanceof Error

@@ -10,7 +10,10 @@ import {
 export function handleCardNumberInput(inputEl: HTMLInputElement): void {
   const selectionStart = inputEl.selectionStart;
   const formatted = formatCardNumber(inputEl.value);
-  inputEl.value = formatted;
+  // Only update if the value changed to prevent infinite input event loops
+  if (inputEl.value !== formatted) {
+    inputEl.value = formatted;
+  }
 
   if (selectionStart !== null) {
     // Attempt cursor correction if user deletes/adds digits in middle of input
@@ -37,7 +40,10 @@ export function handleCardNumberInput(inputEl: HTMLInputElement): void {
  */
 export function handleExpiryInput(inputEl: HTMLInputElement): void {
   const formatted = formatExpiry(inputEl.value);
-  inputEl.value = formatted;
+  // Only update if the value changed to prevent infinite input event loops
+  if (inputEl.value !== formatted) {
+    inputEl.value = formatted;
+  }
 }
 
 /**
@@ -48,5 +54,8 @@ export function handleCvcInput(
   cardNumber: string,
 ): void {
   const formatted = formatCvc(inputEl.value, cardNumber);
-  inputEl.value = formatted;
+  // Only update if the value changed to prevent infinite input event loops
+  if (inputEl.value !== formatted) {
+    inputEl.value = formatted;
+  }
 }

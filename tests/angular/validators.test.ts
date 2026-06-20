@@ -240,7 +240,7 @@ describe('Angular Validators', () => {
       expect(result).toBeNull();
     });
 
-    it('should reject invalid cardholder names', () => {
+    it('should only require a non-empty name (single names are valid)', () => {
       const validator = cardholderNameValidator();
       const control: MockAbstractControl = {
         value: 'John',
@@ -249,7 +249,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ cardholderNameInvalid: { value: 'John' } });
+      expect(result).toBeNull();
     });
 
     it('should return null for empty values', () => {
@@ -380,7 +380,7 @@ describe('Angular Validators', () => {
   });
 
   describe('countryValidator', () => {
-    it('should accept valid country codes', () => {
+    it('should accept valid 2 or 3 letter country codes', () => {
       const validator = countryValidator();
       const control: MockAbstractControl = {
         value: 'US',
@@ -392,7 +392,7 @@ describe('Angular Validators', () => {
       expect(result).toBeNull();
     });
 
-    it('should reject invalid country codes', () => {
+    it('should accept 3 letter country codes', () => {
       const validator = countryValidator();
       const control: MockAbstractControl = {
         value: 'USA',
@@ -401,7 +401,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ countryInvalid: { value: 'USA' } });
+      expect(result).toBeNull();
     });
 
     it('should return null for empty values', () => {

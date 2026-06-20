@@ -8,16 +8,7 @@ import {
   validatePostalCode,
   validateCountry,
 } from '../core/domain/validation';
-
-export interface AbstractControl {
-  value: unknown;
-  root: { get(path: string): AbstractControl | null } | null;
-  get(path: string): AbstractControl | null;
-}
-
-export type ValidationErrors = Record<string, unknown>;
-
-export type ValidatorFn = (control: AbstractControl) => ValidationErrors | null;
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 /**
  * Validates that the credit card number passes Luhn's algorithm.
@@ -26,6 +17,9 @@ export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control || !control.value) return null;
     const clean = String(control.value).replace(/\D/g, '');
+    // Only validate when input has at least 13 digits (minimum for any card type)
+    // This prevents showing invalid error while user is still typing
+    if (clean.length < 13) return null;
     const isValid = luhnCheck(clean);
     return isValid ? null : { creditCard: { value: control.value } };
   };

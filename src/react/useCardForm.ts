@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, PaymentGateway, Token } from '../core/domain/card';
 import { detectCardBrand } from '../core/domain/brand';
 import {
@@ -32,6 +32,31 @@ export interface CardFormValues {
   email?: string;
 }
 
+const OPTIONAL_FIELD_KEYS = [
+  'addressLine1',
+  'addressLine2',
+  'city',
+  'state',
+  'postalCode',
+  'country',
+  'phone',
+  'email',
+] as const;
+
+type OptionalFieldKey = typeof OPTIONAL_FIELD_KEYS[number];
+
+function getOptionalFieldValue(values: CardFormValues, key: OptionalFieldKey): string | undefined {
+  return values[key];
+}
+
+function setOptionalFieldOnCard(
+  card: Card,
+  key: OptionalFieldKey,
+  value: string
+): Card {
+  return { ...card, [key]: value };
+}
+
 export interface UseCardFormParams {
   adapter: PaymentGateway;
   initialValues?: Partial<CardFormValues>;
@@ -55,9 +80,14 @@ export function useCardForm(params: UseCardFormParams) {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const brand = detectCardBrand(values.number);
+  // Use a ref to always access the latest card number for CVC formatting
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize brand detection to avoid recomputing on every render
+  const brand = useMemo(() => detectCardBrand(values.number), [values.number]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let formattedValue = value;
 
@@ -66,7 +96,8 @@ export function useCardForm(params: UseCardFormParams) {
     } else if (name === 'expiry') {
       formattedValue = formatExpiry(value);
     } else if (name === 'cvc') {
-      formattedValue = formatCvc(value, values.number);
+      // Use the ref to get the latest card number, avoiding stale closures
+      formattedValue = formatCvc(value, valuesRef.current.number);
     }
 
     setValues((prev) => ({
@@ -78,17 +109,17 @@ export function useCardForm(params: UseCardFormParams) {
       ...prev,
       [name]: null,
     }));
-  };
+  }, []);
 
-  const handleCvcFocus = () => {
+  const handleCvcFocus = useCallback(() => {
     setIsFlipped(true);
-  };
+  }, []);
 
-  const handleCvcBlur = () => {
+  const handleCvcBlur = useCallback(() => {
     setIsFlipped(false);
-  };
+  }, []);
 
-  const validateField = (name: string, value: string): boolean => {
+  const validateField = useCallback((name: string, value: string): boolean => {
     let isValid = true;
 
     if (name === 'number') {
@@ -106,7 +137,8 @@ export function useCardForm(params: UseCardFormParams) {
       }
     } else if (name === 'cvc') {
       const cleanCvc = value.replace(/\D/g, '');
-      isValid = validateCvc(cleanCvc, values.number);
+      // Use the ref to get the latest card number
+      isValid = validateCvc(cleanCvc, valuesRef.current.number);
     } else if (name === 'name') {
       isValid = validateName(value);
     } else if (name === 'email') {
@@ -127,40 +159,38 @@ export function useCardForm(params: UseCardFormParams) {
     }));
 
     return isValid;
-  };
+  }, []);
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     validateField(name, value);
-  };
+  }, [validateField]);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
     }
 
-    // Validate standard fields
-    const isNumValid = validateField('number', values.number);
-    const isExpValid = validateField('expiry', values.expiry);
-    const isCvcValid = validateField('cvc', values.cvc);
-    const isNameValid = validateField('name', values.name);
+    // Use ref to access latest values, preventing unstable closure over `values` state
+    const current = valuesRef.current;
 
-    // Validate active optional fields
+    // Validate standard fields
+    const isNumValid = validateField('number', current.number);
+    const isExpValid = validateField('expiry', current.expiry);
+    const isCvcValid = validateField('cvc', current.cvc);
+    const isNameValid = validateField('name', current.name);
+
+    // Validate active optional fields using type-safe accessors
     let areOptionalValid = true;
-    Object.keys(values).forEach((key) => {
-      if (
-        key !== 'number' &&
-        key !== 'expiry' &&
-        key !== 'cvc' &&
-        key !== 'name'
-      ) {
-        const val = (values as any)[key] || '';
+    for (const key of OPTIONAL_FIELD_KEYS) {
+      const val = getOptionalFieldValue(current, key);
+      if (val) {
         const isValid = validateField(key, val);
         if (!isValid) {
           areOptionalValid = false;
         }
       }
-    });
+    }
 
     if (
       !isNumValid ||
@@ -176,36 +206,29 @@ export function useCardForm(params: UseCardFormParams) {
     setIsTokenizing(true);
     setPaymentError(null);
 
-    const cleanExp = values.expiry.replace(/\D/g, '');
+    const cleanExp = current.expiry.replace(/\D/g, '');
     const expMonth = cleanExp.substring(0, 2);
     const expYear = cleanExp.substring(2, 4);
 
-    let cardData: Card | null = {
-      number: values.number.replace(/\D/g, ''),
+    // Build card data with type-safe optional field handling
+    let cardData: Card = {
+      number: current.number.replace(/\D/g, ''),
       expMonth,
       expYear,
-      cvc: values.cvc.replace(/\D/g, ''),
-      name: values.name.trim(),
+      cvc: current.cvc.replace(/\D/g, ''),
+      name: current.name.trim(),
     };
 
-    // Populate optional fields
-    Object.keys(values).forEach((key) => {
-      if (
-        key !== 'number' &&
-        key !== 'expiry' &&
-        key !== 'cvc' &&
-        key !== 'name' &&
-        cardData
-      ) {
-        (cardData as any)[key] = (values as any)[key];
+    // Safely copy optional fields
+    for (const key of OPTIONAL_FIELD_KEYS) {
+      const val = getOptionalFieldValue(current, key);
+      if (val) {
+        cardData = setOptionalFieldOnCard(cardData, key, val);
       }
-    });
+    }
 
     try {
       const token = await params.adapter.tokenize(cardData);
-
-      // Dereference Card Data immediately for security
-      cardData = null;
 
       setIsTokenizing(false);
       setIsProcessing(true);
@@ -219,17 +242,18 @@ export function useCardForm(params: UseCardFormParams) {
 
       setIsProcessing(false);
       setIsSuccess(true);
-    } catch (err: any) {
-      cardData = null;
+    } catch (err) {
       setIsTokenizing(false);
       setIsProcessing(false);
-      setPaymentError(err.message || 'Payment processing failed.');
+      const errorMessage = err instanceof Error ? err.message : 'Payment processing failed.';
+      setPaymentError(errorMessage);
 
       if (params.onError) {
-        params.onError(err);
+        params.onError(err instanceof Error ? err : new Error(errorMessage));
       }
     }
-  };
+    // validateField is stable (no deps), params are passed in
+  }, [validateField, params.adapter, params.onSubmit, params.onError]);
 
   return {
     values,

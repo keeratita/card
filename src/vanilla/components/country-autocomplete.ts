@@ -1,0 +1,88 @@
+/**
+ * CountryAutocomplete - A country-specific autocomplete dropdown
+ * 
+ * Extends the base AutocompleteDropdown component with country-specific
+ * functionality and iOS-styled rendering with flag emojis.
+ */
+
+import { AutocompleteDropdown, AutocompleteOption } from './autocomplete-dropdown';
+import { COUNTRIES } from '../../data/countries';
+
+export interface CountryAutocompleteConfig {
+  container: HTMLElement | string;
+  onSelect: (countryCode: string, country: typeof COUNTRIES[0]) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  noResultsText?: string;
+  maxHeight?: number;
+}
+
+/**
+ * Custom render function for country options in the autocomplete dropdown.
+ * Extracted to avoid creating a new closure per country.
+ */
+function renderCountryOption(option: AutocompleteOption): string {
+  const countryData = COUNTRIES.find((c) => c.code === option.value);
+  const emoji = countryData?.emoji || '';
+  const name = countryData?.name || option.label;
+  return `
+    <span class="country-flag">${emoji}</span>
+    <span class="country-name">${name}</span>
+  `;
+}
+
+export class CountryAutocomplete {
+  private autocomplete: AutocompleteDropdown;
+
+  constructor(config: CountryAutocompleteConfig) {
+    // Convert COUNTRIES to AutocompleteOption format with custom rendering
+    const options: AutocompleteOption[] = COUNTRIES.map((country) => ({
+      value: country.code,
+      label: country.name,
+      icon: country.emoji,
+      customRender: renderCountryOption
+    }));
+
+    // Create the base autocomplete with custom onSelect
+    this.autocomplete = new AutocompleteDropdown({
+      container: config.container,
+      options,
+      placeholder: config.placeholder || 'Select a country...',
+      searchPlaceholder: config.searchPlaceholder || 'Search countries...',
+      noResultsText: config.noResultsText || 'No countries found',
+      maxHeight: config.maxHeight,
+      showIcons: true,
+      onSelect: (value: string, _option: AutocompleteOption) => {
+        const country = COUNTRIES.find((c) => c.code === value);
+        if (country) {
+          config.onSelect(country.code, country);
+        }
+      }
+    });
+  }
+
+  // Public methods that delegate to the underlying autocomplete
+  public setValue(countryCode: string): void {
+    this.autocomplete.setValue(countryCode);
+  }
+
+  public getValue(): string {
+    return this.autocomplete.getValue();
+  }
+
+  public getSelectedCountry(): typeof COUNTRIES[0] | undefined {
+    const selected = this.autocomplete.getSelectedOption();
+    if (selected) {
+      return COUNTRIES.find((c) => c.code === selected.value);
+    }
+    return undefined;
+  }
+
+  public refreshOptions(): void {
+    this.autocomplete.refreshOptions();
+  }
+
+  public destroy(): void {
+    this.autocomplete.destroy();
+  }
+}

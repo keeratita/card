@@ -85,8 +85,8 @@ describe('Domain Validations', () => {
       expect(validateName('  Jane   Smith  ')).toBe(true);
     });
 
-    it('should reject single names or empty input', () => {
-      expect(validateName('SingleName')).toBe(false);
+    it('should accept single names with at least 1 character', () => {
+      expect(validateName('John')).toBe(true);
       expect(validateName(' ')).toBe(false);
     });
   });
@@ -109,9 +109,9 @@ describe('Domain Validations', () => {
       expect(validatePostalCode('123')).toBe(false);
     });
 
-    it('should validate 2-letter ISO country code', () => {
+    it('should validate 2 or 3 letter ISO country code', () => {
       expect(validateCountry('US')).toBe(true);
-      expect(validateCountry('THA')).toBe(false);
+      expect(validateCountry('THA')).toBe(true);
     });
 
     it('should trim country code input before validation', () => {

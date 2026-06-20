@@ -141,12 +141,12 @@ describe('Edge Case & Security Validation', () => {
     });
 
     it('should use default logo for null brand', () => {
-      const result = getCardLogoSvg(null as any);
+      const result = getCardLogoSvg(null as unknown as string);
       expect(result).toContain('48 48');
     });
 
     it('should use default logo for undefined brand', () => {
-      const result = getCardLogoSvg(undefined as any);
+      const result = getCardLogoSvg(undefined as unknown as string);
       expect(result).toContain('48 48');
     });
 

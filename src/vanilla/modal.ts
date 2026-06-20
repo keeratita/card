@@ -1,12 +1,23 @@
 import { CardForm } from './form';
 import { CardFormOptions } from '../core/domain/card';
 
+/** Global counter and overflow stack shared across all CardModal instances. */
+const _modalOpenCount = { value: 0 };
+const _savedBodyOverflowStack: string[] = [];
+
+/** @internal Test-only reset — clears the module-level counter and overflow stack. */
+export function _resetModalGlobals(): void {
+  _modalOpenCount.value = 0;
+  _savedBodyOverflowStack.length = 0;
+}
+
 export class CardModal {
   private overlayEl!: HTMLDivElement;
   private formInstance!: CardForm;
   private readonly options: CardFormOptions;
-  private static openModalCount = 0;
-  private static savedBodyOverflow = '';
+  private previousFocus: HTMLElement | null = null;
+  private handleEscape!: (e: KeyboardEvent) => void;
+  private handleFocusTrap!: (e: KeyboardEvent) => void;
 
   constructor(options: CardFormOptions) {
     this.options = options;
@@ -66,47 +77,106 @@ export class CardModal {
     });
 
     // Close on clicking close button
-    closeBtn.addEventListener('click', () => {
-      this.close();
-    });
+    const closeBtnEl = this.overlayEl.querySelector('.modal-close-btn');
+    if (closeBtnEl) {
+      closeBtnEl.addEventListener('click', () => {
+        this.close();
+      });
+    }
 
-    // Bind accessibility keyboard handler
-    this.handleEscape = this.handleEscape.bind(this);
+    // Bind accessibility keyboard handlers
+    this.handleEscape = this._handleEscape.bind(this);
+    this.handleFocusTrap = this._handleFocusTrap.bind(this);
   }
 
   public open(): void {
     if (this.overlayEl.classList.contains('active')) return;
 
-    if (CardModal.openModalCount === 0) {
-      CardModal.savedBodyOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-    }
-    CardModal.openModalCount += 1;
+    // Save the element that had focus before opening (for restoration on close)
+    this.previousFocus = document.activeElement as HTMLElement;
+
+    const overflow = document.body.style.overflow;
+    _savedBodyOverflowStack[_modalOpenCount.value] = overflow;
+    _modalOpenCount.value += 1;
+
     this.overlayEl.classList.add('active');
+    document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', this.handleEscape);
+    document.addEventListener('keydown', this.handleFocusTrap);
+
+    // Move focus to first focusable element in modal
+    requestAnimationFrame(() => {
+      const firstInput = this.overlayEl.querySelector('input, button');
+      if (firstInput && (firstInput as HTMLElement).focus) {
+        (firstInput as HTMLElement).focus();
+      }
+    });
   }
 
   public close(): void {
     if (!this.overlayEl.classList.contains('active')) return;
 
     this.overlayEl.classList.remove('active');
-    if (CardModal.openModalCount > 0) {
-      CardModal.openModalCount -= 1;
-      if (CardModal.openModalCount === 0) {
-        document.body.style.overflow = CardModal.savedBodyOverflow;
-      }
+    _modalOpenCount.value -= 1;
+
+    if (_modalOpenCount.value <= 0) {
+      _modalOpenCount.value = 0;
+      // No more open modals — restore original overflow
+      document.body.style.overflow = _savedBodyOverflowStack[0] || '';
+      _savedBodyOverflowStack.length = 0;
+      document.removeEventListener('keydown', this.handleFocusTrap);
+    } else {
+      // Another modal is still open — restore its overflow setting
+      document.body.style.overflow = _savedBodyOverflowStack[_modalOpenCount.value] || 'hidden';
     }
+
     document.removeEventListener('keydown', this.handleEscape);
+
+    // Restore focus to the element that triggered the modal
+    if (this.previousFocus && (this.previousFocus as HTMLElement).focus) {
+      (this.previousFocus as HTMLElement).focus();
+      this.previousFocus = null;
+    }
   }
 
   public destroy(): void {
+    document.removeEventListener('keydown', this.handleEscape);
+    document.removeEventListener('keydown', this.handleFocusTrap);
+
     this.close();
     this.overlayEl.remove();
+    this.formInstance.destroy();
   }
 
-  private handleEscape(e: KeyboardEvent): void {
+  private _handleEscape(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       this.close();
+    }
+  }
+
+  private _handleFocusTrap(e: KeyboardEvent): void {
+    if (e.key !== 'Tab') return;
+
+    const focusable = this.overlayEl.querySelectorAll(
+      'input, button, [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusable.length === 0) return;
+
+    const firstFocusable = focusable[0] as HTMLElement;
+    const lastFocusable = focusable[focusable.length - 1] as HTMLElement;
+
+    if (e.shiftKey) {
+      // Shift+Tab: if on first element, wrap to last
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      }
+    } else {
+      // Tab: if on last element, wrap to first
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
     }
   }
 

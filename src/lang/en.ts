@@ -62,4 +62,5 @@ export const CARD_FORM_TEXT_EN = {
   gateway: 'Gateway',
   cardBrand: 'Card Brand',
   tokenId: 'Token ID',
+  searchCountries: 'Search countries...',
 } as const;

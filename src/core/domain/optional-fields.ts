@@ -56,8 +56,8 @@ export const FIELD_METADATA: Record<OptionalCardField, OptionalFieldMetadata> =
     country: {
       label: OPTIONAL_FIELD_TEXT_EN.country.label,
       placeholder: OPTIONAL_FIELD_TEXT_EN.country.placeholder,
-      type: 'text',
-      autocomplete: 'country',
+      type: 'select',
+      autocomplete: 'country-name',
     },
     phone: {
       label: OPTIONAL_FIELD_TEXT_EN.phone.label,

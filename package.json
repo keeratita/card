@@ -28,10 +28,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsup && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
+    "build": "tsup && node scripts/generate-dist-package-json.js && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:core": "tsup src/index.ts --format cjs,esm --dts --out-dir dist",
     "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:react": "tsup src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
@@ -39,7 +43,11 @@
     "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
     "test": "vitest run",
     "lint": "eslint src",
-    "prepare": "husky"
+    "prepare": "husky",
+    "demo": "npx http-server . -p 3000 -c-1 --cors & sleep 2 && open http://localhost:3000/examples/vanilla/index.html",
+    "demo:react": "npm run build && cd examples/react && npm install && npm run dev",
+    "demo:angular": "npm run build && cd examples/angular && npm install && npm run start",
+    "demo:all": "npm run build && (cd examples/react && npm install && npm run dev &) && (cd examples/angular && npm install && npm run start &)"
   },
   "keywords": [
     "credit-card",
@@ -81,13 +89,17 @@
     }
   },
   "devDependencies": {
+    "@angular/compiler": "^21.2.16",
     "@angular/core": "^21.2.16",
     "@angular/forms": "^21.2.16",
     "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.55",
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^10.4.1",
     "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
     "release-it": "^20.2.0",
     "sass": "^1.71.1",
     "tsup": "^8.0.2",

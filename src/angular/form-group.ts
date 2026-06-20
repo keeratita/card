@@ -28,18 +28,18 @@ export function createCardFormGroup(
   const activeOptionalFields = resolveActiveFields(preset, config.fields || []);
 
   // Core required fields
-  const group: Record<string, FormControl<unknown>> = {
-    number: new FormControl('', [Validators.required, creditCardValidator()]),
-    expiry: new FormControl('', [Validators.required, expiryValidator()]),
-    cvc: new FormControl('', [Validators.required, cvcValidator('number')]),
-    name: new FormControl('', [Validators.required, cardholderNameValidator()]),
+  const group: Record<string, FormControl<string | null>> = {
+    number: new FormControl<string>('', [Validators.required, creditCardValidator()]),
+    expiry: new FormControl<string>('', [Validators.required, expiryValidator()]),
+    cvc: new FormControl<string>('', [Validators.required, cvcValidator('number')]),
+    name: new FormControl<string>('', [Validators.required, cardholderNameValidator()]),
   };
 
   // Dynamically populate optional fields with appropriate validations
   activeOptionalFields.forEach((field) => {
     // AddressLine2 is usually optional in real payment forms
     if (field === 'addressLine2') {
-      group[field] = new FormControl('');
+      group[field] = new FormControl<string | null>('');
       return;
     }
 
@@ -54,7 +54,7 @@ export function createCardFormGroup(
       validators.push(countryValidator());
     }
 
-    group[field] = new FormControl('', validators);
+    group[field] = new FormControl<string | null>('', validators);
   });
 
   return new FormGroup(group);

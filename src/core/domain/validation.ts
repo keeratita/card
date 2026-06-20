@@ -1,22 +1,15 @@
 import { detectCardBrand } from './brand';
-
-// Maximum allowed lengths for various fields
-const MAX_CARD_NUMBER_LENGTH = 19;
-const MAX_CVC_LENGTH = 4;
-const MAX_NAME_LENGTH = 100;
-const MAX_EMAIL_LENGTH = 254;
-const MAX_PHONE_LENGTH = 20;
-const MAX_POSTAL_CODE_LENGTH = 20;
-const MAX_COUNTRY_LENGTH = 3;
-const MAX_EXPIRY_LENGTH = 4;
-
-/**
- * Sanitize input: remove null bytes and dangerous control characters
- */
-function sanitizeInput(value: string): string {
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-}
+import {
+  MAX_CARD_NUMBER_LENGTH,
+  MAX_CVC_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_EMAIL_LENGTH,
+  MAX_PHONE_LENGTH,
+  MAX_POSTAL_CODE_LENGTH,
+  MAX_COUNTRY_LENGTH,
+  MAX_EXPIRY_LENGTH,
+} from '../constants';
+import { sanitizeInput as sanitizeInputCore } from '../formatters/sanitize';
 
 export function luhnCheck(cardNumber: string): boolean {
   // Sanitize and truncate to prevent DoS attacks with extremely long inputs
@@ -63,6 +56,9 @@ export function validateExpiry(expMonth: string, expYear: string): boolean {
     return false;
   }
 
+  // Cap at a reasonable future year
+  if (year > 2100) return false;
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1; // getMonth is 0-indexed
@@ -83,35 +79,34 @@ export function validateCvc(cvc: string, cardNumber: string): boolean {
 }
 
 export function validateName(name: string): boolean {
-  const clean = sanitizeInput(name).trim().slice(0, MAX_NAME_LENGTH);
+  const clean = sanitizeInputCore(name).trim().slice(0, MAX_NAME_LENGTH);
   if (!clean) return false;
-  const parts = clean.split(/\s+/);
-  return parts.length >= 2;
+  return clean.length >= 1;
 }
 
 export function validateEmail(email: string): boolean {
-  const cleanEmail = sanitizeInput(email).trim().slice(0, MAX_EMAIL_LENGTH);
+  const cleanEmail = sanitizeInputCore(email).trim().slice(0, MAX_EMAIL_LENGTH);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(cleanEmail);
 }
 
 export function validatePhone(phone: string): boolean {
-  const clean = sanitizeInput(phone).replace(/\D/g, '').slice(0, MAX_PHONE_LENGTH);
+  const clean = sanitizeInputCore(phone).replace(/\D/g, '').slice(0, MAX_PHONE_LENGTH);
   return clean.length >= 8;
 }
 
 export function validatePostalCode(postalCode: string): boolean {
-  const clean = sanitizeInput(postalCode).trim().slice(0, MAX_POSTAL_CODE_LENGTH);
+  const clean = sanitizeInputCore(postalCode).trim().slice(0, MAX_POSTAL_CODE_LENGTH);
   return clean.length >= 4;
 }
 
 export function validateCountry(country: string): boolean {
-  const clean = sanitizeInput(country).trim().toUpperCase().slice(0, MAX_COUNTRY_LENGTH);
-  return clean.length === 2;
+  const clean = sanitizeInputCore(country).trim().toUpperCase().slice(0, MAX_COUNTRY_LENGTH);
+  return clean.length === 2 || clean.length === 3;
 }
 
 export function validateGeneric(val: string): boolean {
-  const clean = sanitizeInput(val).trim();
+  const clean = sanitizeInputCore(val).trim();
   return clean.length > 0;
 }
 

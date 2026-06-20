@@ -1,5 +1,4 @@
 // Public API contracts, domain validation, formatters, and adapters.
-// No AI identity exists in this file.
 
 // Domain Core
 export type {
@@ -34,6 +33,9 @@ export {
   formatCvc,
   formatCountryCode,
   formatPhone,
+  reformatExpiryDate,
+  validateCardNumberLength,
+  isCardLengthValid,
 } from './core/formatters/card-formatter';
 
 // REST Gateway Adapters
@@ -46,3 +48,12 @@ export { StripeAdapter } from './core/adapters/stripe';
 export type { StripeAdapterOptions } from './core/adapters/stripe';
 export { OmiseAdapter } from './core/adapters/omise';
 export type { OmiseAdapterOptions } from './core/adapters/omise';
+
+// Country Data
+export {
+  COUNTRIES,
+  getCountryByCode,
+  getAllCountryCodes,
+  isValidCountryCode,
+} from './data/countries';
+export type { Country } from './data/countries';

@@ -12,7 +12,9 @@ const OPTIONAL_FIELD_MAP: Record<OptionalCardField, true> = {
 };
 
 export function escapeHtml(value: string): string {
-  return value
+  // Strip null bytes first to prevent null-byte injection attacks
+  const stripped = value.replace(/\0/g, '');
+  return stripped
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
