@@ -1,5 +1,4 @@
 /* iOS 17 Translucent Credit Card Styling with Liquid Glass aesthetics */
-/* No AI identity exists in this file. */
 
 $ios-blue: #0a84ff;
 $ios-red: #ff453a;
@@ -221,7 +220,6 @@ $border-color: rgba(255, 255, 255, 0.08);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 14px;
   border: 1px solid $border-color;
-  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
@@ -264,6 +262,14 @@ $border-color: rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
+// Narrower labels for half-width rows (Expiry & CVC)
+.ios-input-row-half {
+  .ios-label {
+    width: 60px;
+    font-size: 13px;
+  }
+}
+
 .ios-input {
   flex-grow: 1;
   min-width: 0;
@@ -282,6 +288,68 @@ $border-color: rgba(255, 255, 255, 0.08);
   &:-webkit-autofill {
     box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.05) inset !important;
     -webkit-text-fill-color: $text-primary !important;
+  }
+}
+
+// Country dropdown specific styles
+.card-country-input {
+  padding: 0;
+  background: none;
+  border: none;
+  color: $text-primary;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+
+  // Hide default dropdown arrow on some browsers
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  // Custom dropdown arrow
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255, 255, 255, 0.5)' d='M2.5 4.5L6 8l3.5-3.5' stroke='rgba(255, 255, 255, 0.5)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 24px;
+
+  option {
+    background-color: rgba(10, 11, 14, 0.95);
+    color: $text-primary;
+    font-size: 15px;
+    padding: 8px 12px;
+
+    // Flag emoji styling
+    &::before {
+      content: attr(data-flag);
+      margin-right: 8px;
+    }
+  }
+
+  // Hover state
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  // Focus state
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  // Disabled state
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Row with country dropdown
+.row-country {
+  .ios-input-row {
+    display: flex;
+    align-items: center;
   }
 }
 
@@ -319,8 +387,15 @@ $border-color: rgba(255, 255, 255, 0.08);
   font-size: 12px;
   margin-top: 6px;
   margin-left: 16px;
+  margin-right: 16px;
   display: none;
   animation: fadeIn 0.2s ease-out;
+}
+
+.validation-error-msg {
+  text-align: center;
+  margin: 12px 0 4px;
+  font-weight: 500;
 }
 
 @keyframes fadeIn {
@@ -367,6 +442,23 @@ $border-color: rgba(255, 255, 255, 0.08);
     cursor: not-allowed;
     transform: none;
   }
+}
+
+.card-form-submit {
+  margin-top: 28px;
+}
+
+.payment-form-section {
+  width: 100%;
+}
+
+.form-section-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
 }
 
 .spinner {
@@ -487,6 +579,307 @@ $border-color: rgba(255, 255, 255, 0.08);
   &:hover {
     color: $text-primary;
   }
+}
+
+/* --- AUTOCOMPLETE DROPDOWN (iOS GLASSMORPHISM) --- */
+.autocomplete-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-input {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: $text-primary;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(10, 11, 14, 0.95);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  z-index: 1000;
+  animation: autocompleteSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes autocompleteSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.autocomplete-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: $text-primary;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.autocomplete-results {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.autocomplete-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.autocomplete-results::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.autocomplete-results::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.autocomplete-results::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.autocomplete-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  &.highlighted {
+    background-color: rgba(10, 132, 255, 0.2);
+  }
+}
+
+.autocomplete-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.autocomplete-label {
+  flex-grow: 1;
+  font-size: 15px;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-no-results {
+  padding: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+}
+
+/* Country-specific autocomplete styles */
+.country-flag {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.country-name {
+  flex-grow: 1;
+  font-size: 15px;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Row with country autocomplete */
+.row-country {
+  .ios-input-row {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.country-autocomplete-container {
+  flex-grow: 1;
+  position: relative;
+}
+
+/* React CountryAutocomplete component styles */
+.country-autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.country-autocomplete-input {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: $text-primary;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.country-autocomplete-dropdown {
+  background: rgba(10, 11, 14, 0.95);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.country-autocomplete-search {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: $text-primary;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.country-autocomplete-list {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.country-autocomplete-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.country-autocomplete-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.country-autocomplete-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.country-autocomplete-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.country-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin: 0;
+  list-style: none;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  &.highlighted {
+    background-color: rgba(10, 132, 255, 0.2);
+  }
+
+  &.selected {
+    background-color: rgba(10, 132, 255, 0.15);
+  }
+}
+
+.country-autocomplete-flag {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.country-autocomplete-name {
+  flex-grow: 1;
+  font-size: 15px;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.country-autocomplete-code {
+  font-size: 13px;
+  color: $text-secondary;
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+}
+
+.country-autocomplete-empty {
+  padding: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  list-style: none;
+}
+
+.country-autocomplete-loading {
+  padding: 10px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-style: italic;
+  list-style: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 480px) {

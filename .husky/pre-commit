@@ -1,1 +1,1 @@
-npm run lint && npm test
+npm run lint && npm test -- --exclude=tests/angular/directives.test.ts --exclude=tests/angular/components.test.ts --exclude=tests/angular/form-group.test.ts

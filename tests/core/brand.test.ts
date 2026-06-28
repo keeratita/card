@@ -23,17 +23,19 @@ describe('Card Brand Detection', () => {
   });
 
   it('should return unknown for unrecognized patterns', () => {
-    expect(detectCardBrand('6011111111111111')).toBe('unknown');
+    // Numbers starting with 1 or 9 don't match any known brand
+    expect(detectCardBrand('1234567890123456')).toBe('unknown');
+    expect(detectCardBrand('9999999999999999')).toBe('unknown');
     expect(detectCardBrand('')).toBe('unknown');
   });
 
   it('should return unknown for null input', () => {
-    // @ts-ignore - testing edge case
+    // @ts-expect-error - testing edge case
     expect(detectCardBrand(null)).toBe('unknown');
   });
 
   it('should return unknown for undefined input', () => {
-    // @ts-ignore - testing edge case
+    // @ts-expect-error - testing edge case
     expect(detectCardBrand(undefined)).toBe('unknown');
   });
 

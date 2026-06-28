@@ -100,7 +100,7 @@ import {
     <input
       type="password"
       kgCardCvc
-      [kgCardCvcNumber]="cardNumber"
+      [cardNumber]="cardNumber"
       placeholder="•••"
     />
   `,
@@ -112,14 +112,37 @@ export class CheckoutComponent {
 
 ### Directive Properties
 
-#### `kgCardCvcNumber`
+#### `cardNumber`
 
-- **Type**: `string`
+- **Type**: `string` (using Angular v20+ `input()` signal)
 - **Description**: Used for cross-validation of CVC against card number to ensure proper length validation
 
-## Validator Functions
+## Validator Functions & Error Keys
 
-The Angular package exports several validator functions for use with Angular reactive forms:
+The Angular package exports validator functions that produce specific error keys. Access them via `form.get('field')?.errors?.['errorKey']`:
+
+| Validator | Error Key | Returns When |
+|-----------|-----------|---------------|
+| `creditCardValidator()` | `creditCard` | Card number fails Luhn check (only when 13+ digits typed) |
+| `expiryValidator()` | `expiryInvalid` | Invalid MM/YY format or expired date |
+| `cvcValidator()` | `cvcInvalid` | CVC length doesn't match card brand (3 or 4 digits) |
+| `cardholderNameValidator()` | `cardholderNameInvalid` | Name doesn't contain first + last name |
+| `emailValidator()` | `emailInvalid` | Invalid email format |
+| `phoneValidator()` | `phoneInvalid` | Phone number too short (need 8+ digits) |
+| `postalCodeValidator()` | `postalCodeInvalid` | Postal code too short (need 4+ chars) |
+| `countryValidator()` | `countryInvalid` | Not a valid 2-3 letter ISO code |
+
+Example:
+
+```typescript
+// Check specific validation error
+const errors = this.checkoutForm.get('cardNumber')?.errors;
+if (errors?.['creditCard']) {
+  console.log('Card number failed Luhn check');
+}
+```
+
+The Angular package exports 8 validator functions for use with Angular reactive forms. Usage:
 
 ### `creditCardValidator()`
 
@@ -260,7 +283,7 @@ import {
           formControlName="cvc"
           placeholder="•••"
           kgCardCvc
-          [kgCardCvcNumber]="checkoutForm.get('cardNumber')?.value"
+          [cardNumber]="checkoutForm.get('cardNumber')?.value"
         />
         <div
           *ngIf="
@@ -360,6 +383,57 @@ export class CheckoutComponent implements OnInit {
   }
 }
 ```
+
+## Country Selection Component
+
+The package exports `CountrySelectComponent` — a standalone, searchable country dropdown with flag emojis:
+
+```typescript
+import { Component } from '@angular/core';
+import { CountrySelectComponent } from '@keeratita/card/angular';
+
+@Component({
+  selector: 'app-checkout',
+  standalone: true,
+  imports: [CountrySelectComponent],
+  template: `
+    <kg-country-select
+      controlName="shipCountry"
+      [value]="selectedCountry"
+      preset="billing"
+      (countryChange)="onCountryChange($event)">
+    </kg-country-select>
+  `,
+})
+export class CheckoutComponent {
+  selectedCountry = 'US';
+
+  onCountryChange(event: { name: string; value: string }) {
+    console.log('Selected country:', event.value);
+  }
+}
+```
+
+**Component Inputs:**
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `controlName` | `string` | `'country'` | Name/ID for the form control |
+| `value` | `string` | `''` | Currently selected country code |
+| `preset` | `CardFormPreset` (string) | `'none'` | Preset affecting label/placeholder text |
+| `invalid` | `boolean` | `false` | Shows invalid border styling |
+| `required` | `boolean` | `true` | Marks the field as required |
+
+**Output:**
+- `countryChange` — Emits `{ name: string, value: string }` (form control name + country code)
+
+## Re-exported Utilities
+
+The Angular entry point also re-exports these utilities for convenience when importing from `@keeratita/card/angular`:
+
+- `COUNTRIES` — Array of country objects
+- `Country` type
+- `formatCardNumber` — Format card number with spacing
+- `formatExpiry` — Format expiry date (MMYY → MM / YY)
 
 ## Best Practices
 

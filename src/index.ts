@@ -1,5 +1,8 @@
-// Public API contracts, domain validation, formatters, and adapters.
-// No AI identity exists in this file.
+// Public API contracts, domain validation, formatters, adapters, and security utilities.
+
+// Security
+export { sanitizeInput } from './core/security';
+export { escapeHtml } from './core/security';
 
 // Domain Core
 export type {
@@ -23,17 +26,14 @@ export {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric,
+  validateCardNumber,
 } from './core/domain/validation';
 
 // Input Formatters
 export {
-  cleanDigits,
   formatCardNumber,
   formatExpiry,
   formatCvc,
-  formatCountryCode,
-  formatPhone,
 } from './core/formatters/card-formatter';
 
 // REST Gateway Adapters
@@ -46,3 +46,12 @@ export { StripeAdapter } from './core/adapters/stripe';
 export type { StripeAdapterOptions } from './core/adapters/stripe';
 export { OmiseAdapter } from './core/adapters/omise';
 export type { OmiseAdapterOptions } from './core/adapters/omise';
+
+// Country Data
+export {
+  COUNTRIES,
+  getCountryByCode,
+  getAllCountryCodes,
+  isValidCountryCode,
+} from './data/countries';
+export type { Country } from './data/countries';

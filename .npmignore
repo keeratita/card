@@ -1,0 +1,42 @@
+# Ignore all source maps from npm publish
+**/*.map
+dist/**/*.map
+
+# Ignore source files (only dist is needed)
+src/
+
+# Ignore development files
+.gitignore
+.git
+*.log
+
+# Ignore test files
+tests/
+test-results/
+
+# Ignore example files (they're in the repo but not needed in npm package)
+examples/
+
+# Ignore scripts (they're only needed for development)
+scripts/
+
+# Ignore build configuration files
+tsup.config.ts
+vitest.config.ts
+eslint.config.mjs
+sonar-project.properties
+
+# Ignore documentation (README.md is included)
+docs/
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore coverage
+coverage/
+
+# Ignore hidden config files
+.claude/
+.husky/
+.github/

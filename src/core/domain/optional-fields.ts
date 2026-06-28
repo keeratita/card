@@ -8,7 +8,7 @@ export interface OptionalFieldMetadata {
   autocomplete: string;
 }
 
-const OPTIONAL_FIELD_KEYS = [
+export const OPTIONAL_FIELD_KEYS = [
   'addressLine1',
   'addressLine2',
   'city',
@@ -56,8 +56,8 @@ export const FIELD_METADATA: Record<OptionalCardField, OptionalFieldMetadata> =
     country: {
       label: OPTIONAL_FIELD_TEXT_EN.country.label,
       placeholder: OPTIONAL_FIELD_TEXT_EN.country.placeholder,
-      type: 'text',
-      autocomplete: 'country',
+      type: 'select',
+      autocomplete: 'country-name',
     },
     phone: {
       label: OPTIONAL_FIELD_TEXT_EN.phone.label,
@@ -75,13 +75,36 @@ export const FIELD_METADATA: Record<OptionalCardField, OptionalFieldMetadata> =
 
 export const PRESET_FIELDS: Record<CardFormPreset, OptionalCardField[]> = {
   none: [],
-  us: ['postalCode'],
+  us: ['postalCode', 'country'],
   billing: ['addressLine1', 'city', 'state', 'postalCode', 'country'],
   contact: ['email', 'phone'],
 };
 
-function isOptionalCardField(value: string): value is OptionalCardField {
+export const SENSITIVE_FIELDS: ReadonlySet<OptionalCardField> = new Set([
+  'email',
+  'phone',
+  'addressLine1',
+  'addressLine2',
+  'city',
+  'state',
+  'postalCode',
+  'country',
+]);
+
+export function isOptionalCardField(value: string): value is OptionalCardField {
   return OPTIONAL_FIELD_SET.has(value as OptionalCardField);
+}
+
+export function sanitizeOptionalFields(
+  fields: readonly string[],
+): OptionalCardField[] {
+  const uniqueFields = new Set<OptionalCardField>();
+  fields.forEach((field) => {
+    if (isOptionalCardField(field)) {
+      uniqueFields.add(field);
+    }
+  });
+  return Array.from(uniqueFields);
 }
 
 export function resolveActiveFields(

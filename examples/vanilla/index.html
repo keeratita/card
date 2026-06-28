@@ -333,7 +333,7 @@
           <input type="checkbox" id="field-postalCode" value="postalCode"> Postal / ZIP
         </label>
         <label class="dev-checkbox-label">
-          <input type="checkbox" id="field-country" value="country"> Country Code
+          <input type="checkbox" id="field-country" value="country" checked> Country Code
         </label>
         <label class="dev-checkbox-label" style="grid-column: span 2;">
           <input type="checkbox" id="field-phone" value="phone"> Cardholder Phone
@@ -364,6 +364,7 @@
   </button>
 
   <!-- ES Modules script to load compiled bundle -->
+  <!-- NOTE: Always use public keys (pk_..., pkey_...) — never expose secret keys (sk_..., skey_...) -->
   <script type="module">
     import { StripeAdapter, OmiseAdapter } from '../../dist/index.mjs';
     import { CardForm, CardModal } from '../../dist/vanilla/index.mjs';
@@ -379,8 +380,13 @@
     let modalInstance = null;
 
     // Direct Stripe & Omise REST token vault mock keys
-    const stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
-    const omiseAdapter = new OmiseAdapter({ publicKey: 'pkey_test_omise_integrated_demo_key' });
+    const env = typeof import.meta.env !== 'undefined' ? import.meta.env : {};
+    const stripeAdapter = new StripeAdapter({
+      publicKey: env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_stripe_integrated_demo_key'
+    });
+    const omiseAdapter = new OmiseAdapter({
+      publicKey: env.VITE_OMISE_PUBLIC_KEY || 'pkey_test_omise_integrated_demo_key'
+    });
 
     function getActiveAdapter() {
       return activeProvider === 'Stripe' ? stripeAdapter : omiseAdapter;
