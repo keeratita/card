@@ -48,7 +48,8 @@
     "demo:react": "npm run build && cd examples/react && npm install && npm run dev",
     "demo:angular": "npm run build && cd examples/angular && npm install && npm run start",
     "demo:all": "npm run build && (cd examples/react && npm install && npm run dev &) && (cd examples/angular && npm install && npm run start &)",
-    "release": "release-it"
+    "release": "release-it --ci",
+    "publish": "npm run build && npm publish --access public"
   },
   "keywords": [
     "credit-card",
