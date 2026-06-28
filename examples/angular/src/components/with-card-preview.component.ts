@@ -1,151 +1,159 @@
 /**
  * Card Form with Live Preview Example - Angular (Latest Syntax)
- * 
+ *
  * This example demonstrates how to show card information as users enter their details.
  */
 
-import { Component, inject, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { createCardFormGroup, CardNumberDirective, CardExpiryDirective } from '@keeratita/card/angular';
+import {
+  createCardFormGroup,
+  CardNumberDirective,
+  CardExpiryDirective,
+} from '@keeratita/card/angular';
 import { type Token } from '@keeratita/card';
-import { stripeAdapter, omiseAdapter } from '../shared/adapters';
+import { stripeAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-card-form-with-live-preview',
   standalone: true,
-  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective],
-  styles: [`
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-    }
-    h2 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #24292e;
-      margin: 0 0 8px 0;
-    }
-    .subtitle {
-      color: #586069;
-      margin: 0 0 24px 0;
-      font-size: 15px;
-    }
-    .success-msg {
-      padding: 16px;
-      background-color: #f0fdf4;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border: 1px solid #bbf7d0;
-      color: #166534;
-    }
-    .content-grid {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    .preview-section, .form-section {
-      flex: 1;
-      min-width: 300px;
-    }
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #24292e;
-      margin: 0 0 12px 0;
-    }
-    .preview-box {
-      padding: 20px;
-      background-color: #f6f8fa;
-      border-radius: 8px;
-      min-height: 180px;
-      border: 1px solid #d0d7de;
-    }
-    .card-info {
-      text-align: center;
-    }
-    .card-brand {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    .brand-icon {
-      font-size: 32px;
-    }
-    .brand-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: #24292e;
-      text-transform: uppercase;
-    }
-    .card-number {
-      font-size: 14px;
-      font-family: 'SF Mono', Monaco, Consolas, monospace;
-      color: #586069;
-    }
-    .placeholder {
-      color: #6e7781;
-      text-align: center;
-      margin: 0;
-      font-size: 14px;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #24292e;
-      font-size: 14px;
-    }
-    input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 6px;
-      border: 1px solid #d0d7de;
-      font-size: 15px;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-      font-family: 'SF Mono', Monaco, Consolas, monospace;
-    }
-    input:focus {
-      outline: none;
-      border-color: #0366d6;
-      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
-    }
-    input.invalid {
-      border-color: #cf222e;
-    }
-    input::placeholder {
-      color: #6e7781;
-    }
-    .submit-btn {
-      width: 100%;
-      padding: 14px;
-      background-color: #0366d6;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      margin-top: 8px;
-    }
-    .submit-btn:hover:not(:disabled) {
-      background-color: #0255b3;
-    }
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  `],
+  imports: [ReactiveFormsModule],
+  providers: [CardNumberDirective, CardExpiryDirective],
+  styles: [
+    `
+      .container {
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      h2 {
+        font-size: 28px;
+        font-weight: 600;
+        color: #24292e;
+        margin: 0 0 8px 0;
+      }
+      .subtitle {
+        color: #586069;
+        margin: 0 0 24px 0;
+        font-size: 15px;
+      }
+      .success-msg {
+        padding: 16px;
+        background-color: #f0fdf4;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+      }
+      .content-grid {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .preview-section,
+      .form-section {
+        flex: 1;
+        min-width: 300px;
+      }
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #24292e;
+        margin: 0 0 12px 0;
+      }
+      .preview-box {
+        padding: 20px;
+        background-color: #f6f8fa;
+        border-radius: 8px;
+        min-height: 180px;
+        border: 1px solid #d0d7de;
+      }
+      .card-info {
+        text-align: center;
+      }
+      .card-brand {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .brand-icon {
+        font-size: 32px;
+      }
+      .brand-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #24292e;
+        text-transform: uppercase;
+      }
+      .card-number {
+        font-size: 14px;
+        font-family: 'SF Mono', Monaco, Consolas, monospace;
+        color: #586069;
+      }
+      .placeholder {
+        color: #6e7781;
+        text-align: center;
+        margin: 0;
+        font-size: 14px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #24292e;
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 6px;
+        border: 1px solid #d0d7de;
+        font-size: 15px;
+        transition: all 0.15s ease;
+        box-sizing: border-box;
+        font-family: 'SF Mono', Monaco, Consolas, monospace;
+      }
+      input:focus {
+        outline: none;
+        border-color: #0366d6;
+        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+      }
+      input.invalid {
+        border-color: #cf222e;
+      }
+      input::placeholder {
+        color: #6e7781;
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background-color: #0366d6;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        margin-top: 8px;
+      }
+      .submit-btn:hover:not(:disabled) {
+        background-color: #0255b3;
+      }
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `,
+  ],
   template: `
     <div class="container">
       <h2>Card Form with Live Preview</h2>
@@ -175,7 +183,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
                 }
               </div>
             } @else {
-              <p class="placeholder">Start entering card number to see details</p>
+              <p class="placeholder">
+                Start entering card number to see details
+              </p>
             }
           </div>
         </div>
@@ -191,7 +201,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
                 formControlName="number"
                 class="form-input"
                 placeholder="4242 4242 4242 4242"
-                [class.invalid]="form.get('number')?.invalid && form.get('number')?.touched"
+                [class.invalid]="
+                  form.get('number')?.invalid && form.get('number')?.touched
+                "
                 kgCardNumber
               />
             </div>
@@ -203,7 +215,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
                 formControlName="expiry"
                 class="form-input"
                 placeholder="MM / YY"
-                [class.invalid]="form.get('expiry')?.invalid && form.get('expiry')?.touched"
+                [class.invalid]="
+                  form.get('expiry')?.invalid && form.get('expiry')?.touched
+                "
                 kgCardExpiry
               />
             </div>
@@ -215,7 +229,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
                 formControlName="cvc"
                 class="form-input"
                 placeholder="123"
-                [class.invalid]="form.get('cvc')?.invalid && form.get('cvc')?.touched"
+                [class.invalid]="
+                  form.get('cvc')?.invalid && form.get('cvc')?.touched
+                "
               />
             </div>
 
@@ -230,7 +246,7 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
         </div>
       </div>
     </div>
-  `
+  `,
 })
 export class CardFormWithLivePreviewComponent {
   form = createCardFormGroup();
@@ -239,7 +255,7 @@ export class CardFormWithLivePreviewComponent {
   isProcessing = signal(false);
   cardBrand = signal<string>('');
   cardLast4 = signal<string>('');
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   getBrandIcon(brand: string): string {
     const icons: { [key: string]: string } = {
@@ -250,7 +266,7 @@ export class CardFormWithLivePreviewComponent {
       diners: '🎫',
       jcb: '🇯🇵',
       unionpay: '🇨🇳',
-      unknown: '🏦'
+      unknown: '🏦',
     };
     return icons[brand.toLowerCase()] || icons['unknown'];
   }
@@ -296,7 +312,7 @@ export class CardFormWithLivePreviewComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);
@@ -308,112 +324,113 @@ export class CardFormWithLivePreviewComponent {
 @Component({
   selector: 'app-compact-card-preview',
   standalone: true,
-  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective],
-  styles: [`
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    h2 {
-      font-size: 28px;
-      font-weight: 600;
-      color: #24292e;
-      margin: 0 0 8px 0;
-    }
-    .subtitle {
-      color: #586069;
-      margin: 0 0 24px 0;
-      font-size: 15px;
-    }
-    .success-msg {
-      padding: 16px;
-      background-color: #f0fdf4;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border: 1px solid #bbf7d0;
-      color: #166534;
-    }
-    .compact-preview {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px;
-      background-color: #f6f8fa;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border: 1px solid #d0d7de;
-    }
-    .brand-icon {
-      font-size: 24px;
-    }
-    .brand-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: #24292e;
-      text-transform: uppercase;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #24292e;
-      font-size: 14px;
-    }
-    input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 6px;
-      border: 1px solid #d0d7de;
-      font-size: 15px;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-      font-family: 'SF Mono', Monaco, Consolas, monospace;
-    }
-    input:focus {
-      outline: none;
-      border-color: #0366d6;
-      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
-    }
-    input.invalid {
-      border-color: #cf222e;
-    }
-    input::placeholder {
-      color: #6e7781;
-    }
-    .submit-btn {
-      width: 100%;
-      padding: 14px;
-      background-color: #0366d6;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      margin-top: 8px;
-    }
-    .submit-btn:hover:not(:disabled) {
-      background-color: #0255b3;
-    }
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  `],
+  imports: [ReactiveFormsModule],
+  providers: [CardNumberDirective, CardExpiryDirective],
+  styles: [
+    `
+      .container {
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      h2 {
+        font-size: 28px;
+        font-weight: 600;
+        color: #24292e;
+        margin: 0 0 8px 0;
+      }
+      .subtitle {
+        color: #586069;
+        margin: 0 0 24px 0;
+        font-size: 15px;
+      }
+      .success-msg {
+        padding: 16px;
+        background-color: #f0fdf4;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+      }
+      .compact-preview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        background-color: #f6f8fa;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #d0d7de;
+      }
+      .brand-icon {
+        font-size: 24px;
+      }
+      .brand-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #24292e;
+        text-transform: uppercase;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #24292e;
+        font-size: 14px;
+      }
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 6px;
+        border: 1px solid #d0d7de;
+        font-size: 15px;
+        transition: all 0.15s ease;
+        box-sizing: border-box;
+        font-family: 'SF Mono', Monaco, Consolas, monospace;
+      }
+      input:focus {
+        outline: none;
+        border-color: #0366d6;
+        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+      }
+      input.invalid {
+        border-color: #cf222e;
+      }
+      input::placeholder {
+        color: #6e7781;
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background-color: #0366d6;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        margin-top: 8px;
+      }
+      .submit-btn:hover:not(:disabled) {
+        background-color: #0255b3;
+      }
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `,
+  ],
   template: `
     <div class="container">
       <h2>Quick Checkout</h2>
-      <p class="subtitle">
-        Fast and secure payment.
-      </p>
+      <p class="subtitle">Fast and secure payment.</p>
 
       @if (token()) {
         <div class="success-msg">
@@ -435,7 +452,9 @@ export class CardFormWithLivePreviewComponent {
             type="text"
             formControlName="number"
             placeholder="4242 4242 4242 4242"
-            [class.invalid]="form.get('number')?.invalid && form.get('number')?.touched"
+            [class.invalid]="
+              form.get('number')?.invalid && form.get('number')?.touched
+            "
             kgCardNumber
           />
         </div>
@@ -446,7 +465,9 @@ export class CardFormWithLivePreviewComponent {
             type="text"
             formControlName="expiry"
             placeholder="MM / YY"
-            [class.invalid]="form.get('expiry')?.invalid && form.get('expiry')?.touched"
+            [class.invalid]="
+              form.get('expiry')?.invalid && form.get('expiry')?.touched
+            "
             kgCardExpiry
           />
         </div>
@@ -457,7 +478,9 @@ export class CardFormWithLivePreviewComponent {
             type="text"
             formControlName="cvc"
             placeholder="123"
-            [class.invalid]="form.get('cvc')?.invalid && form.get('cvc')?.touched"
+            [class.invalid]="
+              form.get('cvc')?.invalid && form.get('cvc')?.touched
+            "
           />
         </div>
 
@@ -470,7 +493,7 @@ export class CardFormWithLivePreviewComponent {
         </button>
       </form>
     </div>
-  `
+  `,
 })
 export class CompactCardPreviewComponent {
   form = createCardFormGroup();
@@ -478,7 +501,7 @@ export class CompactCardPreviewComponent {
   error = signal<string | null>(null);
   isProcessing = signal(false);
   cardBrand = signal<string>('');
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   getBrandIcon(brand: string): string {
     const icons: { [key: string]: string } = {
@@ -486,7 +509,7 @@ export class CompactCardPreviewComponent {
       mastercard: '🔴',
       amex: '💎',
       discover: '🔵',
-      unknown: '🏦'
+      unknown: '🏦',
     };
     return icons[brand.toLowerCase()] || icons['unknown'];
   }
@@ -526,7 +549,7 @@ export class CompactCardPreviewComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);

@@ -33,6 +33,7 @@ export function CountryAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   // Filter countries based on search term
   const filteredCountries = useMemo(() => {
@@ -51,7 +52,48 @@ export function CountryAutocomplete({
     ? `${selectedCountry.emoji} ${selectedCountry.name}`
     : placeholder;
 
-  // Handle click outside to close dropdown
+  // Sync isOpen state with popover show/hide
+  useEffect(() => {
+    const popover = popoverRef.current;
+    if (!popover) return;
+
+    if (isOpen) {
+      try {
+        if (document.activeElement !== popover && !popover.matches(':popover-open')) {
+          popover.showPopover();
+        }
+      } catch {
+        // Fallback for environments without full Popover support
+      }
+    } else {
+      try {
+        if (popover.matches(':popover-open')) {
+          popover.hidePopover();
+        }
+      } catch {
+        // Fallback
+      }
+    }
+  }, [isOpen]);
+
+  // Listen to popover toggle events to sync state back to React (e.g. on click-outside or Escape)
+  useEffect(() => {
+    const popover = popoverRef.current;
+    if (!popover) return;
+
+    const handleToggle = (e: Event) => {
+      const toggleEvent = e as ToggleEvent;
+      const open = toggleEvent.newState === 'open';
+      if (open !== isOpen) {
+        setIsOpen(open);
+      }
+    };
+
+    popover.addEventListener('toggle', handleToggle);
+    return () => popover.removeEventListener('toggle', handleToggle);
+  }, [isOpen]);
+
+  // Handle click outside to close dropdown (Fallback for jsdom/older browsers)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -67,7 +109,7 @@ export function CountryAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Handle ESC key to close dropdown (document level)
+  // Handle ESC key to close dropdown (Fallback for jsdom/older browsers)
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -124,6 +166,12 @@ export function CountryAutocomplete({
       // Prevent layout thrashing and blinking during scroll
       willChange: 'transform',
       contain: 'layout style',
+      // Reset popover defaults
+      margin: 0,
+      border: 'none',
+      padding: 0,
+      background: 'transparent',
+      overflow: 'visible',
     };
   }, [dropdownPosition]);
 
@@ -306,16 +354,19 @@ export function CountryAutocomplete({
         placeholder={placeholder}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-controls={`country-list-${id}`}
+        aria-controls={`country-popover-${id}`}
         aria-label={placeholder}
         role="combobox"
         tabIndex={0}
       />
-      {isOpen && dropdownPosition && (
-        <div
-          className="country-autocomplete-dropdown-container"
-          style={getDropdownStyle()}
-        >
+      <div
+        ref={popoverRef}
+        id={`country-popover-${id}`}
+        {...{ popover: 'auto' }}
+        className="country-autocomplete-dropdown-container"
+        style={getDropdownStyle()}
+      >
+        {isOpen && (
           <div className="country-autocomplete-dropdown">
             <input
               ref={searchInputRef}
@@ -367,8 +418,8 @@ export function CountryAutocomplete({
               )}
             </ul>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

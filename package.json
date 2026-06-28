@@ -47,7 +47,8 @@
     "demo": "npx http-server . -p 3000 -c-1 --cors & sleep 2 && open http://localhost:3000/examples/vanilla/index.html",
     "demo:react": "npm run build && cd examples/react && npm install && npm run dev",
     "demo:angular": "npm run build && cd examples/angular && npm install && npm run start",
-    "demo:all": "npm run build && (cd examples/react && npm install && npm run dev &) && (cd examples/angular && npm install && npm run start &)"
+    "demo:all": "npm run build && (cd examples/react && npm install && npm run dev &) && (cd examples/angular && npm install && npm run start &)",
+    "release": "release-it"
   },
   "keywords": [
     "credit-card",
@@ -105,10 +106,11 @@
     "tsup": "^8.0.2",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.60.1",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "@release-it/bumper": "^7.0.6"
   },
   "overrides": {
-    "esbuild": "0.27.7",
+    "esbuild": "0.28.1",
     "vite": "6.4.3"
   }
 }

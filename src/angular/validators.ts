@@ -17,10 +17,8 @@ export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const clean = String(control.value).replace(/\D/g, '');
-    // Only validate when input has at least 13 digits (minimum for any card type)
-    // This prevents showing invalid error while user is still typing
-    if (clean.length < 13) return null;
-    const isValid = luhnCheck(clean);
+    // If there is any input, it must be a valid length (13-19 digits) and pass Luhn's algorithm
+    const isValid = clean.length >= 13 && clean.length <= 19 && luhnCheck(clean);
     return isValid ? null : { creditCard: { value: control.value } };
   };
 }

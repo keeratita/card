@@ -20,6 +20,7 @@ export interface FormFieldsGroupProps {
   preset: CardFormPreset;
   optionalFields: OptionalCardField[];
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  setFieldValue: (name: keyof CardFormValues, value: string) => void;
   handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleCvcFocus: () => void;
   className?: string;
@@ -33,6 +34,7 @@ export function FormFieldsGroup({
   preset,
   optionalFields,
   handleChange,
+  setFieldValue,
   handleBlur,
   handleCvcFocus,
   className = '',
@@ -93,13 +95,7 @@ export function FormFieldsGroup({
                     id={`card-${field}`}
                     value={values[field as keyof typeof values] as string}
                     onChange={(countryCode) => {
-                      const event = {
-                        target: {
-                          name: field,
-                          value: countryCode,
-                        },
-                      } as React.ChangeEvent<HTMLInputElement>;
-                      handleChange(event);
+                      setFieldValue('country', countryCode);
                     }}
                     placeholder={placeholder}
                     searchPlaceholder="Search countries..."

@@ -1,6 +1,6 @@
 /**
  * Card Form with Custom Styling Example
- * 
+ *
  * This example demonstrates how to customize the appearance of the card form
  * to match your application's design system.
  */
@@ -9,7 +9,7 @@ import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { type Token } from '@keeratita/card';
 import { formatCardNumber, formatExpiry } from '@keeratita/card/angular';
-import { stripeAdapter, omiseAdapter } from '../shared/adapters';
+import { stripeAdapter } from '../shared/adapters';
 
 // Dark theme example
 @Component({
@@ -19,7 +19,7 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
   template: `
     <div class="dark-container">
       <h1>Dark Theme Checkout</h1>
-      
+
       @if (token()) {
         <div class="success-message">
           <strong>Success!</strong> Token: {{ token()?.id }}
@@ -35,7 +35,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
             class="ios-input dark-input"
             placeholder="4242 4242 4242 4242"
             (input)="onCardNumberInput($event)"
-            [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+            [class.invalid]="
+              form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+            "
           />
         </div>
 
@@ -47,7 +49,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
             class="ios-input dark-input"
             placeholder="MM / YY"
             (input)="onExpiryInput($event)"
-            [class.invalid]="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+            [class.invalid]="
+              form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched
+            "
           />
         </div>
 
@@ -58,7 +62,9 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
             formControlName="cardCvc"
             class="ios-input dark-input"
             placeholder="123"
-            [class.invalid]="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+            [class.invalid]="
+              form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched
+            "
           />
         </div>
 
@@ -72,80 +78,82 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
       </form>
     </div>
   `,
-  styles: [`
-    .dark-container {
-      background-color: #1a1a2e;
-      padding: 40px;
-      border-radius: 16px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      color: #eee;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    
-    .success-message {
-      padding: 16px;
-      background-color: #10b981;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      color: #fff;
-    }
-    
-    .input-row {
-      margin-bottom: 16px;
-    }
-    
-    .ios-label {
-      display: block;
-      margin-bottom: 6px;
-      color: #a5b4fc;
-      font-size: 14px;
-    }
-    
-    .ios-input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #0f3460;
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-      font-family: monospace;
-    }
-    
-    .dark-input {
-      background-color: #16213e;
-      color: #e94560;
-    }
-    
-    .ios-input.invalid {
-      border-color: #ff3b30;
-    }
-    
-    .ios-submit {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    
-    .dark-submit {
-      background-color: #e94560;
-      color: white;
-    }
-    
-    .ios-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  `]
+  styles: [
+    `
+      .dark-container {
+        background-color: #1a1a2e;
+        padding: 40px;
+        border-radius: 16px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        color: #eee;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .success-message {
+        padding: 16px;
+        background-color: #10b981;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: #fff;
+      }
+
+      .input-row {
+        margin-bottom: 16px;
+      }
+
+      .ios-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #a5b4fc;
+        font-size: 14px;
+      }
+
+      .ios-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #0f3460;
+        border-radius: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+
+      .dark-input {
+        background-color: #16213e;
+        color: #e94560;
+      }
+
+      .ios-input.invalid {
+        border-color: #ff3b30;
+      }
+
+      .ios-submit {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+
+      .dark-submit {
+        background-color: #e94560;
+        color: white;
+      }
+
+      .ios-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class DarkThemeCardFormComponent {
   private fb = inject(FormBuilder);
@@ -157,7 +165,7 @@ export class DarkThemeCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -191,7 +199,7 @@ export class DarkThemeCardFormComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);
@@ -211,7 +219,7 @@ export class DarkThemeCardFormComponent {
         <h1>Enterprise Payment</h1>
         <p>Secure & Compliant</p>
       </div>
-      
+
       @if (token()) {
         <div class="success-message">
           <strong>Payment processed!</strong>
@@ -227,7 +235,9 @@ export class DarkThemeCardFormComponent {
             class="ios-input corporate-input"
             placeholder="4242 4242 4242 4242"
             (input)="onCardNumberInput($event)"
-            [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+            [class.invalid]="
+              form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+            "
           />
         </div>
 
@@ -239,7 +249,9 @@ export class DarkThemeCardFormComponent {
             class="ios-input corporate-input"
             placeholder="MM / YY"
             (input)="onExpiryInput($event)"
-            [class.invalid]="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+            [class.invalid]="
+              form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched
+            "
           />
         </div>
 
@@ -250,7 +262,9 @@ export class DarkThemeCardFormComponent {
             formControlName="cardCvc"
             class="ios-input corporate-input"
             placeholder="123"
-            [class.invalid]="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+            [class.invalid]="
+              form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched
+            "
           />
         </div>
 
@@ -262,114 +276,114 @@ export class DarkThemeCardFormComponent {
           {{ isProcessing() ? 'Processing...' : 'Process Payment' }}
         </button>
       </form>
-      
-      <p class="security-note">
-        🔒 SSL Encrypted • PCI DSS Compliant
-      </p>
+
+      <p class="security-note">🔒 SSL Encrypted • PCI DSS Compliant</p>
     </div>
   `,
-  styles: [`
-    .corporate-container {
-      background-color: #f8fafc;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    
-    .icon-box {
-      width: 60px;
-      height: 60px;
-      background-color: #1e40af;
-      border-radius: 12px;
-      margin: 0 auto 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-    
-    h1 {
-      color: #1e3a8a;
-      margin: 0;
-    }
-    
-    .header p {
-      color: #64748b;
-      margin: 8px 0 0;
-    }
-    
-    .success-message {
-      padding: 16px;
-      background-color: #dcfce7;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      color: #166534;
-    }
-    
-    .input-row {
-      margin-bottom: 16px;
-    }
-    
-    .ios-label {
-      display: block;
-      margin-bottom: 6px;
-      color: #1e40af;
-      font-size: 14px;
-    }
-    
-    .ios-input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-      font-family: monospace;
-    }
-    
-    .corporate-input {
-      background-color: #fff;
-    }
-    
-    .ios-input.invalid {
-      border-color: #ff3b30;
-    }
-    
-    .ios-submit {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    
-    .corporate-submit {
-      background-color: #1e40af;
-      color: white;
-    }
-    
-    .ios-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    
-    .security-note {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 12px;
-      margin-top: 20px;
-    }
-  `]
+  styles: [
+    `
+      .corporate-container {
+        background-color: #f8fafc;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .icon-box {
+        width: 60px;
+        height: 60px;
+        background-color: #1e40af;
+        border-radius: 12px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      h1 {
+        color: #1e3a8a;
+        margin: 0;
+      }
+
+      .header p {
+        color: #64748b;
+        margin: 8px 0 0;
+      }
+
+      .success-message {
+        padding: 16px;
+        background-color: #dcfce7;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: #166534;
+      }
+
+      .input-row {
+        margin-bottom: 16px;
+      }
+
+      .ios-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #1e40af;
+        font-size: 14px;
+      }
+
+      .ios-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+
+      .corporate-input {
+        background-color: #fff;
+      }
+
+      .ios-input.invalid {
+        border-color: #ff3b30;
+      }
+
+      .ios-submit {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+
+      .corporate-submit {
+        background-color: #1e40af;
+        color: white;
+      }
+
+      .ios-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .security-note {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12px;
+        margin-top: 20px;
+      }
+    `,
+  ],
 })
 export class CorporateCardFormComponent {
   private fb = inject(FormBuilder);
@@ -381,7 +395,7 @@ export class CorporateCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -415,7 +429,7 @@ export class CorporateCardFormComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);
@@ -448,7 +462,9 @@ export class CorporateCardFormComponent {
             class="ios-input gradient-input"
             placeholder="4242 4242 4242 4242"
             (input)="onCardNumberInput($event)"
-            [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+            [class.invalid]="
+              form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+            "
           />
         </div>
 
@@ -460,7 +476,9 @@ export class CorporateCardFormComponent {
             class="ios-input gradient-input"
             placeholder="MM / YY"
             (input)="onExpiryInput($event)"
-            [class.invalid]="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+            [class.invalid]="
+              form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched
+            "
           />
         </div>
 
@@ -471,7 +489,9 @@ export class CorporateCardFormComponent {
             formControlName="cardCvc"
             class="ios-input gradient-input"
             placeholder="123"
-            [class.invalid]="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+            [class.invalid]="
+              form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched
+            "
           />
         </div>
 
@@ -485,88 +505,90 @@ export class CorporateCardFormComponent {
       </form>
     </div>
   `,
-  styles: [`
-    .gradient-container {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 40px;
-      border-radius: 20px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      color: #fff;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    
-    p {
-      color: rgba(255,255,255,0.8);
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    
-    .success-message {
-      padding: 16px;
-      background-color: rgba(255,255,255,0.2);
-      border-radius: 8px;
-      margin-bottom: 20px;
-      color: #fff;
-    }
-    
-    .input-row {
-      margin-bottom: 16px;
-    }
-    
-    .ios-label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-    
-    .gradient-label {
-      color: #fff;
-    }
-    
-    .ios-input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
-      font-size: 16px;
-      box-sizing: border-box;
-      font-family: monospace;
-    }
-    
-    .gradient-input {
-      background-color: rgba(255,255,255,0.9);
-    }
-    
-    .ios-input.invalid {
-      border-color: #ff3b30;
-    }
-    
-    .ios-submit {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    
-    .gradient-submit {
-      background-color: #fff;
-      color: #667eea;
-    }
-    
-    .ios-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  `]
+  styles: [
+    `
+      .gradient-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px;
+        border-radius: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        color: #fff;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      p {
+        color: rgba(255, 255, 255, 0.8);
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .success-message {
+        padding: 16px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: #fff;
+      }
+
+      .input-row {
+        margin-bottom: 16px;
+      }
+
+      .ios-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      .gradient-label {
+        color: #fff;
+      }
+
+      .ios-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+
+      .gradient-input {
+        background-color: rgba(255, 255, 255, 0.9);
+      }
+
+      .ios-input.invalid {
+        border-color: #ff3b30;
+      }
+
+      .ios-submit {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+
+      .gradient-submit {
+        background-color: #fff;
+        color: #667eea;
+      }
+
+      .ios-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class GradientCardFormComponent {
   private fb = inject(FormBuilder);
@@ -578,7 +600,7 @@ export class GradientCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -612,7 +634,7 @@ export class GradientCardFormComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);
@@ -644,7 +666,9 @@ export class GradientCardFormComponent {
             class="ios-input minimal-input"
             placeholder="4242 4242 4242 4242"
             (input)="onCardNumberInput($event)"
-            [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+            [class.invalid]="
+              form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+            "
           />
         </div>
 
@@ -656,7 +680,9 @@ export class GradientCardFormComponent {
             class="ios-input minimal-input"
             placeholder="MM / YY"
             (input)="onExpiryInput($event)"
-            [class.invalid]="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+            [class.invalid]="
+              form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched
+            "
           />
         </div>
 
@@ -667,7 +693,9 @@ export class GradientCardFormComponent {
             formControlName="cardCvc"
             class="ios-input minimal-input"
             placeholder="123"
-            [class.invalid]="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+            [class.invalid]="
+              form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched
+            "
           />
         </div>
 
@@ -681,81 +709,83 @@ export class GradientCardFormComponent {
       </form>
     </div>
   `,
-  styles: [`
-    .minimal-container {
-      padding: 40px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      font-size: 24px;
-      font-weight: 300;
-      text-align: center;
-      margin-bottom: 30px;
-      color: #000;
-    }
-    
-    .success-message {
-      padding: 16px;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 20px;
-      color: #000;
-    }
-    
-    .input-row {
-      margin-bottom: 16px;
-    }
-    
-    .ios-label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-    
-    .minimal-label {
-      color: #000;
-    }
-    
-    .ios-input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #eee;
-      border-radius: 0;
-      font-size: 16px;
-      box-sizing: border-box;
-      font-family: monospace;
-    }
-    
-    .minimal-input {
-      background-color: transparent;
-    }
-    
-    .ios-input.invalid {
-      border-color: #ff3b30;
-    }
-    
-    .ios-submit {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 0;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    
-    .minimal-submit {
-      background-color: #000;
-      color: #fff;
-    }
-    
-    .ios-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  `]
+  styles: [
+    `
+      .minimal-container {
+        padding: 40px;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 300;
+        text-align: center;
+        margin-bottom: 30px;
+        color: #000;
+      }
+
+      .success-message {
+        padding: 16px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 20px;
+        color: #000;
+      }
+
+      .input-row {
+        margin-bottom: 16px;
+      }
+
+      .ios-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      .minimal-label {
+        color: #000;
+      }
+
+      .ios-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 0;
+        font-size: 16px;
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+
+      .minimal-input {
+        background-color: transparent;
+      }
+
+      .ios-input.invalid {
+        border-color: #ff3b30;
+      }
+
+      .ios-submit {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+
+      .minimal-submit {
+        background-color: #000;
+        color: #fff;
+      }
+
+      .ios-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class MinimalCardFormComponent {
   private fb = inject(FormBuilder);
@@ -767,7 +797,7 @@ export class MinimalCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -801,7 +831,7 @@ export class MinimalCardFormComponent {
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.isProcessing.set(false);

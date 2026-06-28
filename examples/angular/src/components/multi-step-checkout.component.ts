@@ -1,14 +1,15 @@
 /**
  * Multi-Step Checkout Example - Angular (Latest Syntax)
- * 
+ *
  * This example demonstrates how to implement a multi-step checkout flow
  * where the card form is shown as the final step.
  */
 
 import { Component, signal, computed, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { createCardFormGroup } from '@keeratita/card/angular';
+import { createCardFormGroup, formatCardNumber, formatExpiry } from '@keeratita/card/angular';
 import { stripeAdapter, omiseAdapter } from '../shared/adapters';
+import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
 
 type CheckoutStep = 'cart' | 'shipping' | 'payment' | 'confirmation';
 
@@ -28,205 +29,207 @@ const sampleCart: CartItem[] = [
   selector: 'app-multi-step-checkout',
   standalone: true,
   imports: [ReactiveFormsModule],
-  styles: [`
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    .step-indicator {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-    }
-    .step-item {
-      flex: 1;
-      display: flex;
-      align-items: center;
-    }
-    .step-number {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      margin-right: 8px;
-    }
-    .step-number.active {
-      background-color: #0366d6;
-    }
-    .step-number.inactive {
-      background-color: #e1e4e8;
-    }
-    .step-label {
-      font-size: 14px;
-    }
-    .step-label.active {
-      color: #24292e;
-      font-weight: 600;
-    }
-    .step-label.inactive {
-      color: #6e7781;
-      font-weight: 400;
-    }
-    .step-connector {
-      flex: 1;
-      height: 2px;
-      margin-left: 16px;
-    }
-    .step-connector.active {
-      background-color: #0366d6;
-    }
-    .step-connector.inactive {
-      background-color: #e1e4e8;
-    }
-    .content-card {
-      background-color: #ffffff;
-      border-radius: 8px;
-      padding: 32px;
-      border: 1px solid #e1e4e8;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .content-card h2 {
-      margin-top: 0;
-      font-size: 24px;
-      font-weight: 600;
-      color: #24292e;
-    }
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid #e1e4e8;
-    }
-    .cart-item-name {
-      font-weight: 500;
-      color: #24292e;
-    }
-    .cart-item-price {
-      color: #586069;
-      font-size: 14px;
-    }
-    .cart-item-total {
-      font-weight: 600;
-      color: #24292e;
-    }
-    .cart-total {
-      display: flex;
-      justify-content: space-between;
-      padding: 16px 0;
-      border-top: 2px solid #24292e;
-      font-weight: 600;
-      font-size: 18px;
-    }
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .btn-primary {
-      background-color: #0366d6;
-      color: white;
-      border: none;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background-color: #0255b3;
-    }
-    .btn-secondary {
-      background-color: #f6f8fa;
-      color: #24292e;
-      border: 1px solid #d0d7de;
-    }
-    .btn-secondary:hover {
-      background-color: #f0f0f0;
-    }
-    .btn-back {
-      background-color: transparent;
-      color: #586069;
-      border: none;
-      margin-top: 16px;
-    }
-    .btn-back:hover {
-      color: #24292e;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #24292e;
-      font-size: 14px;
-    }
-    .form-input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 6px;
-      border: 1px solid #d0d7de;
-      font-size: 15px;
-      transition: all 0.15s ease;
-      box-sizing: border-box;
-    }
-    .form-input:focus {
-      outline: none;
-      border-color: #0366d6;
-      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
-    }
-    .form-input::placeholder {
-      color: #6e7781;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    .btn-group {
-      display: flex;
-      gap: 12px;
-    }
-    .gateway-btn {
-      flex: 1;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .gateway-btn.active {
-      border: 2px solid #0366d6;
-      background-color: #f1f8ff;
-      color: #0366d6;
-    }
-    .gateway-btn.inactive {
-      border: 1px solid #d0d7de;
-      background-color: #ffffff;
-      color: #24292e;
-    }
-    .confirmation-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-      color: #28a745;
-    }
-    .confirmation-text {
-      color: #586069;
-      margin-bottom: 20px;
-    }
-    .transaction-id {
-      background-color: #f6f8fa;
-      padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 24px;
-      font-size: 13px;
-    }
-  `],
+  styles: [
+    `
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .step-item {
+        flex: 1;
+        display: flex;
+        align-items: center;
+      }
+      .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 8px;
+      }
+      .step-number.active {
+        background-color: #0366d6;
+      }
+      .step-number.inactive {
+        background-color: #e1e4e8;
+      }
+      .step-label {
+        font-size: 14px;
+      }
+      .step-label.active {
+        color: #24292e;
+        font-weight: 600;
+      }
+      .step-label.inactive {
+        color: #6e7781;
+        font-weight: 400;
+      }
+      .step-connector {
+        flex: 1;
+        height: 2px;
+        margin-left: 16px;
+      }
+      .step-connector.active {
+        background-color: #0366d6;
+      }
+      .step-connector.inactive {
+        background-color: #e1e4e8;
+      }
+      .content-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 32px;
+        border: 1px solid #e1e4e8;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .content-card h2 {
+        margin-top: 0;
+        font-size: 24px;
+        font-weight: 600;
+        color: #24292e;
+      }
+      .cart-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #e1e4e8;
+      }
+      .cart-item-name {
+        font-weight: 500;
+        color: #24292e;
+      }
+      .cart-item-price {
+        color: #586069;
+        font-size: 14px;
+      }
+      .cart-item-total {
+        font-weight: 600;
+        color: #24292e;
+      }
+      .cart-total {
+        display: flex;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-top: 2px solid #24292e;
+        font-weight: 600;
+        font-size: 18px;
+      }
+      .btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .btn-primary {
+        background-color: #0366d6;
+        color: white;
+        border: none;
+      }
+      .btn-primary:hover:not(:disabled) {
+        background-color: #0255b3;
+      }
+      .btn-secondary {
+        background-color: #f6f8fa;
+        color: #24292e;
+        border: 1px solid #d0d7de;
+      }
+      .btn-secondary:hover {
+        background-color: #f0f0f0;
+      }
+      .btn-back {
+        background-color: transparent;
+        color: #586069;
+        border: none;
+        margin-top: 16px;
+      }
+      .btn-back:hover {
+        color: #24292e;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #24292e;
+        font-size: 14px;
+      }
+      .form-input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 6px;
+        border: 1px solid #d0d7de;
+        font-size: 15px;
+        transition: all 0.15s ease;
+        box-sizing: border-box;
+      }
+      .form-input:focus {
+        outline: none;
+        border-color: #0366d6;
+        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+      }
+      .form-input::placeholder {
+        color: #6e7781;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .btn-group {
+        display: flex;
+        gap: 12px;
+      }
+      .gateway-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .gateway-btn.active {
+        border: 2px solid #0366d6;
+        background-color: #f1f8ff;
+        color: #0366d6;
+      }
+      .gateway-btn.inactive {
+        border: 1px solid #d0d7de;
+        background-color: #ffffff;
+        color: #24292e;
+      }
+      .confirmation-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        color: #28a745;
+      }
+      .confirmation-text {
+        color: #586069;
+        margin-bottom: 20px;
+      }
+      .transaction-id {
+        background-color: #f6f8fa;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 24px;
+        font-size: 13px;
+      }
+    `,
+  ],
   template: `
     <div class="container">
       <!-- Step Indicator -->
@@ -351,7 +354,10 @@ const sampleCart: CartItem[] = [
               <button
                 class="btn btn-primary"
                 (click)="goToPayment()"
-                [disabled]="!shippingForm.get('name')?.value || !shippingForm.get('email')?.value"
+                [disabled]="
+                  !shippingForm.get('name')?.value ||
+                  !shippingForm.get('email')?.value
+                "
               >
                 Continue to Payment
               </button>
@@ -442,14 +448,15 @@ const sampleCart: CartItem[] = [
                 class="btn btn-primary"
                 [disabled]="paymentForm.invalid || processing()"
               >
-                {{ processing() ? 'Processing...' : 'Pay ' + formatPrice(cartTotal()) }}
+                {{
+                  processing()
+                    ? 'Processing...'
+                    : 'Pay ' + formatPrice(cartTotal())
+                }}
               </button>
             </form>
 
-            <button
-              class="btn btn-back"
-              (click)="currentStep.set('shipping')"
-            >
+            <button class="btn btn-back" (click)="currentStep.set('shipping')">
               ← Back to Shipping
             </button>
           </div>
@@ -461,28 +468,26 @@ const sampleCart: CartItem[] = [
             <div class="confirmation-icon">✓</div>
             <h2>Order Confirmed!</h2>
             <p class="confirmation-text">
-              Thank you for your purchase. A confirmation email has been sent to {{ shippingForm.get('email')?.value }}.
+              Thank you for your purchase. A confirmation email has been sent to
+              {{ shippingForm.get('email')?.value }}.
             </p>
             @if (token()) {
               <div class="transaction-id">
                 <strong>Transaction ID:</strong> {{ token()?.id }}
               </div>
             }
-            <button
-              class="btn btn-primary"
-              (click)="resetCheckout()"
-            >
+            <button class="btn btn-primary" (click)="resetCheckout()">
               Start New Order
             </button>
           </div>
         }
       </div>
     </div>
-  `
+  `,
 })
 export class MultiStepCheckoutComponent {
   fb = inject(FormBuilder);
-  
+
   currentStep = signal<CheckoutStep>('cart');
   selectedAdapter = signal<'stripe' | 'omise'>('stripe');
   token = signal<{ id: string } | null>(null);
@@ -495,26 +500,29 @@ export class MultiStepCheckoutComponent {
     email: ['', [Validators.required, Validators.email]],
     address: [''],
     city: [''],
-    postalCode: ['']
+    postalCode: [''],
   });
   paymentForm = createCardFormGroup();
 
-  stripeAdapter = stripeAdapter
-  omiseAdapter = omiseAdapter
+  stripeAdapter = stripeAdapter;
+  omiseAdapter = omiseAdapter;
 
   steps = signal([
     { id: 'cart' as const, label: 'Cart' },
     { id: 'shipping' as const, label: 'Shipping' },
     { id: 'payment' as const, label: 'Payment' },
-    { id: 'confirmation' as const, label: 'Complete' }
+    { id: 'confirmation' as const, label: 'Complete' },
   ]);
 
   currentStepIndex = computed(() => {
-    return this.steps().findIndex(s => s.id === this.currentStep());
+    return this.steps().findIndex((s) => s.id === this.currentStep());
   });
 
   cartTotal = computed(() => {
-    return this.cart().reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return this.cart().reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
   });
 
   formatPrice(price: number): string {
@@ -522,7 +530,9 @@ export class MultiStepCheckoutComponent {
   }
 
   getActiveAdapter(): StripeAdapter | OmiseAdapter {
-    return this.selectedAdapter() === 'stripe' ? this.stripeAdapter : this.omiseAdapter;
+    return this.selectedAdapter() === 'stripe'
+      ? this.stripeAdapter
+      : this.omiseAdapter;
   }
 
   goToPayment(): void {
@@ -551,7 +561,7 @@ export class MultiStepCheckoutComponent {
       this.currentStep.set('confirmation');
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.processing.set(false);
@@ -564,5 +574,17 @@ export class MultiStepCheckoutComponent {
     this.error.set(null);
     this.shippingForm.reset();
     this.paymentForm.reset();
+  }
+
+  // Card number input handler - formats with spacing based on card type
+  onCardNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    input.value = formatCardNumber(input.value);
+  }
+
+  // Expiry input handler - formats as MM / YY
+  onExpiryInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    input.value = formatExpiry(input.value);
   }
 }

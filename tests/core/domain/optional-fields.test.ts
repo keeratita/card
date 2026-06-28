@@ -78,7 +78,7 @@ describe('Optional Fields Module', () => {
     });
 
     it('should define fields for us preset', () => {
-      expect(PRESET_FIELDS.us).toEqual(['postalCode']);
+      expect(PRESET_FIELDS.us).toEqual(['postalCode', 'country']);
     });
 
     it('should define fields for billing preset', () => {
@@ -104,7 +104,7 @@ describe('Optional Fields Module', () => {
 
     it('should return us preset fields', () => {
       const result = resolveActiveFields('us', []);
-      expect(result).toEqual(['postalCode']);
+      expect(result).toEqual(['postalCode', 'country']);
     });
 
     it('should return billing preset fields', () => {
@@ -132,8 +132,8 @@ describe('Optional Fields Module', () => {
 
     it('should deduplicate fields when preset and additional overlap', () => {
       const result = resolveActiveFields('us', ['postalCode']);
-      expect(result).toEqual(['postalCode']);
-      expect(result).toHaveLength(1);
+      expect(result).toEqual(['postalCode', 'country']);
+      expect(result).toHaveLength(2);
     });
 
     it('should filter out invalid field names', () => {
@@ -148,7 +148,7 @@ describe('Optional Fields Module', () => {
 
     it('should handle undefined fields array', () => {
       const result = resolveActiveFields('us', undefined as OptionalCardField[] | undefined);
-      expect(result).toEqual(['postalCode']);
+      expect(result).toEqual(['postalCode', 'country']);
     });
 
     it('should return empty array when both preset and fields are empty', () => {

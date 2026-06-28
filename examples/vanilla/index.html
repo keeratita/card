@@ -380,11 +380,12 @@
     let modalInstance = null;
 
     // Direct Stripe & Omise REST token vault mock keys
+    const env = typeof import.meta.env !== 'undefined' ? import.meta.env : {};
     const stripeAdapter = new StripeAdapter({
-      publicKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_stripe_integrated_demo_key'
+      publicKey: env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_stripe_integrated_demo_key'
     });
     const omiseAdapter = new OmiseAdapter({
-      publicKey: import.meta.env.VITE_OMISE_PUBLIC_KEY || 'pkey_test_omise_integrated_demo_key'
+      publicKey: env.VITE_OMISE_PUBLIC_KEY || 'pkey_test_omise_integrated_demo_key'
     });
 
     function getActiveAdapter() {

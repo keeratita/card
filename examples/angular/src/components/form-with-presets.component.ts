@@ -5,19 +5,32 @@
  * customize the form fields based on your requirements.
  */
 
-import { Component, signal, inject, computed, ChangeDetectorRef } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
-import { createCardFormGroup, formatCardNumber, formatExpiry } from '@keeratita/card/angular';
+import {
+  Component,
+  signal,
+  inject,
+  computed,
+  ChangeDetectorRef,
+} from '@angular/core';
+import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import {
+  createCardFormGroup,
+  updateCardFormGroup,
+  formatCardNumber,
+  formatExpiry,
+} from '@keeratita/card/angular';
+import { CountrySelectComponent } from './country-select.component';
 import {
   StripeAdapter,
   OmiseAdapter,
   type CardFormPreset,
 } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-form-with-presets',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CountrySelectComponent],
   styles: [
     `
       .container {
@@ -194,7 +207,8 @@ import {
     <div class="container">
       <h2>Form with Presets</h2>
       <p class="subtitle">
-        Use createCardFormGroup() with different presets to automatically include the right fields and validators.
+        Use createCardFormGroup() with different presets to automatically
+        include the right fields and validators.
       </p>
 
       <!-- Configuration Panel -->
@@ -235,8 +249,13 @@ import {
 
       <!-- Preset Info Box -->
       @if (presetInfo()) {
-        <div class="config-section" style="background-color: #fff8c5; border: 1px solid #f1c40f;">
-          <h3 style="color: #856404; margin: 0 0 8px 0;">Current Preset: {{ selectedPreset() }}</h3>
+        <div
+          class="config-section"
+          style="background-color: #fff8c5; border: 1px solid #f1c40f;"
+        >
+          <h3 style="color: #856404; margin: 0 0 8px 0;">
+            Current Preset: {{ selectedPreset() }}
+          </h3>
           <p style="margin: 0; color: #856404; font-size: 14px;">
             {{ presetInfo() }}
           </p>
@@ -311,14 +330,13 @@ import {
 
         <!-- US Preset Fields -->
         @if (selectedPreset() === 'us') {
-          <div class="form-group">
-            <label>Country</label>
-            <input
-              type="text"
-              formControlName="country"
-              placeholder="US"
+            <kg-country-select
+              controlName="country"
+              [value]="form.get('country')?.value || ''"
+              [preset]="selectedPreset()"
+              [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
+              (countryChange)="onCountryChange($event)"
             />
-          </div>
           <div class="form-group">
             <label>Postal Code</label>
             <input
@@ -350,7 +368,11 @@ import {
           <div class="input-grid">
             <div class="form-group">
               <label>City</label>
-              <input type="text" formControlName="city" placeholder="New York" />
+              <input
+                type="text"
+                formControlName="city"
+                placeholder="New York"
+              />
             </div>
             <div class="form-group">
               <label>State</label>
@@ -366,14 +388,13 @@ import {
                 placeholder="10001"
               />
             </div>
-            <div class="form-group">
-              <label>Country</label>
-              <input
-                type="text"
-                formControlName="country"
-                placeholder="US"
-              />
-            </div>
+            <kg-country-select
+              controlName="country"
+              [value]="form.get('country')?.value || ''"
+              [preset]="selectedPreset()"
+              [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
+              (countryChange)="onCountryChange($event)"
+            />
           </div>
         }
 
@@ -427,8 +448,8 @@ export class FormWithPresetsComponent {
   processing = signal(false);
 
   // Stripe and Omise adapters
-  stripeAdapter = stripeAdapter
-  omiseAdapter = omiseAdapter
+  stripeAdapter = stripeAdapter;
+  omiseAdapter = omiseAdapter;
 
   cdr = inject(ChangeDetectorRef);
 
@@ -438,7 +459,11 @@ export class FormWithPresetsComponent {
 
   // Update form when preset changes
   private updateForm(): void {
-    this.form = createCardFormGroup({ preset: this.selectedPreset() });
+    // Update validators in-place rather than replacing this.form.
+    // Replacing the FormGroup reference causes Angular's FormGroupDirective to
+    // teardown/rebuild all formControlName bindings in the same CD pass that
+    // signal-driven @if blocks use — producing "Cannot find control" errors.
+    updateCardFormGroup(this.form, { preset: this.selectedPreset(), resetValues: true });
     this.cdr.markForCheck();
   }
 
@@ -446,7 +471,8 @@ export class FormWithPresetsComponent {
   presetDescriptions: Record<CardFormPreset, string> = {
     none: 'Core fields: Card Number, Expiry, CVC, Cardholder Name',
     us: 'Core fields + Country + Postal Code for US-specific forms',
-    billing: 'Core fields + Full address (addressLine1, addressLine2, city, state, postalCode, country)',
+    billing:
+      'Core fields + Full address (addressLine1, addressLine2, city, state, postalCode, country)',
     contact: 'Core fields + Email + Phone for customer contact information',
   };
 
@@ -456,31 +482,37 @@ export class FormWithPresetsComponent {
   // Get active fields for code example
   getPresetFields(): string {
     const preset = this.selectedPreset();
-    const fields: string[] = [];
-    
+
     // Core fields are always included
-    fields.push('- number (required, with credit card validation)');
-    fields.push('- expiry (required, with MM/YY format validation)');
-    fields.push('- cvc (required, with numeric validation)');
-    fields.push('- name (required, cardholder name)');
-    
-    // Add preset-specific fields
-    if (preset === 'us') {
-      fields.push('- country (required, with country code validation)');
-      fields.push('- postalCode (required, with postal code validation)');
-    } else if (preset === 'billing') {
-      fields.push('- addressLine1 (required, billing address line 1)');
-      fields.push('- addressLine2 (optional, apartment/suite)');
-      fields.push('- city (required, billing city)');
-      fields.push('- state (required, billing state)');
-      fields.push('- postalCode (required, billing postal code)');
-      fields.push('- country (required, billing country)');
-    } else if (preset === 'contact') {
-      fields.push('- email (required, with email validation)');
-      fields.push('- phone (required, with phone validation)');
-    }
-    
-    return fields.join('\n');
+    const coreFields = [
+      '- number (required, with credit card validation)',
+      '- expiry (required, with MM/YY format validation)',
+      '- cvc (required, with numeric validation)',
+      '- name (required, cardholder name)',
+    ];
+
+    // Preset-specific fields defined as arrays
+    const presetFieldsMap: Record<CardFormPreset, string[]> = {
+      none: [],
+      us: [
+        '- country (required, with country code validation)',
+        '- postalCode (required, with postal code validation)',
+      ],
+      billing: [
+        '- addressLine1 (required, billing address line 1)',
+        '- addressLine2 (optional, apartment/suite)',
+        '- city (required, billing city)',
+        '- state (required, billing state)',
+        '- postalCode (required, billing postal code)',
+        '- country (required, billing country)',
+      ],
+      contact: [
+        '- email (required, with email validation)',
+        '- phone (required, with phone validation)',
+      ],
+    };
+
+    return [...coreFields, ...presetFieldsMap[preset]].join('\n');
   }
 
   getActiveAdapter(): StripeAdapter | OmiseAdapter {
@@ -499,6 +531,11 @@ export class FormWithPresetsComponent {
     this.updateForm();
     this.token.set(null);
     this.error.set(null);
+  }
+
+  onCountryChange(event: { name: string; value: string }): void {
+    this.form.get(event.name)?.setValue(event.value);
+    this.form.get(event.name)?.markAsTouched();
   }
 
   // Card number input handler - formats with spacing based on card type
@@ -529,7 +566,7 @@ ${this.getPresetFields()}`;
 
   async onSubmit(): Promise<void> {
     const formValue = this.form.value;
-    
+
     // Check if form is valid
     if (!formValue || this.form.invalid) {
       this.error.set('Please fill in all required fields.');
@@ -565,7 +602,7 @@ ${this.getPresetFields()}`;
       this.token.set(result);
     } catch (err) {
       this.error.set(
-        err instanceof Error ? err.message : 'An unexpected error occurred.'
+        err instanceof Error ? err.message : 'An unexpected error occurred.',
       );
     } finally {
       this.processing.set(false);

@@ -42,6 +42,7 @@ export function CardForm({
     paymentError,
     isFlipped,
     handleChange,
+    setFieldValue,
     handleBlur,
     handleCvcFocus,
     handleSubmit,
@@ -77,6 +78,7 @@ export function CardForm({
             preset={preset}
             optionalFields={fields}
             handleChange={handleChange}
+            setFieldValue={setFieldValue}
             handleBlur={handleBlur}
             handleCvcFocus={handleCvcFocus}
             headerLabel={CARD_FORM_TEXT_EN.paymentMethod}

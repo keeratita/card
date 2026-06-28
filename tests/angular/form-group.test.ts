@@ -28,10 +28,18 @@ vi.mock('@angular/forms', async () => {
     FormControl: class MockFormControl {
       value: unknown;
       validators: unknown[];
+      valueChanges: { subscribe: (cb: any) => any };
       constructor(value: unknown = '', validators: unknown[] = []) {
         this.value = value;
         this.validators = validators;
+        this.valueChanges = {
+          subscribe: (cb: any) => ({ unsubscribe: () => {} })
+        };
       }
+      setValidators(validators: unknown[]) {
+        this.validators = validators;
+      }
+      updateValueAndValidity() {}
       get valid() {
         return true;
       }
@@ -95,12 +103,24 @@ describe('Angular Form Group', () => {
       expect(formGroup.controls.name).toBeDefined();
     });
 
-    it('should create form group with none preset', () => {
+    it('should create form group with none preset (all fields always present)', () => {
       const formGroup = createCardFormGroup({ preset: 'none' });
       
       const controls = Object.keys(formGroup.controls);
-      expect(controls).toEqual(['number', 'expiry', 'cvc', 'name']);
-      expect(controls).toHaveLength(4);
+      // All fields are always created, preset only controls required validators
+      expect(controls).toContain('number');
+      expect(controls).toContain('expiry');
+      expect(controls).toContain('cvc');
+      expect(controls).toContain('name');
+      expect(controls).toContain('addressLine1');
+      expect(controls).toContain('addressLine2');
+      expect(controls).toContain('city');
+      expect(controls).toContain('state');
+      expect(controls).toContain('postalCode');
+      expect(controls).toContain('country');
+      expect(controls).toContain('email');
+      expect(controls).toContain('phone');
+      expect(controls).toHaveLength(12);
     });
 
     it('should create form group with us preset including postalCode', () => {
@@ -166,11 +186,24 @@ describe('Angular Form Group', () => {
       expect(formGroup.controls.number).toBeDefined();
     });
 
-    it('should create form group with empty fields array', () => {
+    it('should create form group with empty fields array (all fields always present)', () => {
       const formGroup = createCardFormGroup({ fields: [] });
       
       const controls = Object.keys(formGroup.controls);
-      expect(controls).toEqual(['number', 'expiry', 'cvc', 'name']);
+      // All fields are always created, empty fields array means no extra required validators
+      expect(controls).toContain('number');
+      expect(controls).toContain('expiry');
+      expect(controls).toContain('cvc');
+      expect(controls).toContain('name');
+      expect(controls).toContain('addressLine1');
+      expect(controls).toContain('addressLine2');
+      expect(controls).toContain('city');
+      expect(controls).toContain('state');
+      expect(controls).toContain('postalCode');
+      expect(controls).toContain('country');
+      expect(controls).toContain('email');
+      expect(controls).toContain('phone');
+      expect(controls).toHaveLength(12);
     });
 
     it('should return FormGroup instance', () => {

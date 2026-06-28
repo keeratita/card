@@ -19,7 +19,7 @@ import {
   formatCardNumber,
   formatExpiry,
 } from '@keeratita/card/angular';
-import { stripeAdapter, omiseAdapter } from '../shared/adapters';
+import { stripeAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-directives-demo',
@@ -214,15 +214,15 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
           <!-- Expiry Field -->
           <div class="form-group">
             <label>Expiry Date</label>
-              <input
-                type="text"
-                formControlName="expiry"
-                placeholder="MM/YY"
-                (input)="onExpiryInput($event)"
-                [class.invalid]="
-                  form.get('expiry')?.invalid && form.get('expiry')?.touched
-                "
-              />
+            <input
+              type="text"
+              formControlName="expiry"
+              placeholder="MM/YY"
+              (input)="onExpiryInput($event)"
+              [class.invalid]="
+                form.get('expiry')?.invalid && form.get('expiry')?.touched
+              "
+            />
           </div>
 
           <!-- CVC Field -->
@@ -270,15 +270,13 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
   `,
 })
 export class DirectivesDemoComponent {
-  form = createCardFormGroup({
-    fields: ['number', 'expiry', 'cvc', 'name'],
-  });
+  form = createCardFormGroup();
 
   token = signal<{ id: string } | null>(null);
   error = signal<string | null>(null);
   processing = signal(false);
 
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   directiveUsage = `// Import the directives from the library
 import {

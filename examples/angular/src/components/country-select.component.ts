@@ -1,22 +1,23 @@
 import { Component, input, computed, signal, output, ElementRef, viewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import {
   CardFormPreset,
   OptionalCardField,
-} from '../core/domain/card';
-import {
-  FIELD_METADATA,
-  getFieldDisplayText,
-} from '../core/domain/optional-fields';
-import { COUNTRIES } from '../data/countries';
-import type { Country } from '../data/countries';
-import { escapeHtml } from '../core/security';
+  COUNTRIES,
+  Country,
+} from '@keeratita/card';
+import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields';
 
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   styles: [`
+    :host {
+      display: block;
+    }
+
     .country-select-wrapper {
       position: relative;
     }
@@ -32,6 +33,8 @@ import { escapeHtml } from '../core/security';
       cursor: pointer;
       transition: all 0.15s ease;
       font-size: 15px;
+      box-sizing: border-box;
+      height: 45px;
     }
 
     .country-select-trigger:hover {
@@ -179,9 +182,9 @@ import { escapeHtml } from '../core/security';
           [class.open]="isOpen()"
           [class.invalid]="invalid()"
           role="button"
+          tabindex="0"
           [attr.aria-expanded]="isOpen()"
           [attr.aria-haspopup]="true"
-          tabindex="0"
         >
           <div class="country-select-display">
             @if (selectedCountry()) {
@@ -242,9 +245,6 @@ import { escapeHtml } from '../core/security';
   `,
 })
 export class CountrySelectComponent {
-  /**
-   * Using Angular v20+ input() signal API instead of @Input decorator.
-   */
   controlName = input<string>('country');
   value = input<string>('');
   preset = input<CardFormPreset>('none');
@@ -253,9 +253,6 @@ export class CountrySelectComponent {
 
   readonly countries = COUNTRIES;
 
-  /**
-   * Using Angular v20+ computed() for derived state instead of getter.
-   */
   readonly label = computed(() => {
     const { label } = getFieldDisplayText('country', this.preset());
     return label;
@@ -266,19 +263,16 @@ export class CountrySelectComponent {
     return placeholder;
   });
 
-  // Local state signals
   isOpen = signal(false);
   searchQuery = signal('');
   highlightedIndex = signal(-1);
   
-  // Selected country computed from value input
   selectedCountry = computed(() => {
     const value = this.value();
     if (!value) return null;
     return this.countries.find(c => c.code === value) || null;
   });
 
-  // Filtered countries based on search query
   filteredCountries = computed(() => {
     const query = this.searchQuery().toLowerCase();
     if (!query) return this.countries;
@@ -288,12 +282,8 @@ export class CountrySelectComponent {
     );
   });
 
-  // Reference to search input for focus management
   searchInputRef = viewChild<ElementRef>('searchInput');
 
-  /**
-   * Output event for Angular forms integration
-   */
   readonly countryChange = output<{ name: string; value: string }>();
 
   toggleDropdown(): void {
@@ -301,7 +291,6 @@ export class CountrySelectComponent {
     this.searchQuery.set('');
     this.highlightedIndex.set(-1);
 
-    // Focus search input when opening
     if (this.isOpen()) {
       setTimeout(() => {
         this.searchInputRef()?.nativeElement?.focus();
@@ -325,7 +314,6 @@ export class CountrySelectComponent {
     this.highlightedIndex.set(-1);
   }
 
-  // Keyboard navigation
   onKeydown(event: KeyboardEvent): void {
     if (!this.isOpen()) {
       if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
@@ -366,50 +354,9 @@ export class CountrySelectComponent {
 
   onInputChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
-    // Emit change event for Angular forms integration
     const customEvent = new CustomEvent('kgCountryChange', {
       detail: { name: this.controlName(), value: target.value },
     });
     (event.target as HTMLElement).dispatchEvent(customEvent);
   }
-}
-
-/**
- * Render optional fields as HTML strings.
- * @deprecated Prefer using Angular directives/pipe over raw HTML injection.
- * Use `renderOptionalFieldSafe` for safer HTML output with escaped attributes.
- */
-export function renderOptionalFieldHtml(
-  field: OptionalCardField,
-  preset: CardFormPreset,
-  controlName: string,
-  value: string = '',
-  invalid: boolean = false,
-): string {
-  const meta = FIELD_METADATA[field];
-  if (!meta) return '';
-
-  const { label, placeholder } = getFieldDisplayText(field, preset);
-  const invalidClass = invalid ? ' invalid' : '';
-
-  if (field === 'country') {
-    const options = COUNTRIES
-      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`)
-      .join('\n        ');
-
-    return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">
-      <label class="ios-label" for="${escapeHtml(controlName)}">${escapeHtml(label)}</label>
-      <select id="${escapeHtml(controlName)}" name="${escapeHtml(controlName)}" class="ios-input card-country-input" autocomplete="country" required>
-        <option value="" disabled>${escapeHtml(placeholder)}</option>
-        ${options}
-      </select>
-    </div>`;
-  }
-
-  const required = field !== 'addressLine2' ? 'required' : '';
-
-  return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">
-    <label class="ios-label" for="${escapeHtml(controlName)}">${escapeHtml(label)}</label>
-    <input type="${escapeHtml(meta.type)}" id="${escapeHtml(controlName)}" name="${escapeHtml(controlName)}" class="ios-input" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" autocomplete="${escapeHtml(meta.autocomplete)}" ${required} />
-  </div>`;
 }

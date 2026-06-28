@@ -75,7 +75,7 @@ export const FIELD_METADATA: Record<OptionalCardField, OptionalFieldMetadata> =
 
 export const PRESET_FIELDS: Record<CardFormPreset, OptionalCardField[]> = {
   none: [],
-  us: ['postalCode'],
+  us: ['postalCode', 'country'],
   billing: ['addressLine1', 'city', 'state', 'postalCode', 'country'],
   contact: ['email', 'phone'],
 };

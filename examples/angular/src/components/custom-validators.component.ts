@@ -267,13 +267,16 @@ import { stripeAdapter } from '../shared/adapters';
   `,
 })
 export class CustomValidatorsComponent {
-  form = createCardFormGroup({ preset: 'billing', fields: ['email', 'postalCode'] });
+  form = createCardFormGroup({
+    preset: 'billing',
+    fields: ['email', 'postalCode'],
+  });
 
   token = signal<{ id: string } | null>(null);
   error = signal<string | null>(null);
   processing = signal(false);
 
-  stripeAdapter = stripeAdapter
+  stripeAdapter = stripeAdapter;
 
   codeExample = `// Import the helper function
 import { createCardFormGroup } from '@keeratita/card/angular';
