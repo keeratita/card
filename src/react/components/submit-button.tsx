@@ -4,57 +4,27 @@ import { CARD_FORM_TEXT_EN } from '../../lang/en';
 export interface SubmitButtonProps {
   isSubmitting?: boolean;
   isSuccess?: boolean;
+  tokenizing?: boolean;
   disabled?: boolean;
   text?: string;
   className?: string;
   style?: React.CSSProperties;
-  isTokenizing?: boolean;
 }
 
 export function SubmitButton({
   isSubmitting,
   isSuccess,
+  tokenizing,
   disabled,
   text,
   className = '',
   style,
-  isTokenizing,
-}: SubmitButtonProps) {
-  const buttonText = getTextState({ isSubmitting, isSuccess, text, isTokenizing });
+}: Readonly<SubmitButtonProps>) {
+  let buttonContent: React.ReactNode;
 
-  return (
-    <button
-      type="submit"
-      className={`pay-btn submit-btn ${isSuccess ? 'success' : ''} ${className}`}
-      disabled={isSubmitting || isSuccess || disabled}
-      style={style}
-    >
-      {isSubmitting && (
-        <div className="spinner btn-spinner" />
-      )}
-      <span className="btn-text">
-        {buttonText.icon}
-        {buttonText.label}
-      </span>
-    </button>
-  );
-}
-
-interface ButtonTextState {
-  label: string;
-  icon?: React.ReactNode;
-}
-
-function getTextState({ isSubmitting, isSuccess, text, isTokenizing }: { 
-  isSubmitting?: boolean; 
-  isSuccess?: boolean; 
-  text?: string; 
-  isTokenizing?: boolean;
-}): ButtonTextState {
   if (isSuccess) {
-    return {
-      label: CARD_FORM_TEXT_EN.paymentSuccess,
-      icon: (
+    buttonContent = (
+      <>
         <svg
           width="18"
           height="18"
@@ -66,14 +36,26 @@ function getTextState({ isSubmitting, isSuccess, text, isTokenizing }: {
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
-      ),
-    };
+        {CARD_FORM_TEXT_EN.paymentSuccess}
+      </>
+    );
+  } else if (tokenizing) {
+    buttonContent = text || CARD_FORM_TEXT_EN.tokenizing;
+  } else if (isSubmitting) {
+    buttonContent = text || CARD_FORM_TEXT_EN.processing;
+  } else {
+    buttonContent = text || CARD_FORM_TEXT_EN.submitDefault;
   }
-  if (isTokenizing) {
-    return { label: CARD_FORM_TEXT_EN.tokenizing };
-  }
-  if (isSubmitting) {
-    return { label: CARD_FORM_TEXT_EN.processing };
-  }
-  return { label: text || CARD_FORM_TEXT_EN.submitDefault };
+
+  return (
+    <button
+      type="submit"
+      className={`pay-btn submit-btn ${isSuccess ? 'success' : ''} ${className}`}
+      disabled={isSubmitting || isSuccess || disabled}
+      style={style}
+    >
+      {isSubmitting && <div className="spinner btn-spinner" />}
+      <span className="btn-text">{buttonContent}</span>
+    </button>
+  );
 }

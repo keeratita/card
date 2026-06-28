@@ -12,13 +12,8 @@
 
 import { useState } from 'react';
 import { CardForm } from '@keeratita/card/react';
-import { StripeAdapter, Token } from '@keeratita/card';
-
-// Create a Stripe adapter instance
-// In production, use your actual Stripe API key
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { Token } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 
 export function BasicCardForm() {
   const [token, setToken] = useState<Token | null>(null);

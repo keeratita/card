@@ -5,12 +5,10 @@
  */
 
 import { useState } from 'react';
-import { StripeAdapter, Token } from '@keeratita/card';
+import { Token } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 import { useCardForm } from '@keeratita/card/react';
-
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { PaymentFormFields } from '../shared/payment-form-fields';
 
 export function GradientCardForm() {
   const [token, setToken] = useState<Token | null>(null);
@@ -41,13 +39,13 @@ export function GradientCardForm() {
     onError: handleError,
   });
 
-  const inputStyle = (name: string): React.CSSProperties => {
+  const inputStyle = (name: string) => {
     const hasError = !!errors[name as keyof typeof errors];
     return {
       width: '100%',
       padding: '12px',
       backgroundColor: 'rgba(255,255,255,0.9)',
-      border: `2px solid ${hasError ? '#ef4444' : 'transparent'}`,
+      border: `1px solid ${hasError ? '#ef4444' : 'transparent'}`,
       borderRadius: '10px',
       fontSize: '15px',
       fontFamily: "'SF Mono', Monaco, Consolas, monospace",
@@ -110,92 +108,19 @@ export function GradientCardForm() {
         </div>
       )}
 
-      <form onSubmit={onFormSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '6px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: '500' }}>
-            Card Number
-          </label>
-          <input
-            name="number"
-            type="text"
-            value={values.number}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="4242 4242 4242 4242"
-            style={inputStyle('number')}
-          />
-          {errors.number && <span style={{ color: '#fecaca', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.number}</span>}
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '6px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: '500' }}>
-            Expiry Date
-          </label>
-          <input
-            name="expiry"
-            type="text"
-            value={values.expiry}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="MM / YY"
-            style={inputStyle('expiry')}
-          />
-          {errors.expiry && <span style={{ color: '#fecaca', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.expiry}</span>}
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '6px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: '500' }}>
-            CVC
-          </label>
-          <input
-            name="cvc"
-            type="password"
-            value={values.cvc}
-            onChange={handleChange}
-            onBlur={handleCvcBlur}
-            onFocus={handleCvcFocus}
-            placeholder="123"
-            style={inputStyle('cvc')}
-          />
-          {errors.cvc && <span style={{ color: '#fecaca', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.cvc}</span>}
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '6px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: '500' }}>
-            Cardholder Name
-          </label>
-          <input
-            name="name"
-            type="text"
-            value={values.name}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="John Doe"
-            style={inputStyle('name')}
-          />
-          {errors.name && <span style={{ color: '#fecaca', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.name}</span>}
-        </div>
-
-        <button
-          type="submit"
-          disabled={!values.number || !values.expiry || !values.cvc}
-          style={{
-            width: '100%',
-            padding: '14px',
-            background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
-            boxShadow: '0 4px 12px rgba(245, 87, 108, 0.4)',
-            opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1
-          }}
-        >
-          Pay Now
-        </button>
-      </form>
+      <PaymentFormFields
+        values={values}
+        errors={errors}
+        handleChange={handleChange}
+        handleBlur={handleBlur}
+        handleCvcFocus={handleCvcFocus}
+        handleCvcBlur={handleCvcBlur}
+        handleSubmit={onFormSubmit}
+        inputStyle={inputStyle}
+        submitLabel="Pay Now"
+        submitStyle={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', boxShadow: '0 4px 12px rgba(245, 87, 108, 0.4)' }}
+        showSecurityBadge
+      />
     </div>
   );
 }

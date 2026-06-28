@@ -387,8 +387,16 @@ $border-color: rgba(255, 255, 255, 0.08);
   font-size: 12px;
   margin-top: 6px;
   margin-left: 16px;
+  margin-right: 16px;
   display: none;
   animation: fadeIn 0.2s ease-out;
+}
+
+.validation-error-msg {
+  display: block !important;
+  text-align: center;
+  margin: 12px 0 4px;
+  font-weight: 500;
 }
 
 @keyframes fadeIn {
@@ -435,6 +443,23 @@ $border-color: rgba(255, 255, 255, 0.08);
     cursor: not-allowed;
     transform: none;
   }
+}
+
+.card-form-submit {
+  margin-top: 28px;
+}
+
+.payment-form-section {
+  width: 100%;
+}
+
+.form-section-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
 }
 
 .spinner {

@@ -10,19 +10,9 @@ import {
 } from '../core/domain/optional-fields';
 import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
+import { escapeHtml } from '../core/security';
 
-/**
- * Angular component to render the country dropdown with flags.
- * This component can be used within an Angular card form to provide
- * a user-friendly country selection experience.
- * Uses Angular v20+ input() signals and computed() for derived state.
- * 
- * Features:
- * - Searchable country list
- * - Flag emoji display
- * - iOS-style dropdown UI
- * - Keyboard navigation support
- */
+/** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
   standalone: true,
@@ -377,23 +367,9 @@ export class CountrySelectComponent {
 }
 
 /**
- * Helper function to render optional fields as raw HTML strings.
- * 
- * ⚠️  WARNING: This function returns raw HTML strings and should only be used
- * in vanilla JS contexts (e.g., server-side rendering, string templates).
- * In Angular templates, prefer using the `CountrySelectComponent` (`<kg-country-select>`)
- * directly instead of injecting HTML via `innerHTML`, as it bypasses Angular's
- * template security and event binding.
- * 
- * For country fields, returns a select element with country options including flags.
- * For other fields, returns a standard input element.
- * 
- * @param field - The field name to render
- * @param preset - The card form preset
- * @param controlName - The name/ID for the form control
- * @param value - The current value of the field
- * @param invalid - Whether the field is in an invalid state
- * @returns HTML string for the field
+ * Render optional fields as HTML strings.
+ * @deprecated Prefer using Angular directives/pipe over raw HTML injection.
+ * Use `renderOptionalFieldSafe` for safer HTML output with escaped attributes.
  */
 export function renderOptionalFieldHtml(
   field: OptionalCardField,
@@ -408,48 +384,24 @@ export function renderOptionalFieldHtml(
   const { label, placeholder } = getFieldDisplayText(field, preset);
   const invalidClass = invalid ? ' invalid' : '';
 
-  // Render country as dropdown with flags
   if (field === 'country') {
     const options = COUNTRIES
-      .map((c) => `<option value="${c.code}">${c.emoji} ${c.name}</option>`)
+      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`)
       .join('\n        ');
 
-    return `
-      <div class="ios-input-row row-${field}${invalidClass}">
-        <label class="ios-label" for="${controlName}">
-          ${label}
-        </label>
-        <select
-          id="${controlName}"
-          name="${controlName}"
-          class="ios-input card-country-input"
-          value="${value}"
-          autocomplete="country"
-          required
-        >
-          <option value="" disabled>${placeholder}</option>
-          ${options}
-        </select>
-      </div>
-    `.trim();
+    return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">
+      <label class="ios-label" for="${escapeHtml(controlName)}">${escapeHtml(label)}</label>
+      <select id="${escapeHtml(controlName)}" name="${escapeHtml(controlName)}" class="ios-input card-country-input" autocomplete="country" required>
+        <option value="" disabled>${escapeHtml(placeholder)}</option>
+        ${options}
+      </select>
+    </div>`;
   }
 
-  // Render standard input for other fields
-  return `
-    <div class="ios-input-row row-${field}${invalidClass}">
-      <label class="ios-label" for="${controlName}">
-        ${label}
-      </label>
-      <input
-        type="${meta.type}"
-        id="${controlName}"
-        name="${controlName}"
-        class="ios-input"
-        placeholder="${placeholder}"
-        value="${value}"
-        autocomplete="${meta.autocomplete}"
-        required="${field !== 'addressLine2' ? 'true' : ''}"
-      />
-    </div>
-  `.trim();
+  const required = field !== 'addressLine2' ? 'required' : '';
+
+  return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">
+    <label class="ios-label" for="${escapeHtml(controlName)}">${escapeHtml(label)}</label>
+    <input type="${escapeHtml(meta.type)}" id="${escapeHtml(controlName)}" name="${escapeHtml(controlName)}" class="ios-input" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(value)}" autocomplete="${escapeHtml(meta.autocomplete)}" ${required} />
+  </div>`;
 }

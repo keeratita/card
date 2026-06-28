@@ -17,7 +17,7 @@ import {
   },
 })
 export class CardNumberDirective {
-  constructor(private el: ElementRef<HTMLInputElement>) {}
+  constructor(private readonly el: ElementRef<HTMLInputElement>) {}
 
   onInput(): void {
     handleCardNumberInput(this.el.nativeElement);
@@ -36,7 +36,7 @@ export class CardNumberDirective {
   },
 })
 export class CardExpiryDirective {
-  constructor(private el: ElementRef<HTMLInputElement>) {}
+  constructor(private readonly el: ElementRef<HTMLInputElement>) {}
 
   onInput(): void {
     handleExpiryInput(this.el.nativeElement);
@@ -55,13 +55,9 @@ export class CardExpiryDirective {
   },
 })
 export class CardCvcDirective {
-  /**
-   * Reference value or control string of the card number to dynamically restrict length (3 vs 4 digits).
-   * Using Angular v20+ input() signal API.
-   */
   cardNumber = input<string>('');
 
-  constructor(private el: ElementRef<HTMLInputElement>) {}
+  constructor(private readonly el: ElementRef<HTMLInputElement>) {}
 
   onInput(): void {
     handleCvcInput(this.el.nativeElement, this.cardNumber());

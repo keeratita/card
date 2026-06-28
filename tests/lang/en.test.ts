@@ -71,7 +71,7 @@ describe('English Language Module', () => {
     });
 
     it('should have expiryPlaceholder text', () => {
-      expect(CARD_FORM_TEXT_EN.expiryPlaceholder).toBe('MM/YY');
+      expect(CARD_FORM_TEXT_EN.expiryPlaceholder).toBe('MM / YY');
     });
 
     it('should have cvc text', () => {

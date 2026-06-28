@@ -5,12 +5,10 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { StripeAdapter, Token } from '@keeratita/card';
+import { Token } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 import { useCardForm } from '@keeratita/card/react';
 
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
 
 type CheckoutStep = 'cart' | 'shipping' | 'payment' | 'confirmation';
 

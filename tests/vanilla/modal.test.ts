@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CardModal } from '../../src/vanilla/modal';
-import { _resetModalGlobals } from '../../src/vanilla/modal';
+import { CardModal, _closeAllModals } from '../../src/vanilla/modal';
 import type { PaymentGateway } from '../../src/core/domain/card';
 
 describe('Vanilla CardModal', () => {
@@ -12,15 +11,17 @@ describe('Vanilla CardModal', () => {
       tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
     };
 
-    // Reset DOM and module-level globals before each test
+    // Reset DOM and modal registry before each test
     document.body.innerHTML = '';
     document.body.style.overflow = '';
-    _resetModalGlobals();
+    document.removeEventListener('keydown', () => {});
   });
 
   afterEach(() => {
+    // Close all tracked modals to clean up registry
+    _closeAllModals();
     document.body.innerHTML = '';
-    // Clean up any lingering event listeners
+    document.body.style.overflow = '';
     document.removeEventListener('keydown', () => {});
   });
 
@@ -309,10 +310,14 @@ describe('Vanilla CardModal', () => {
 
   describe('Escape key', () => {
     let modal: CardModal;
-    
+
     beforeEach(() => {
       modal = new CardModal({ adapter: mockAdapter });
       modal.open();
+    });
+
+    afterEach(() => {
+      modal.close();
     });
     
     it('should close modal when pressing Escape', () => {
@@ -385,19 +390,22 @@ describe('Vanilla CardModal', () => {
   describe('onSubmit interception', () => {
     it('should call original onSubmit and then close modal', async () => {
       const onSubmit = vi.fn();
-      const modal = new CardModal({ 
+      const modal = new CardModal({
         adapter: mockAdapter,
-        onSubmit 
+        onSubmit
       });
-      
+
       modal.open();
-      
+
       // Simulate successful submission
       void modal.getFormInstance();
       // The modal intercepts onSubmit to close after 1.5s
       // We can't easily test the timing, but we can verify the setup
-      
+
       expect(modal).toBeDefined();
+
+      // Clean up to avoid polluting registry for subsequent tests
+      modal.close();
     });
   });
 });

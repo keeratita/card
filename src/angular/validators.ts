@@ -15,7 +15,7 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
  */
 export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const clean = String(control.value).replace(/\D/g, '');
     // Only validate when input has at least 13 digits (minimum for any card type)
     // This prevents showing invalid error while user is still typing
@@ -31,7 +31,7 @@ export function creditCardValidator(): ValidatorFn {
  */
 export function expiryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) {
+    if (!control?.value) {
       // If no value is provided, we could generate a valid expiry date
       // But for validation purposes, we typically don't auto-generate values
       return null;
@@ -68,7 +68,7 @@ export function expiryValidator(): ValidatorFn {
  */
 export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const cvc = String(control.value).replace(/\D/g, '');
 
     let cardNumber = '';
@@ -89,11 +89,11 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
 }
 
 /**
- * Validates that the cardholder name contains at least a first name and a last name.
+ * Validates that the cardholder name is non-empty.
  */
 export function cardholderNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const isValid = validateName(String(control.value));
     return isValid ? null : { cardholderNameInvalid: { value: control.value } };
   };
@@ -104,7 +104,7 @@ export function cardholderNameValidator(): ValidatorFn {
  */
 export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const isValid = validateEmail(String(control.value));
     return isValid ? null : { emailInvalid: { value: control.value } };
   };
@@ -115,7 +115,7 @@ export function emailValidator(): ValidatorFn {
  */
 export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const isValid = validatePhone(String(control.value));
     return isValid ? null : { phoneInvalid: { value: control.value } };
   };
@@ -126,7 +126,7 @@ export function phoneValidator(): ValidatorFn {
  */
 export function postalCodeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const isValid = validatePostalCode(String(control.value));
     return isValid ? null : { postalCodeInvalid: { value: control.value } };
   };
@@ -137,7 +137,7 @@ export function postalCodeValidator(): ValidatorFn {
  */
 export function countryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control || !control.value) return null;
+    if (!control?.value) return null;
     const isValid = validateCountry(String(control.value));
     return isValid ? null : { countryInvalid: { value: control.value } };
   };

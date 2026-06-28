@@ -11,7 +11,7 @@ import {
   formatCardNumber,
   formatExpiry,
 } from '@keeratita/card/angular';
-import { StripeAdapter } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-custom-validators',
@@ -273,9 +273,7 @@ export class CustomValidatorsComponent {
   error = signal<string | null>(null);
   processing = signal(false);
 
-  stripeAdapter = new StripeAdapter({
-    publicKey: 'pk_test_stripe_integrated_demo_key',
-  });
+  stripeAdapter = stripeAdapter
 
   codeExample = `// Import the helper function
 import { createCardFormGroup } from '@keeratita/card/angular';

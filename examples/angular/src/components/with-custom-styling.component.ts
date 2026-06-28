@@ -7,7 +7,9 @@
 
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { StripeAdapter, type Token, formatCardNumber, formatExpiry } from '@keeratita/card';
+import { type Token } from '@keeratita/card';
+import { formatCardNumber, formatExpiry } from '@keeratita/card/angular';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 // Dark theme example
 @Component({
@@ -155,7 +157,7 @@ export class DarkThemeCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -379,7 +381,7 @@ export class CorporateCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -576,7 +578,7 @@ export class GradientCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {
@@ -765,7 +767,7 @@ export class MinimalCardFormComponent {
   token = signal<Token | null>(null);
   error = signal<string | null>(null);
   isProcessing = signal(false);
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   // Card number input handler - formats with spacing based on card type
   onCardNumberInput(event: Event): void {

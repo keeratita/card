@@ -5,16 +5,11 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { StripeAdapter, OmiseAdapter, Token } from '@keeratita/card';
+import { Token } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 import { useCardForm } from '@keeratita/card/react';
 
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
 
-const omiseAdapter = new OmiseAdapter({
-  publicKey: 'pkey_test_omise_integrated_demo_key',
-});
 
 interface ModalProps {
   isOpen: boolean;

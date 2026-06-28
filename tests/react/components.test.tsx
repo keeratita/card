@@ -114,7 +114,7 @@ describe('React Components', () => {
         />
       );
 
-      expect(screen.getByText('MM/YY')).toBeDefined();
+      expect(screen.getByText('MM / YY')).toBeDefined();
     });
 
     it('should show CVC with bullets when flipped', () => {

@@ -1,4 +1,8 @@
-// Public API contracts, domain validation, formatters, and adapters.
+// Public API contracts, domain validation, formatters, adapters, and security utilities.
+
+// Security
+export { sanitizeInput } from './core/security';
+export { escapeHtml } from './core/security';
 
 // Domain Core
 export type {
@@ -22,20 +26,14 @@ export {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric,
+  validateCardNumber,
 } from './core/domain/validation';
 
 // Input Formatters
 export {
-  cleanDigits,
   formatCardNumber,
   formatExpiry,
   formatCvc,
-  formatCountryCode,
-  formatPhone,
-  reformatExpiryDate,
-  validateCardNumberLength,
-  isCardLengthValid,
 } from './core/formatters/card-formatter';
 
 // REST Gateway Adapters

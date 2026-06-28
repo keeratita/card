@@ -185,7 +185,7 @@ describe('Angular Components - renderOptionalFieldHtml', () => {
     it('should handle special characters in value', () => {
       const html = renderOptionalFieldHtml('addressLine1', 'billing', 'addressLine1', '123 Main St & Co');
       
-      expect(html).toContain('value="123 Main St & Co"');
+      expect(html).toContain('value="123 Main St &amp; Co"');
     });
 
     it('should render all field types', () => {

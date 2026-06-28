@@ -76,25 +76,18 @@ describe('CvcInput', () => {
     expect(input.required).toBe(true);
   });
 
-  it('should set maxLength to 4 for amex brand', () => {
-    render(<CvcInput {...defaultProps} brand="amex" />);
-    
-    const input = screen.getByLabelText(/cvc/i) as HTMLInputElement;
-    expect(input.maxLength).toBe(4);
-  });
-
-  it('should set maxLength to 3 for non-amex brand', () => {
-    render(<CvcInput {...defaultProps} brand="visa" />);
-    
-    const input = screen.getByLabelText(/cvc/i) as HTMLInputElement;
-    expect(input.maxLength).toBe(3);
-  });
-
-  it('should set default maxLength when no brand', () => {
+  it('should default maxLength to 3', () => {
     render(<CvcInput {...defaultProps} />);
     
     const input = screen.getByLabelText(/cvc/i) as HTMLInputElement;
     expect(input.maxLength).toBe(3);
+  });
+
+  it('should accept custom maxLength for amex', () => {
+    render(<CvcInput {...defaultProps} maxLength={4} />);
+    
+    const input = screen.getByLabelText(/cvc/i) as HTMLInputElement;
+    expect(input.maxLength).toBe(4);
   });
 
   it('should accept custom label', () => {

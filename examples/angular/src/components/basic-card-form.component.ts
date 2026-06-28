@@ -8,7 +8,7 @@
 import { Component, signal, inject, computed, ChangeDetectorRef } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { createCardFormGroup, formatCardNumber, formatExpiry } from '@keeratita/card/angular';
-import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 // Local type definition for preset options
 type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
@@ -487,12 +487,8 @@ export class BasicCardFormComponent {
   processing = signal(false);
 
   // Stripe and Omise adapters
-  stripeAdapter = new StripeAdapter({
-    publicKey: 'pk_test_stripe_integrated_demo_key'
-  });
-  omiseAdapter = new OmiseAdapter({
-    publicKey: 'pkey_test_omise_integrated_demo_key'
-  });
+  stripeAdapter = stripeAdapter
+  omiseAdapter = omiseAdapter
 
   cdr = inject(ChangeDetectorRef);
 

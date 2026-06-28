@@ -6,11 +6,8 @@
 
 import { useState } from 'react';
 import { CreditCardPreview, useCardForm, FormField, Token } from '@keeratita/card/react';
-import { OmiseAdapter } from '@keeratita/card';
+import { omiseAdapter } from '../shared/adapters';
 
-const omiseAdapter = new OmiseAdapter({
-  publicKey: 'pkey_test_omise_integrated_demo_key',
-});
 
 export function CardFormWithOmiseAdapter() {
   const [token, setToken] = useState<Token | null>(null);

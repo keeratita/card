@@ -31,7 +31,7 @@ export function CardForm({
   onSubmit,
   onError,
   initialValues,
-}: CardFormProps) {
+}: Readonly<CardFormProps>) {
   const {
     values,
     brand,
@@ -44,7 +44,6 @@ export function CardForm({
     handleChange,
     handleBlur,
     handleCvcFocus,
-    handleCvcBlur,
     handleSubmit,
   } = useCardForm({
     adapter,
@@ -80,16 +79,12 @@ export function CardForm({
             handleChange={handleChange}
             handleBlur={handleBlur}
             handleCvcFocus={handleCvcFocus}
-            handleCvcBlur={handleCvcBlur}
             headerLabel={CARD_FORM_TEXT_EN.paymentMethod}
           />
 
           {/* Error Messages */}
           {(paymentError || errors.number || errors.expiry || errors.cvc || errors.name) && (
-            <div
-              className='error-text validation-error-msg'
-              style={{ display: 'block' }}
-            >
+            <div className='error-text validation-error-msg'>
               {paymentError || CARD_FORM_TEXT_EN.validationError}
             </div>
           )}
@@ -97,10 +92,10 @@ export function CardForm({
           {/* Submit Button */}
           <SubmitButton
             isSubmitting={isTokenizing || isProcessing}
+            tokenizing={isTokenizing}
             isSuccess={isSuccess}
-            isTokenizing={isTokenizing}
-            text={submitButtonText}
-            style={{ marginTop: '28px' }}
+            text={!isTokenizing && !isProcessing ? submitButtonText : undefined}
+            className="card-form-submit"
           />
         </div>
       </form>

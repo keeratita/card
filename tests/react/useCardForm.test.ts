@@ -129,7 +129,6 @@ describe('React useCardForm Hook', () => {
       expect(result.current.handleChange).toBeDefined();
       expect(result.current.handleBlur).toBeDefined();
       expect(result.current.handleCvcFocus).toBeDefined();
-      expect(result.current.handleCvcBlur).toBeDefined();
       expect(result.current.handleSubmit).toBeDefined();
     });
 
@@ -271,18 +270,6 @@ describe('React useCardForm Hook', () => {
     });
   });
 
-  describe('handleCvcBlur function', () => {
-    it('should be a function', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(typeof result.current.handleCvcBlur).toBe('function');
-    });
-  });
 
   describe('handleSubmit function', () => {
     it('should be a function', () => {

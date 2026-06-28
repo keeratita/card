@@ -17,12 +17,11 @@ export function CountryAutocomplete({
   searchPlaceholder = 'Search countries...',
   className = '',
   id,
-}: CountryAutocompleteProps) {
+}: Readonly<CountryAutocompleteProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [visibleCount, setVisibleCount] = useState(20);
-  const [isLoading, setIsLoading] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     left: number;
@@ -79,6 +78,15 @@ export function CountryAutocomplete({
       document.addEventListener('keydown', handleKeyDown);
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Reset search state when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+      setHighlightedIndex(-1);
+      setVisibleCount(20);
+    }
   }, [isOpen]);
 
   // Calculate and set dropdown position when it opens
@@ -169,20 +177,14 @@ export function CountryAutocomplete({
 
   // Handle list scroll for lazy loading
   const handleListScroll = useCallback(() => {
-    if (isLoading) return;
     if (!listRef.current) return;
 
     const list = listRef.current;
     // Trigger when within 50px of bottom
     if (list.scrollTop + list.clientHeight >= list.scrollHeight - 50) {
-      setIsLoading(true);
-      // Use setTimeout to allow scroll reset between batches
-      setTimeout(() => {
-        setVisibleCount((prev) => Math.min(prev + 20, filteredCountries.length));
-        setIsLoading(false);
-      }, 100);
+      setVisibleCount((prev) => Math.min(prev + 20, filteredCountries.length));
     }
-  }, [isLoading, filteredCountries.length]);
+  }, [filteredCountries.length]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -237,7 +239,6 @@ export function CountryAutocomplete({
       ) {
         handleSelect(filteredCountries[highlightedIndex].code);
       }
-      return;
     }
   }, [filteredCountries, highlightedIndex, handleSelect]);
 
@@ -290,7 +291,7 @@ export function CountryAutocomplete({
   const displayedCountries = filteredCountries.slice(0, visibleCount);
 
   return (
-    <div ref={containerRef} className={`country-autocomplete-wrapper ${className}`} style={{ position: 'relative' }}>
+    <div ref={containerRef} className={`country-autocomplete-wrapper ${className}`}>
       <input
         ref={inputRef}
         id={id}
@@ -305,6 +306,8 @@ export function CountryAutocomplete({
         placeholder={placeholder}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-controls={`country-list-${id}`}
+        aria-label={placeholder}
         role="combobox"
         tabIndex={0}
       />
@@ -323,11 +326,13 @@ export function CountryAutocomplete({
               onChange={handleSearchChange}
               onKeyDown={handleSearchKeyDown}
               autoComplete="off"
+              aria-label="Search countries"
             />
             <ul
               ref={listRef}
               className="country-autocomplete-list"
               role="listbox"
+              aria-label="Country list"
               onScroll={handleListScroll}
             >
               {displayedCountries.map((country, index) => (
@@ -339,6 +344,13 @@ export function CountryAutocomplete({
                   data-code={country.code}
                   data-index={index}
                   onClick={() => handleSelect(country.code)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelect(country.code);
+                    }
+                  }}
+                  tabIndex={index === highlightedIndex ? 0 : -1}
                 >
                   <span className="country-autocomplete-flag">{country.emoji}</span>
                   <span className="country-autocomplete-name">{country.name}</span>
@@ -346,8 +358,11 @@ export function CountryAutocomplete({
                 </li>
               ))}
               {hasMore && (
-                <li className="country-autocomplete-loading">
-                  {isLoading ? 'Loading more countries...' : `Scroll or type to find more (${filteredCountries.length - visibleCount} more)`}
+                <li
+                  className="country-autocomplete-loading"
+                  role="status"
+                >
+                  {`Scroll or type to find more (${filteredCountries.length - visibleCount} more)`}
                 </li>
               )}
             </ul>

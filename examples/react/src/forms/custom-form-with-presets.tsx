@@ -7,16 +7,8 @@
 
 import { useState } from 'react';
 import { CardForm, CreditCardPreview, Token } from '@keeratita/card/react';
-import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
-// Create adapter instances
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
-
-const omiseAdapter = new OmiseAdapter({
-  publicKey: 'pkey_test_omise_integrated_demo_key',
-});
 
 type PresetOption = 'none' | 'us' | 'billing' | 'contact';
 
@@ -224,12 +216,7 @@ export function CustomFormWithPresets() {
         <pre style={{ color: '#c9d1d9', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
 {`// Import the CardForm component and adapters
 import { CardForm, CreditCardPreview } from '@keeratita/card/react';
-import { StripeAdapter } from '@keeratita/card';
-
-// Create adapter instance
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'your_stripe_public_key',
-});
+import { stripeAdapter } from '../shared/adapters';
 
 // Use with any preset: 'none' | 'us' | 'billing' | 'contact'
 <CardForm

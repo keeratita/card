@@ -7,12 +7,7 @@
 
 import { useState } from 'react';
 import { CreditCardPreview, useCardForm, FormField, Token } from '@keeratita/card/react';
-import { StripeAdapter } from '@keeratita/card';
-
-// Create a Stripe adapter instance
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { stripeAdapter } from '../shared/adapters';
 
 export function CardFormWithLivePreview() {
   const [token, setToken] = useState<Token | null>(null);
@@ -205,11 +200,8 @@ export function CardFormWithLivePreview() {
         </h4>
         <pre style={{ color: '#c9d1d9', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
 {`import { useCardForm, CreditCardPreview, FormField } from '@keeratita/card/react';
-import { StripeAdapter } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'your_stripe_public_key',
-});
 
 const {
   values,      // { number, expiry, cvc, name, ... }

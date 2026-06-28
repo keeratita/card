@@ -5,12 +5,10 @@
  */
 
 import { useState } from 'react';
-import { StripeAdapter, Token } from '@keeratita/card';
+import { Token } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 import { useCardForm } from '@keeratita/card/react';
-
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { PaymentFormFields } from '../shared/payment-form-fields';
 
 export function DarkThemeCardForm() {
   const [token, setToken] = useState<Token | null>(null);
@@ -105,94 +103,18 @@ export function DarkThemeCardForm() {
         </div>
       )}
 
-      <form onSubmit={onFormSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="card-number" style={{ display: 'block', marginBottom: '6px', color: '#a5b4fc', fontSize: '14px' }}>
-            Card Number
-          </label>
-          <input
-            id="card-number"
-            name="number"
-            type="text"
-            value={values.number}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            onFocus={handleCvcFocus}
-            placeholder="4242 4242 4242 4242"
-            style={inputStyle('number')}
-          />
-          {errors.number && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.number}</span>}
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="expiry" style={{ display: 'block', marginBottom: '6px', color: '#a5b4fc', fontSize: '14px' }}>
-            Expiry Date
-          </label>
-          <input
-            id="expiry"
-            name="expiry"
-            type="text"
-            value={values.expiry}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            style={inputStyle('expiry')}
-          />
-          {errors.expiry && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.expiry}</span>}
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="cvc" style={{ display: 'block', marginBottom: '6px', color: '#a5b4fc', fontSize: '14px' }}>
-            CVC
-          </label>
-          <input
-            id="cvc"
-            name="cvc"
-            type="password"
-            value={values.cvc}
-            onChange={handleChange}
-            onBlur={handleCvcBlur}
-            onFocus={handleCvcFocus}
-            style={inputStyle('cvc')}
-          />
-          {errors.cvc && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.cvc}</span>}
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '6px', color: '#a5b4fc', fontSize: '14px' }}>
-            Cardholder Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={values.name}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="John Doe"
-            style={inputStyle('name')}
-          />
-          {errors.name && <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.name}</span>}
-        </div>
-
-        <button
-          type="submit"
-          disabled={!values.number || !values.expiry || !values.cvc}
-          style={{
-            width: '100%',
-            padding: '14px',
-            backgroundColor: '#e94560',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
-            opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1
-          }}
-        >
-          Pay Now
-        </button>
-      </form>
+      <PaymentFormFields
+        values={values}
+        errors={errors}
+        handleChange={handleChange}
+        handleBlur={handleBlur}
+        handleCvcFocus={handleCvcFocus}
+        handleCvcBlur={handleCvcBlur}
+        handleSubmit={onFormSubmit}
+        inputStyle={inputStyle}
+        submitLabel="Pay Now"
+        showSecurityBadge
+      />
     </div>
   );
 }

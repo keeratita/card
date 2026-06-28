@@ -26,7 +26,7 @@ export function CardNumberInput({
   id = 'card-number',
   className = '',
   showErrorBorder = true,
-}: CardNumberInputProps) {
+}: Readonly<CardNumberInputProps>) {
   const hasError = !!error && showErrorBorder;
 
   return (

@@ -118,13 +118,6 @@ describe('Domain Validations', () => {
       expect(validateCountry(' TH ')).toBe(true);
     });
   });
-
-  describe('Generic Validation', () => {
-    it('should validate non-empty trimmed values', () => {
-      expect(validateGeneric(' value ')).toBe(true);
-      expect(validateGeneric('   ')).toBe(false);
-    });
-  });
 });
 
 describe('Security Edge Cases', () => {

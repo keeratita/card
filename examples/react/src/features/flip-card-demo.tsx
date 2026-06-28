@@ -9,12 +9,7 @@
  */
 
 import { CreditCardPreview, useCardForm, FormField, Token } from '@keeratita/card/react';
-import { StripeAdapter } from '@keeratita/card';
-
-// Create a Stripe adapter instance
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { stripeAdapter } from '../shared/adapters';
 
 export function FlipCardDemo() {
   const {

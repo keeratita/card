@@ -44,7 +44,7 @@ export const CARD_FORM_TEXT_EN = {
   cardNumber: 'Card Number',
   cardNumberPlaceholder: '•••• •••• •••• ••••',
   expires: 'Expires',
-  expiryPlaceholder: 'MM/YY',
+  expiryPlaceholder: 'MM / YY',
   cvc: 'CVC',
   cvcPlaceholder: '•••',
   cardholder: 'Cardholder',

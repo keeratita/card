@@ -7,7 +7,7 @@ export interface CvcInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
   onFocus: () => void;
-  brand?: string;
+  maxLength?: number;
   label?: string;
   id?: string;
   className?: string;
@@ -22,14 +22,13 @@ export function CvcInput({
   onChange,
   onBlur,
   onFocus,
-  brand,
+  maxLength = 3,
   label = DEFAULT_LABEL,
   id = 'card-cvc',
   className = '',
   showErrorBorder = true,
-}: CvcInputProps) {
+}: Readonly<CvcInputProps>) {
   const hasError = !!error && showErrorBorder;
-  const maxLength = brand === 'amex' ? 4 : 3;
 
   return (
     <div className={`ios-input-row ${hasError ? 'invalid' : ''} ${className}`}>

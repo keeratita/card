@@ -1,69 +1,48 @@
 export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'jcb' | 'discover' | 'diners' | 'unknown';
 
-/**
- * Pre-compiled regex patterns for card brand detection.
- * Compiled once at module load time to reduce GC pressure on hot paths.
- */
-const BRAND_PATTERNS = {
-  visa: /^4/,
-  mastercard: /^(5[1-5]|2[2-7])/,
-  amex: /^3[47]/,
-  jcb: /^35/,
-  discover6011: /^6011/,
-  discover65: /^65/,
-  discover64: /^64[4-9]/,
-  diners: /^3(0[0-5]|09|6|8[9])/,
-} as const;
+const FIRST_DIGITS_MASTERCARD = new Set(['51', '52', '53', '54', '55', '22', '23', '24', '25', '26', '27']);
+const FIRST_DIGITS_AMEX = new Set(['34', '37']);
+const FIRST_DIGITS_DINERS = new Set(['300', '301', '302', '303', '304', '305', '309', '36', '38', '39']);
+const FIRST_DIGITS_DISCOVER_64 = new Set(['644', '645', '646', '647', '648', '649']);
 
-/**
- * Detects the credit card brand based on the card number.
- * Returns 'unknown' for invalid inputs, empty strings, or unrecognized patterns.
- * 
- * PERFORMANCE: Uses pre-compiled regex patterns and short-circuit evaluation
- * to minimize allocations on the hot path (called on every keystroke).
- */
 export function detectCardBrand(cardNumber: string): CardBrand {
-  // Handle null, undefined, or non-string inputs gracefully
   if (!cardNumber || typeof cardNumber !== 'string') {
     return 'unknown';
   }
 
-  // Truncate to prevent DoS with extremely long inputs
   const cleanNumber = cardNumber.replace(/\D/g, '').slice(0, 19);
 
-  // Empty or too short numbers are unknown
-  // Minimum 6 digits ensures we have enough context to distinguish brands
-  // (e.g., Visa "4" vs Mastercard "51" vs Amex "37")
   if (cleanNumber.length < 6) {
     return 'unknown';
   }
 
-  // Use pre-compiled regex patterns (short-circuit from most common to least)
-  if (BRAND_PATTERNS.visa.test(cleanNumber)) {
+  // Visa: starts with 4
+  if (cleanNumber.startsWith('4')) {
     return 'visa';
   }
 
-  if (BRAND_PATTERNS.mastercard.test(cleanNumber)) {
+  // Mastercard: starts with 51-55 or 22-27
+  if (FIRST_DIGITS_MASTERCARD.has(cleanNumber.substring(0, 2))) {
     return 'mastercard';
   }
 
-  if (BRAND_PATTERNS.amex.test(cleanNumber)) {
+  // Amex: starts with 34 or 37
+  if (FIRST_DIGITS_AMEX.has(cleanNumber.substring(0, 2))) {
     return 'amex';
   }
 
-  if (BRAND_PATTERNS.jcb.test(cleanNumber)) {
+  // JCB: starts with 35
+  if (cleanNumber.startsWith('35')) {
     return 'jcb';
   }
 
   // Discover: starts with 6011, 65, or 644-649
-  if (BRAND_PATTERNS.discover6011.test(cleanNumber) ||
-      BRAND_PATTERNS.discover65.test(cleanNumber) ||
-      BRAND_PATTERNS.discover64.test(cleanNumber)) {
+  if (cleanNumber.startsWith('6011') || cleanNumber.startsWith('65') || FIRST_DIGITS_DISCOVER_64.has(cleanNumber.substring(0, 3))) {
     return 'discover';
   }
 
-  // Diners Club: starts with 300-305, 36, 309, or 3[8-9]
-  if (BRAND_PATTERNS.diners.test(cleanNumber)) {
+  // Diners: starts with 300-305, 309, 36, or 38-39
+  if (FIRST_DIGITS_DINERS.has(cleanNumber.substring(0, 3))) {
     return 'diners';
   }
 

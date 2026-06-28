@@ -26,7 +26,7 @@ export function ExpiryInput({
   id = 'card-expiry',
   className = '',
   showErrorBorder = true,
-}: ExpiryInputProps) {
+}: Readonly<ExpiryInputProps>) {
   const hasError = !!error && showErrorBorder;
 
   return (

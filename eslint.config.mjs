@@ -13,6 +13,18 @@ export default tseslint.config(
       ],
       'no-console': 'warn',
       'no-debugger': 'error',
+      '@typescript-eslint/max-params': ['error', { max: 6 }],
+      '@typescript-eslint/naming-convention': [
+        'error',
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+          custom: {
+            regex: '^I[A-Z]',
+            match: false,
+          },
+        },
+      ],
     },
   },
   {

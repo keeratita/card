@@ -8,7 +8,7 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { createCardFormGroup } from '@keeratita/card/angular';
-import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 type CheckoutStep = 'cart' | 'shipping' | 'payment' | 'confirmation';
 
@@ -499,12 +499,8 @@ export class MultiStepCheckoutComponent {
   });
   paymentForm = createCardFormGroup();
 
-  stripeAdapter = new StripeAdapter({
-    publicKey: 'pk_test_stripe_integrated_demo_key'
-  });
-  omiseAdapter = new OmiseAdapter({
-    publicKey: 'pkey_test_omise_integrated_demo_key'
-  });
+  stripeAdapter = stripeAdapter
+  omiseAdapter = omiseAdapter
 
   steps = signal([
     { id: 'cart' as const, label: 'Cart' },

@@ -1,17 +1,11 @@
-/**
- * Ensures the connection uses HTTPS to prevent man-in-the-middle attacks.
- * Throws an error only when running in production over HTTP.
- * This check is skipped for localhost and test environments.
- */
+const HTTPS_ERROR_MESSAGE =
+  'SECURITY: Payment operations require HTTPS. Please access the site over a secure connection.';
+
 export function enforceHttps(): void {
-  if (typeof window !== 'undefined' && window.location) {
-    const { protocol, hostname } = window.location;
-    // Only enforce HTTPS in production (not localhost, 127.0.0.1, or test environments)
-    if (protocol === 'http:' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      throw new Error(
-        'SECURITY: Payment operations require HTTPS. Please access the site over a secure connection.',
-      );
-    }
+  if (typeof window === 'undefined' || !window.location) return;
+  const { protocol, hostname } = window.location;
+  if (protocol === 'http:' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    throw new Error(HTTPS_ERROR_MESSAGE);
   }
 }
 
@@ -20,11 +14,32 @@ export function toFormUrlEncoded(
 ): string {
   return Object.entries(data)
     .filter(([_, value]) => value !== undefined)
-    .map(
-      ([key, value]) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
-    )
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&');
+}
+
+export const DEFAULT_TIMEOUT_MS = 30_000;
+
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function normalizeNetworkError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return new Error('Request timed out.');
+  }
+  return new Error('Network connection failed.');
 }
 export class PaymentGatewayError extends Error {
   constructor(

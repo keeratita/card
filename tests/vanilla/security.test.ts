@@ -137,22 +137,22 @@ describe('Edge Case & Security Validation', () => {
 
     it('should use default logo for empty brand', () => {
       const result = getCardLogoSvg('');
-      expect(result).toContain('48 48');
+      expect(result).toContain('24 24');
     });
 
     it('should use default logo for null brand', () => {
       const result = getCardLogoSvg(null as unknown as string);
-      expect(result).toContain('48 48');
+      expect(result).toContain('24 24');
     });
 
     it('should use default logo for undefined brand', () => {
       const result = getCardLogoSvg(undefined as unknown as string);
-      expect(result).toContain('48 48');
+      expect(result).toContain('24 24');
     });
 
     it('should use default logo for invalid brand name', () => {
       const result = getCardLogoSvg('invalid-brand');
-      expect(result).toContain('48 48');
+      expect(result).toContain('24 24');
     });
   });
 });

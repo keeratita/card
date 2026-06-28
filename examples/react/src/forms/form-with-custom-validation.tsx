@@ -12,16 +12,8 @@
 
 import { useState } from 'react';
 import { CreditCardPreview, useCardForm, FormField, Token } from '@keeratita/card/react';
-import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
-// Create adapter instances
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
-
-const omiseAdapter = new OmiseAdapter({
-  publicKey: 'pkey_test_omise_integrated_demo_key',
-});
 
 export function FormWithCustomValidation() {
   const [selectedAdapter, setSelectedAdapter] = useState<'stripe' | 'omise'>('stripe');

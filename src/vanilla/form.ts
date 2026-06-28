@@ -3,6 +3,7 @@ import {
   FIELD_METADATA,
   getFieldDisplayText,
   resolveActiveFields,
+  SENSITIVE_FIELDS,
 } from '../core/domain/optional-fields';
 import { getCardLogoSvg } from '../core/domain/card-brand-logos';
 import { CARD_FORM_TEXT_EN } from '../lang/en';
@@ -21,15 +22,9 @@ import {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric,
 } from '../core/domain/validation';
 import { escapeHtml } from './internal/security';
 import { CountryAutocomplete } from './components/country-autocomplete';
-
-/**
- * Sensitive fields that should be masked in the success panel.
- */
-const SENSITIVE_FIELDS: Set<OptionalCardField> = new Set(['email', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country']);
 
 /**
  * Masks a value for display in the success panel.
@@ -38,7 +33,7 @@ const SENSITIVE_FIELDS: Set<OptionalCardField> = new Set(['email', 'phone', 'add
  * - address fields: shows "*** masked ***"
  */
 function maskSensitiveValue(field: OptionalCardField, value: string): string {
-  if (!value || value.length === 0) return '—';
+  if (!value) return '—';
 
   switch (field) {
     case 'email':
@@ -106,7 +101,6 @@ export class CardForm {
     const containerWrapper = document.createElement('div');
     containerWrapper.className = 'kg-card-container';
 
-    // Renders the 3D card layout
     const cardLabelText =
       this.options.cardLabel || this.options.adapter.name.toUpperCase();
     const safeCardLabelText = escapeHtml(cardLabelText);
@@ -117,7 +111,6 @@ export class CardForm {
     containerWrapper.innerHTML = `
       <div class="card-perspective">
         <div class="card-inner credit-card-element">
-          <!-- Front of Card -->
           <div class="card-front">
             <div class="card-header">
               <div class="card-chip"></div>
@@ -281,14 +274,11 @@ export class CardForm {
     );
     const safeLabelText = escapeHtml(label);
 
-    // Render country as autocomplete dropdown with flags
     if (fieldKey === 'country') {
-      // Create container for autocomplete
       const container = document.createElement('div');
       container.className = 'country-autocomplete-container';
       container.id = `card-${fieldKey}-container`;
 
-      // Create hidden input for form submission
       const hiddenInput = document.createElement('input');
       hiddenInput.type = 'hidden';
       hiddenInput.className = 'country-value-input';
@@ -301,15 +291,12 @@ export class CardForm {
       `;
       row.appendChild(container);
 
-      // Initialize country autocomplete using the container element directly
       this.countryAutocomplete = new CountryAutocomplete({
         container: container,
         placeholder: placeholder,
         searchPlaceholder: CARD_FORM_TEXT_EN.searchCountries,
         onSelect: (countryCode: string, _country) => {
-          // Store selected country value for form submission
           hiddenInput.value = countryCode;
-          // Validate the field
           row.classList.remove('invalid');
         }
       });
@@ -364,7 +351,6 @@ export class CardForm {
       '.credit-card-element',
     ) as HTMLElement;
 
-    // Card formatting & previews
     this.on(numInput, 'input', (e) => {
       const target = e.target as HTMLInputElement;
       const val = target.value;
@@ -437,7 +423,6 @@ export class CardForm {
       target.closest('.ios-input-row')?.classList.remove('invalid');
     });
 
-    // Optional fields listener to clear invalid outline on input
     this.getActiveFields().forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
@@ -447,7 +432,6 @@ export class CardForm {
       });
     });
 
-    // CVC Flip triggers
     this.on(cvcInput, 'focus', () => {
       cardInner.classList.add('flipped');
     });
@@ -455,7 +439,6 @@ export class CardForm {
       cardInner.classList.remove('flipped');
     });
 
-    // Focus triggers for other fields to flip card back
     const removeFlip = () => cardInner.classList.remove('flipped');
     this.on(numInput, 'focus', removeFlip);
     this.on(expInput, 'focus', removeFlip);
@@ -468,7 +451,6 @@ export class CardForm {
       this.on(input, 'focus', removeFlip);
     });
 
-    // Single-field validation on blur
     this.on(numInput, 'blur', () => this.validateField('card-number'));
     this.on(expInput, 'blur', () => this.validateField('card-expiry'));
     this.on(cvcInput, 'blur', () => this.validateField('card-cvc'));
@@ -481,7 +463,6 @@ export class CardForm {
       this.on(input, 'blur', () => this.validateField(field));
     });
 
-    // Submit listener
     this.on(this.formEl, 'submit', (e) => {
       e.preventDefault();
       this.handleSubmit();
@@ -537,7 +518,7 @@ export class CardForm {
     } else if (fieldId === 'country') {
       isValid = validateCountry(val);
     } else {
-      isValid = validateGeneric(val);
+      isValid = val.trim().length > 0;
     }
 
     if (row) {
@@ -550,7 +531,6 @@ export class CardForm {
   private async handleSubmit(): Promise<void> {
     let isFormValid = true;
 
-    // Validate all standard and optional fields
     if (!this.validateField('card-number')) isFormValid = false;
     if (!this.validateField('card-expiry')) isFormValid = false;
     if (!this.validateField('card-cvc')) isFormValid = false;
@@ -581,7 +561,6 @@ export class CardForm {
     const spinner = this.formEl.querySelector('.btn-spinner') as HTMLElement;
     const btnText = this.formEl.querySelector('.btn-text') as HTMLElement;
 
-    // --- PHASE 1: TOKENIZATION ---
     submitBtn.disabled = true;
     spinner.style.display = 'block';
     btnText.innerText = CARD_FORM_TEXT_EN.tokenizing;
@@ -611,7 +590,6 @@ export class CardForm {
       name: nameInput.value.trim(),
     };
 
-    // Populate optional fields
     this.getActiveFields().forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
@@ -627,7 +605,6 @@ export class CardForm {
       // Dereference Card Data immediately for security
       cardData = null;
 
-      // --- PHASE 2: PROCESSING (BACKEND VERIFICATION) ---
       btnText.innerText = CARD_FORM_TEXT_EN.processing;
 
       if (this.options.onSubmit) {
@@ -637,7 +614,6 @@ export class CardForm {
         }
       }
 
-      // --- PHASE 3: SUCCESS STATE ---
       spinner.style.display = 'none';
       submitBtn.classList.add('success');
       btnText.innerHTML = `
@@ -647,18 +623,15 @@ export class CardForm {
         ${escapeHtml(CARD_FORM_TEXT_EN.paymentSuccess)}
       `;
 
-      // Mask card number in the DOM to prevent shoulder surfing
       const lastFour = numInput.value.replace(/\D/g, '').slice(-4);
       numInput.value = `•••• •••• •••• ${lastFour || ''}`;
       numInput.setAttribute('readonly', 'true');
 
-      // Disable form inputs
       const allInputs = this.formEl.querySelectorAll('input, button');
       allInputs.forEach((el) => {
         el.setAttribute('disabled', 'true');
       });
 
-      // Display Status Panel with masked sensitive data
       const statusPanel = this.element.querySelector(
         '.token-status',
       ) as HTMLElement;
@@ -696,10 +669,8 @@ export class CardForm {
         statusPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     } catch (err: unknown) {
-      // Clean up sensitive variables
       cardData = null;
 
-      // --- ERROR ROLLBACK ---
       spinner.style.display = 'none';
       submitBtn.disabled = false;
       btnText.innerText =
@@ -742,19 +713,16 @@ export class CardForm {
    * Call this when the form is no longer needed to prevent memory leaks.
    */
   public destroy(): void {
-    // Remove all tracked event listeners
     for (const { el, event, handler } of this.listeners) {
       el?.removeEventListener(event, handler);
     }
     this.listeners = [];
 
-    // Destroy country autocomplete if present
     if (this.countryAutocomplete) {
       this.countryAutocomplete.destroy();
       this.countryAutocomplete = null;
     }
 
-    // Remove form from DOM
     this.element.innerHTML = '';
   }
 }

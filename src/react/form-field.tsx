@@ -1,133 +1,45 @@
 import React from 'react';
 import { CardFormValues } from './useCardForm';
 
+const FIELD_CONFIGS: Record<
+  keyof CardFormValues,
+  { type: string; mode?: string; autoComplete: string; label: string; placeholder: string }
+> = {
+  number: { type: 'text', mode: 'numeric', autoComplete: 'cc-number', label: 'Card Number', placeholder: '4242 4242 4242 4242' },
+  expiry: { type: 'text', mode: 'numeric', autoComplete: 'cc-exp', label: 'Expiry Date', placeholder: 'MM / YY' },
+  cvc: { type: 'password', mode: 'numeric', autoComplete: 'cc-csc', label: 'CVC', placeholder: '123' },
+  name: { type: 'text', autoComplete: 'cc-name', label: 'Cardholder Name', placeholder: 'Full Name' },
+  addressLine1: { type: 'text', autoComplete: 'address-line1', label: 'Address Line 1', placeholder: '123 Main St' },
+  addressLine2: { type: 'text', autoComplete: 'address-line2', label: 'Address Line 2', placeholder: 'Apt, Suite, etc. (optional)' },
+  city: { type: 'text', autoComplete: 'address-level2', label: 'City', placeholder: 'City' },
+  state: { type: 'text', autoComplete: 'address-level1', label: 'State / Province', placeholder: 'State' },
+  postalCode: { type: 'text', mode: 'numeric', autoComplete: 'postal-code', label: 'Postal Code', placeholder: '12345' },
+  country: { type: 'text', autoComplete: 'country', label: 'Country', placeholder: 'Select country' },
+  phone: { type: 'tel', mode: 'tel', autoComplete: 'tel-national', label: 'Phone', placeholder: '+1234567890' },
+  email: { type: 'email', mode: 'email', autoComplete: 'email', label: 'Email', placeholder: 'email@example.com' },
+};
+
 export interface FormFieldProps {
-  /** The field name (e.g. 'number', 'expiry', 'cvc', 'name') */
   name: keyof CardFormValues;
-  /** The current form values from useCardForm */
   values: CardFormValues;
-  /** The errors object from useCardForm */
   errors: Record<string, string | null>;
-  /** The handleChange handler from useCardForm */
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  /** The handleBlur handler from useCardForm */
   handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  /** Optional: CVC focus handler for card flip animation */
   handleCvcFocus?: () => void;
-  /** Optional: CVC blur handler for card flip unflip */
   handleCvcBlur?: () => void;
-  /** Input type (default: 'text', 'password' for CVC) */
   type?: string;
-  /** Input placeholder */
   placeholder?: string;
-  /** Input label text */
   label?: string;
-  /** Maximum length for the input */
   maxLength?: number;
-  /** Input mode (numeric for card fields) */
   inputMode?: 'numeric' | 'text' | 'tel' | 'email' | 'search';
-  /** AutoComplete attribute */
   autoComplete?: string;
-  /** Whether the field is required */
   required?: boolean;
-  /** Additional CSS class name */
   className?: string;
-  /** Custom error message override (defaults to "Invalid {name}") */
   errorMessage?: string;
-  /** Whether to show the error message below the input */
   showErrorMessage?: boolean;
-  /** Whether to show red border on invalid fields */
   showErrorBorder?: boolean;
 }
 
-const DEFAULT_LABELS: Partial<Record<keyof CardFormValues, string>> = {
-  number: 'Card Number',
-  expiry: 'Expiry Date',
-  cvc: 'CVC',
-  name: 'Cardholder Name',
-  addressLine1: 'Address Line 1',
-  addressLine2: 'Address Line 2',
-  city: 'City',
-  state: 'State / Province',
-  postalCode: 'Postal Code',
-  country: 'Country',
-  phone: 'Phone',
-  email: 'Email',
-};
-
-const DEFAULT_PLACEHOLDERS: Partial<Record<keyof CardFormValues, string>> = {
-  number: '4242 4242 4242 4242',
-  expiry: 'MM / YY',
-  cvc: '123',
-  name: 'Full Name',
-  addressLine1: '123 Main St',
-  addressLine2: 'Apt, Suite, etc. (optional)',
-  city: 'City',
-  state: 'State',
-  postalCode: '12345',
-  country: 'Select country',
-  phone: '+1234567890',
-  email: 'email@example.com',
-};
-
-const INPUT_TYPES: Partial<Record<keyof CardFormValues, string>> = {
-  number: 'text',
-  expiry: 'text',
-  cvc: 'password',
-  name: 'text',
-  addressLine1: 'text',
-  addressLine2: 'text',
-  city: 'text',
-  state: 'text',
-  postalCode: 'text',
-  country: 'text',
-  phone: 'tel',
-  email: 'email',
-};
-
-const INPUT_MODES: Partial<Record<keyof CardFormValues, 'numeric' | 'text' | 'tel' | 'email' | 'search'>> = {
-  number: 'numeric',
-  expiry: 'numeric',
-  cvc: 'numeric',
-  postalCode: 'numeric',
-  phone: 'tel',
-  email: 'email',
-};
-
-const AUTOCOMPLETE: Partial<Record<keyof CardFormValues, string>> = {
-  number: 'cc-number',
-  expiry: 'cc-exp',
-  cvc: 'cc-csc',
-  name: 'cc-name',
-  addressLine1: 'address-line1',
-  addressLine2: 'address-line2',
-  city: 'address-level2',
-  state: 'address-level1',
-  postalCode: 'postal-code',
-  country: 'country',
-  phone: 'tel-national',
-  email: 'email',
-};
-
-/**
- * Reusable form field component that integrates with useCardForm hook.
- * Provides automatic validation display, error borders, and error messages.
- * 
- * This is the React equivalent of Angular's directive-based validation pattern.
- * 
- * @example
- * ```tsx
- * const { values, errors, handleChange, handleBlur, handleCvcFocus, handleCvcBlur } = useCardForm({...});
- * 
- * <FormField
- *   name="number"
- *   values={values}
- *   errors={errors}
- *   handleChange={handleChange}
- *   handleBlur={handleBlur}
- * />
- * ```
- */
 export function FormField({
   name,
   values,
@@ -152,11 +64,12 @@ export function FormField({
   const error = errors[name];
   const hasError = !!error;
 
-  const inputType = type || INPUT_TYPES[name] || 'text';
-  const fieldPlaceholder = placeholder || DEFAULT_PLACEHOLDERS[name] || '';
-  const fieldLabel = label || DEFAULT_LABELS[name] || String(name);
-  const fieldInputMode = customInputMode || INPUT_MODES[name];
-  const fieldAutoComplete = autoComplete || AUTOCOMPLETE[name];
+  const config = FIELD_CONFIGS[name];
+  const inputType = type || config.type;
+  const fieldPlaceholder = placeholder || config.placeholder;
+  const fieldLabel = label || config.label;
+  const fieldInputMode = customInputMode || (config.mode as 'numeric' | 'text' | 'tel' | 'email' | undefined);
+  const fieldAutoComplete = autoComplete || config.autoComplete;
 
   // Determine max length based on field type
   const fieldMaxLength = maxLength ?? (name === 'cvc' ? 4 : undefined);

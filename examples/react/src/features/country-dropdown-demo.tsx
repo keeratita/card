@@ -1,24 +1,25 @@
 /**
  * Country Dropdown Demo Example
- * 
+ *
  * This example demonstrates a searchable country dropdown with
  * flag icons and country code display using the library's COUNTRIES data.
+ * The card form below uses the core library's CardForm component with
+ * built-in validation for all fields including the country field.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { COUNTRIES, type Country } from '@keeratita/card';
+import { COUNTRIES, type Country, StripeAdapter } from '@keeratita/card';
+import { CardForm } from '@keeratita/card/react';
+
+const stripeAdapter = new StripeAdapter({
+  publicKey: 'pk_test_demo_key',
+});
 
 export function CountryDropdownDemo() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
-  const [form, setForm] = useState({
-    number: '',
-    name: '',
-    country: '',
-    postalCode: '',
-  });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredCountries = COUNTRIES.filter(c => {
@@ -29,7 +30,6 @@ export function CountryDropdownDemo() {
 
   const selectCountry = useCallback((country: Country) => {
     setSelectedCountry(country);
-    setForm(prev => ({ ...prev, country: country.code }));
     setSearchQuery('');
     setCountrySearchQuery('');
     setIsDropdownOpen(false);
@@ -62,10 +62,6 @@ export function CountryDropdownDemo() {
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, []);
-
-  const handleFormChange = useCallback((name: string, value: string) => {
-    setForm(prev => ({ ...prev, [name]: value }));
   }, []);
 
   return (
@@ -200,7 +196,7 @@ export function CountryDropdownDemo() {
         </div>
       )}
 
-      {/* Card Form with Country Select */}
+      {/* Card Form with Country Select - Uses core library CardForm with full validation */}
       <div style={{
         backgroundColor: '#f6f8fa',
         padding: '24px',
@@ -210,219 +206,23 @@ export function CountryDropdownDemo() {
         <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#24292e' }}>
           Card Form with Country Select
         </h3>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#24292e', fontSize: '14px' }}>
-            Card Number
-          </label>
-          <input
-            type="text"
-            value={form.number}
-            onChange={(e) => handleFormChange('number', e.target.value)}
-            placeholder="4242 4242 4242 4242"
-            style={{
-              width: '100%',
-              padding: '12px 14px',
-              borderRadius: '6px',
-              border: '1px solid #d0d7de',
-              fontSize: '15px',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#24292e', fontSize: '14px' }}>
-            Cardholder Name
-          </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleFormChange('name', e.target.value)}
-            placeholder="John Doe"
-            style={{
-              width: '100%',
-              padding: '12px 14px',
-              borderRadius: '6px',
-              border: '1px solid #d0d7de',
-              fontSize: '15px',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#24292e', fontSize: '14px' }}>
-            Country
-          </label>
-          <div ref={dropdownRef} style={{ position: 'relative' }}>
-            <div onClick={toggleDropdown} style={{ position: 'relative' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 14px',
-                  border: '1px solid #d0d7de',
-                  borderRadius: '6px',
-                  backgroundColor: '#fff',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  fontSize: '15px',
-                  borderColor: isDropdownOpen ? '#0366d6' : '#d0d7de'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {selectedCountry ? (
-                    <>
-                      <span style={{ fontSize: '20px' }}>{selectedCountry.emoji}</span>
-                      <span style={{ color: '#24292e' }}>{selectedCountry.name}</span>
-                    </>
-                  ) : (
-                    <span style={{ color: '#6e7781' }}>Select a country</span>
-                  )}
-                </div>
-                <span style={{
-                  color: '#586069',
-                  transition: 'transform 0.2s ease',
-                  transform: isDropdownOpen ? 'rotate(180deg)' : 'none'
-                }}>▼</span>
-              </div>
-
-              {/* Dropdown */}
-              {isDropdownOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 4px)',
-                  left: 0,
-                  right: 0,
-                  background: '#fff',
-                  border: '1px solid #d0d7de',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                  zIndex: 1000,
-                  overflow: 'hidden'
-                }}>
-                  {/* Search */}
-                  <div style={{ padding: '12px', borderBottom: '1px solid #e1e4e8' }}>
-                    <input
-                      type="text"
-                      value={countrySearchQuery}
-                      onChange={(e) => setCountrySearchQuery(e.target.value)}
-                      placeholder="Search countries..."
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d0d7de',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  {/* Country List */}
-                  <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
-                    {filteredCountries.length > 0 ? (
-                      filteredCountries.map((country) => (
-                        <div
-                          key={country.code}
-                          onClick={() => selectCountry(country)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '10px 14px',
-                            cursor: 'pointer',
-                            backgroundColor: selectedCountry?.code === country.code ? '#f1f8ff' : 'transparent',
-                            borderLeft: selectedCountry?.code === country.code ? '3px solid #0366d6' : 'none',
-                            transition: 'background-color 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (selectedCountry?.code !== country.code) {
-                              e.currentTarget.style.backgroundColor = '#f6f8fa';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (selectedCountry?.code !== country.code) {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }
-                          }}
-                        >
-                          <span style={{ fontSize: '20px' }}>{country.emoji}</span>
-                          <span style={{ flex: 1, color: '#24292e', fontSize: '14px' }}>{country.name}</span>
-                          <span style={{ color: '#586069', fontSize: '12px' }}>{country.code}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#586069', fontSize: '14px' }}>
-                        No countries found matching "{countrySearchQuery}"
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#24292e', fontSize: '14px' }}>
-            Postal Code
-          </label>
-          <input
-            type="text"
-            value={form.postalCode}
-            onChange={(e) => handleFormChange('postalCode', e.target.value)}
-            placeholder="10001"
-            style={{
-              width: '100%',
-              padding: '12px 14px',
-              borderRadius: '6px',
-              border: '1px solid #d0d7de',
-              fontSize: '15px',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Code Example */}
-      <div style={{
-        backgroundColor: '#161b22',
-        padding: '16px',
-        borderRadius: '8px',
-        marginTop: '24px'
-      }}>
-        <h4 style={{ color: '#fff', margin: '0 0 12px 0', fontSize: '14px' }}>
-          How to use in your app:
-        </h4>
-        <pre style={{
-          color: '#c9d1d9',
-          fontSize: '12px',
-          margin: 0,
-          lineHeight: '1.6',
-          fontFamily: "'SF Mono', Monaco, Consolas, monospace",
-          whiteSpace: 'pre-wrap'
-        }}>{`// Import country data from the library
-import { COUNTRIES } from '@keeratita/card';
-import type { Country } from '@keeratita/card';
-
-// Use COUNTRIES array in your app
-const allCountries = COUNTRIES; // 60+ countries with flags
-
-// Get country by code
-const us = COUNTRIES.find(c => c.code === 'US');
-console.log(us?.emoji, us?.name); // 🇺🇸 United States
-
-// In your component template:
-<select formControlName="country">
-  {COUNTRIES.map((country) => (
-    <option key={country.code} value={country.code}>
-      {country.emoji} {country.name}
-    </option>
-  ))}
-</select>`}</pre>
+        <p style={{ color: '#586069', margin: '0 0 16px 0', fontSize: '13px' }}>
+          This form uses the core library's <code>CardForm</code> component with built-in validation for card number (Luhn check), expiry, CVC, cardholder name, and country fields.
+        </p>
+        <CardForm
+          adapter={stripeAdapter}
+          preset="contact"
+          fields={['country', 'postalCode', 'name']}
+          submitButtonText="Pay Securely"
+          onSubmit={(data) => {
+            console.log('Payment token received:', data.token);
+            alert('Payment successful! Token: ' + data.token.id);
+          }}
+          onError={(error) => {
+            console.error('Payment error:', error);
+            alert('Payment failed: ' + error.message);
+          }}
+        />
       </div>
     </div>
   );

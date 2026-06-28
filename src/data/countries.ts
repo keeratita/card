@@ -1,38 +1,12 @@
-/**
- * Country data with flags
- * 
- * Source: ISO 3166-1 alpha-2 codes (international standard)
- * Flag emojis: Unicode regional indicator symbols
- * Dial codes: ITU-T Recommendation E.123 / E.164
- * 
- * License: ISO 3166-1 codes are factual data (not subject to copyright).
- * Flag emojis are Unicode standard characters.
- * Dial codes are published by ITU (public domain).
- * 
- * This dataset includes country names, ISO 2-letter codes, flag emojis,
- * and international dialing codes. Flag emojis are Unicode regional
- * indicator symbols that render natively on modern operating systems
- * and browsers.
- */
-
+/** Country data with ISO codes, names, flag emojis, and dial codes. */
 export interface Country {
-  /** 2-letter ISO 3166-1 alpha-2 country code */
   code: string;
-  /** Full country name in English */
   name: string;
-  /** Flag emoji for the country */
   emoji: string;
-  /** International dialing code */
   dialCode?: string;
 }
 
-/**
- * Comprehensive list of countries and territories with flags.
- * Includes all UN member states, observer states, and widely recognized territories.
- * Sorted alphabetically by name.
- * 
- * Total: 244 countries and territories
- */
+/** 244 countries and territories, sorted alphabetically by name. */
 export const COUNTRIES: readonly Country[] = [
   { code: 'AF', name: 'Afghanistan', emoji: '🇦🇫', dialCode: '+93' },
   { code: 'AX', name: 'Åland Islands', emoji: '🇦🇽', dialCode: '+358' },
@@ -280,25 +254,18 @@ export const COUNTRIES: readonly Country[] = [
   { code: 'ZW', name: 'Zimbabwe', emoji: '🇿🇼', dialCode: '+263' },
 ] as const;
 
-/**
- * Pre-built Map for O(1) country lookup by ISO code (uppercase).
- * Replaces the O(n) Array.find() pattern used in hot paths.
- */
+/** O(1) lookup for countries by ISO code. */
 const COUNTRY_MAP = new Map<string, Country>();
 for (const country of COUNTRIES) {
   COUNTRY_MAP.set(country.code, country);
 }
 
-/**
- * Get country by ISO code (case-insensitive) - O(1) lookup
- */
+/** Get country by ISO code (case-insensitive). */
 export function getCountryByCode(code: string): Country | undefined {
   return COUNTRY_MAP.get(code.toUpperCase());
 }
 
-/**
- * Get all country codes - returns cached array reference
- */
+/** Cached array of all country codes. */
 const ALL_COUNTRY_CODES: ReadonlyArray<string> = Object.freeze(
   COUNTRIES.map(c => c.code)
 );
@@ -306,9 +273,7 @@ export function getAllCountryCodes(): ReadonlyArray<string> {
   return ALL_COUNTRY_CODES;
 }
 
-/**
- * Check if a code is a valid country code - O(1) lookup
- */
+/** Check if a code is a valid ISO country code. */
 export function isValidCountryCode(code: string): boolean {
   return COUNTRY_MAP.has(code.toUpperCase());
 }

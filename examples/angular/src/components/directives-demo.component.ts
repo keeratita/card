@@ -19,7 +19,7 @@ import {
   formatCardNumber,
   formatExpiry,
 } from '@keeratita/card/angular';
-import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-directives-demo',
@@ -278,9 +278,7 @@ export class DirectivesDemoComponent {
   error = signal<string | null>(null);
   processing = signal(false);
 
-  stripeAdapter = new StripeAdapter({
-    publicKey: 'pk_test_stripe_integrated_demo_key',
-  });
+  stripeAdapter = stripeAdapter
 
   directiveUsage = `// Import the directives from the library
 import {

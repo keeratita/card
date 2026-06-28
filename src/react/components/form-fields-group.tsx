@@ -1,8 +1,6 @@
 import React from 'react';
-import {
-  CardFormPreset,
-  OptionalCardField,
-} from '../../core/domain/card';
+import { CardFormPreset, OptionalCardField } from '../../core/domain/card';
+import type { CardBrand } from '../../core/domain/brand';
 import {
   FIELD_METADATA,
   getFieldDisplayText,
@@ -18,13 +16,12 @@ import { CvcInput } from './cvc-input';
 export interface FormFieldsGroupProps {
   values: CardFormValues;
   errors: Record<string, string | null>;
-  brand: string;
+  brand: CardBrand;
   preset: CardFormPreset;
   optionalFields: OptionalCardField[];
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleCvcFocus: () => void;
-  handleCvcBlur: () => void;
   className?: string;
   headerLabel?: string;
 }
@@ -38,10 +35,9 @@ export function FormFieldsGroup({
   handleChange,
   handleBlur,
   handleCvcFocus,
-  handleCvcBlur: _handleCvcBlur,
   className = '',
   headerLabel,
-}: FormFieldsGroupProps) {
+}: Readonly<FormFieldsGroupProps>) {
   const activeFields = resolveActiveFields(preset, optionalFields);
 
   return (
@@ -72,7 +68,7 @@ export function FormFieldsGroup({
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleCvcFocus}
-            brand={brand}
+            maxLength={brand === 'amex' ? 4 : 3}
           />
         </div>
 

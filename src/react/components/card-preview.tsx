@@ -1,13 +1,14 @@
 import React, { memo } from 'react';
 import { getCardLogoSvg } from '../../core/domain/card-brand-logos';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
+import type { CardBrand } from '../../core/domain/brand';
 
 export interface CreditCardPreviewProps {
   number: string;
   expiry: string;
   cvc: string;
   name: string;
-  brand: string;
+  brand: CardBrand;
   isFlipped: boolean;
   cardLabel?: string;
 }

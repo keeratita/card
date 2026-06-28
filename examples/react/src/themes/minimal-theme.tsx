@@ -5,12 +5,10 @@
  */
 
 import { useState } from 'react';
-import { StripeAdapter, Token } from '@keeratita/card';
+import { Token } from '@keeratita/card';
+import { stripeAdapter } from '../shared/adapters';
 import { useCardForm } from '@keeratita/card/react';
-
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_stripe_integrated_demo_key',
-});
+import { PaymentFormFields } from '../shared/payment-form-fields';
 
 export function MinimalCardForm() {
   const [token, setToken] = useState<Token | null>(null);
@@ -30,8 +28,11 @@ export function MinimalCardForm() {
     values,
     errors,
     paymentError,
+    isTokenizing,
     handleChange,
     handleBlur,
+    handleCvcFocus,
+    handleCvcBlur,
     handleSubmit: onFormSubmit,
   } = useCardForm({
     adapter: stripeAdapter,
@@ -105,79 +106,20 @@ export function MinimalCardForm() {
         </div>
       )}
 
-      <form onSubmit={onFormSubmit}>
-        <div style={{ marginBottom: '24px' }}>
-          <input
-            name="number"
-            type="text"
-            value={values.number}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="CARD NUMBER"
-            style={inputStyle('number')}
-          />
-          {errors.number && <span style={{ color: '#ff0000', fontSize: '11px', marginTop: '4px', display: 'block' }}>{errors.number}</span>}
-        </div>
-
-        <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
-          <div style={{ flex: 1 }}>
-            <input
-              name="expiry"
-              type="text"
-              value={values.expiry}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="EXPIRY"
-              style={inputStyle('expiry')}
-            />
-            {errors.expiry && <span style={{ color: '#ff0000', fontSize: '11px', marginTop: '4px', display: 'block' }}>{errors.expiry}</span>}
-          </div>
-          <div style={{ flex: 1 }}>
-            <input
-              name="cvc"
-              type="password"
-              value={values.cvc}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="CVC"
-              style={inputStyle('cvc')}
-            />
-            {errors.cvc && <span style={{ color: '#ff0000', fontSize: '11px', marginTop: '4px', display: 'block' }}>{errors.cvc}</span>}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '32px' }}>
-          <input
-            name="name"
-            type="text"
-            value={values.name}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            placeholder="CARDHOLDER NAME"
-            style={inputStyle('name')}
-          />
-          {errors.name && <span style={{ color: '#ff0000', fontSize: '11px', marginTop: '4px', display: 'block' }}>{errors.name}</span>}
-        </div>
-
-        <button
-          type="submit"
-          disabled={!values.number || !values.expiry || !values.cvc}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: '#000',
-            color: 'white',
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: '500',
-            letterSpacing: '2px',
-            cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
-            opacity: !values.number || !values.expiry || !values.cvc ? 0.4 : 1,
-          }}
-        >
-          {values.number ? 'PAY NOW' : 'PROCESSING...'}
-        </button>
-      </form>
+      <PaymentFormFields
+        values={values}
+        errors={errors}
+        handleChange={handleChange}
+        handleBlur={handleBlur}
+        handleCvcFocus={handleCvcFocus}
+        handleCvcBlur={handleCvcBlur}
+        handleSubmit={onFormSubmit}
+        isSubmitting={isTokenizing}
+        inputStyle={inputStyle}
+        submitLabel={(v: any) => (v.isSubmitting ? "PROCESSING..." : "PAY NOW")}
+        submitStyle={{ backgroundColor: '#000', fontSize: '13px', fontWeight: '500', letterSpacing: '2px' }}
+        showSecurityBadge
+      />
     </div>
   );
 }

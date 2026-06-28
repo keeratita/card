@@ -427,12 +427,8 @@ export class FormWithPresetsComponent {
   processing = signal(false);
 
   // Stripe and Omise adapters
-  stripeAdapter = new StripeAdapter({
-    publicKey: 'pk_test_stripe_integrated_demo_key',
-  });
-  omiseAdapter = new OmiseAdapter({
-    publicKey: 'pkey_test_omise_integrated_demo_key',
-  });
+  stripeAdapter = stripeAdapter
+  omiseAdapter = omiseAdapter
 
   cdr = inject(ChangeDetectorRef);
 

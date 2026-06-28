@@ -7,7 +7,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { createCardFormGroup, CardNumberDirective, CardExpiryDirective } from '@keeratita/card/angular';
-import { StripeAdapter, type Token } from '@keeratita/card';
+import { type Token } from '@keeratita/card';
+import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 
 @Component({
   selector: 'app-card-form-with-live-preview',
@@ -238,7 +239,7 @@ export class CardFormWithLivePreviewComponent {
   isProcessing = signal(false);
   cardBrand = signal<string>('');
   cardLast4 = signal<string>('');
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   getBrandIcon(brand: string): string {
     const icons: { [key: string]: string } = {
@@ -477,7 +478,7 @@ export class CompactCardPreviewComponent {
   error = signal<string | null>(null);
   isProcessing = signal(false);
   cardBrand = signal<string>('');
-  stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_integrated_demo_key' });
+  stripeAdapter = stripeAdapter
 
   getBrandIcon(brand: string): string {
     const icons: { [key: string]: string } = {

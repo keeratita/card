@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, PaymentGateway, Token } from '../core/domain/card';
 import { detectCardBrand } from '../core/domain/brand';
 import {
+  cleanDigits,
   formatCardNumber,
   formatExpiry,
   formatCvc,
@@ -16,6 +17,7 @@ import {
   validatePostalCode,
   validateCountry,
 } from '../core/domain/validation';
+import { OPTIONAL_FIELD_KEYS } from '../core/domain/optional-fields';
 
 export interface CardFormValues {
   number: string;
@@ -32,30 +34,6 @@ export interface CardFormValues {
   email?: string;
 }
 
-const OPTIONAL_FIELD_KEYS = [
-  'addressLine1',
-  'addressLine2',
-  'city',
-  'state',
-  'postalCode',
-  'country',
-  'phone',
-  'email',
-] as const;
-
-type OptionalFieldKey = typeof OPTIONAL_FIELD_KEYS[number];
-
-function getOptionalFieldValue(values: CardFormValues, key: OptionalFieldKey): string | undefined {
-  return values[key];
-}
-
-function setOptionalFieldOnCard(
-  card: Card,
-  key: OptionalFieldKey,
-  value: string
-): Card {
-  return { ...card, [key]: value };
-}
 
 export interface UseCardFormParams {
   adapter: PaymentGateway;
@@ -63,6 +41,17 @@ export interface UseCardFormParams {
   onSubmit?: (data: { token: Token }) => Promise<void> | void;
   onError?: (error: Error) => void;
 }
+
+const ERROR_LABELS: Record<string, string> = {
+  number: 'Card number',
+  expiry: 'Expiry date',
+  cvc: 'CVC',
+  name: 'Cardholder name',
+  email: 'Email',
+  phone: 'Phone',
+  postalCode: 'Postal code',
+  country: 'Country',
+};
 
 export function useCardForm(params: UseCardFormParams) {
   const [values, setValues] = useState<CardFormValues>({
@@ -115,18 +104,14 @@ export function useCardForm(params: UseCardFormParams) {
     setIsFlipped(true);
   }, []);
 
-  const handleCvcBlur = useCallback(() => {
-    setIsFlipped(false);
-  }, []);
-
   const validateField = useCallback((name: string, value: string): boolean => {
     let isValid = true;
 
     if (name === 'number') {
-      const cleanNum = value.replace(/\D/g, '');
+      const cleanNum = cleanDigits(value);
       isValid = luhnCheck(cleanNum);
     } else if (name === 'expiry') {
-      const cleanExp = value.replace(/\D/g, '');
+      const cleanExp = cleanDigits(value);
       if (cleanExp.length !== 4) {
         isValid = false;
       } else {
@@ -136,8 +121,7 @@ export function useCardForm(params: UseCardFormParams) {
         );
       }
     } else if (name === 'cvc') {
-      const cleanCvc = value.replace(/\D/g, '');
-      // Use the ref to get the latest card number
+      const cleanCvc = cleanDigits(value);
       isValid = validateCvc(cleanCvc, valuesRef.current.number);
     } else if (name === 'name') {
       isValid = validateName(value);
@@ -155,7 +139,7 @@ export function useCardForm(params: UseCardFormParams) {
 
     setErrors((prev) => ({
       ...prev,
-      [name]: isValid ? null : `Invalid ${name}`,
+      [name]: isValid ? null : `Invalid ${ERROR_LABELS[name] || name}.`,
     }));
 
     return isValid;
@@ -183,7 +167,7 @@ export function useCardForm(params: UseCardFormParams) {
     // Validate active optional fields using type-safe accessors
     let areOptionalValid = true;
     for (const key of OPTIONAL_FIELD_KEYS) {
-      const val = getOptionalFieldValue(current, key);
+      const val = current[key];
       if (val) {
         const isValid = validateField(key, val);
         if (!isValid) {
@@ -206,26 +190,26 @@ export function useCardForm(params: UseCardFormParams) {
     setIsTokenizing(true);
     setPaymentError(null);
 
-    const cleanExp = current.expiry.replace(/\D/g, '');
+    const cleanExp = cleanDigits(current.expiry);
     const expMonth = cleanExp.substring(0, 2);
     const expYear = cleanExp.substring(2, 4);
 
     // Build card data with type-safe optional field handling
-    let cardData: Card = {
-      number: current.number.replace(/\D/g, ''),
+    const baseCard: Card = {
+      number: cleanDigits(current.number),
       expMonth,
       expYear,
-      cvc: current.cvc.replace(/\D/g, ''),
+      cvc: cleanDigits(current.cvc),
       name: current.name.trim(),
     };
 
-    // Safely copy optional fields
-    for (const key of OPTIONAL_FIELD_KEYS) {
-      const val = getOptionalFieldValue(current, key);
-      if (val) {
-        cardData = setOptionalFieldOnCard(cardData, key, val);
-      }
-    }
+    // Conditionally spread optional fields into result
+    const optionalEntries = OPTIONAL_FIELD_KEYS.map(key => {
+      const val = current[key as keyof CardFormValues];
+      return val ? { [key]: val } : null;
+    }).filter(Boolean);
+
+    const cardData: Card = Object.assign(baseCard, ...optionalEntries);
 
     try {
       const token = await params.adapter.tokenize(cardData);
@@ -267,7 +251,6 @@ export function useCardForm(params: UseCardFormParams) {
     handleChange,
     handleBlur,
     handleCvcFocus,
-    handleCvcBlur,
     handleSubmit,
   };
 }
