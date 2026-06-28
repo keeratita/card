@@ -1,6 +1,6 @@
 {
   "name": "@keeratita/card",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Translucent iOS-style credit card input form and direct REST tokenization package for Stripe and Omise.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
