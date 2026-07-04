@@ -8,6 +8,7 @@ import {
   fetchWithTimeout,
   normalizeNetworkError,
 } from './base';
+import { cleanDigits } from '../formatters/card-formatter';
 import { sanitizeInput } from '../security';
 import { validateCardFieldsStrict } from './validate-card';
 import { validateEmail, validatePhone } from '../domain/validation';
@@ -35,10 +36,6 @@ function base64Encode(str: string): string {
   throw new Error(
     'Base64 encoding not supported in this environment. Please use a browser environment.',
   );
-}
-
-function cleanDigits(value: string): string {
-  return value.replace(/\D/g, '');
 }
 
 function normalizeAddress(value: string, maxLength: number): string {
