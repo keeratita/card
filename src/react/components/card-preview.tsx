@@ -44,7 +44,9 @@ const CreditCardPreviewMemo = memo(function CreditCardPreview({
                 {CARD_FORM_TEXT_EN.cardholder}
               </span>
               <span className='card-meta-value card-holder-preview'>
-                {name ? name.toUpperCase() : CARD_FORM_TEXT_EN.cardholderPreviewFallback}
+                {name
+                  ? name.toUpperCase()
+                  : CARD_FORM_TEXT_EN.cardholderPreviewFallback}
               </span>
             </div>
             <div className='card-meta-block'>
@@ -55,6 +57,7 @@ const CreditCardPreviewMemo = memo(function CreditCardPreview({
                 {expiry || CARD_FORM_TEXT_EN.expiryPlaceholder}
               </span>
             </div>
+            {/* Trusted: getCardLogoSvg has an allowlist — only known-safe SVGs pass through */}
             <div
               className='brand-logo card-brand-logo'
               dangerouslySetInnerHTML={{ __html: getCardLogoSvg(brand) }}
@@ -71,7 +74,9 @@ const CreditCardPreviewMemo = memo(function CreditCardPreview({
             </span>
             <div className='card-signature-strip'>
               <div className='card-cvc-display card-cvc-preview'>
-                {''.repeat(cvc.length) || CARD_FORM_TEXT_EN.cvcPlaceholder}
+                {cvc
+                  ? '•'.repeat(cvc.length)
+                  : CARD_FORM_TEXT_EN.cvcPlaceholder}
               </div>
             </div>
           </div>

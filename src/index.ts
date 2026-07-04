@@ -36,6 +36,9 @@ export {
   formatCvc,
 } from './core/formatters/card-formatter';
 
+// Utility
+export { cleanDigits } from './core/formatters/card-formatter';
+
 // REST Gateway Adapters
 export {
   PaymentGatewayError,

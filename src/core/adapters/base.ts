@@ -4,7 +4,11 @@ const HTTPS_ERROR_MESSAGE =
 export function enforceHttps(): void {
   if (typeof window === 'undefined' || !window.location) return;
   const { protocol, hostname } = window.location;
-  if (protocol === 'http:' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+  if (
+    protocol === 'http:' &&
+    hostname !== 'localhost' &&
+    hostname !== '127.0.0.1'
+  ) {
     throw new Error(HTTPS_ERROR_MESSAGE);
   }
 }
@@ -14,7 +18,10 @@ export function toFormUrlEncoded(
 ): string {
   return Object.entries(data)
     .filter(([_, value]) => value !== undefined)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
+    )
     .join('&');
 }
 
@@ -37,9 +44,9 @@ export async function fetchWithTimeout(
 export function normalizeNetworkError(error: unknown): Error {
   if (error instanceof Error) return error;
   if (error instanceof DOMException && error.name === 'AbortError') {
-    return new Error('Request timed out.');
+    return new Error('Request timed out.', { cause: error });
   }
-  return new Error('Network connection failed.');
+  return new Error('Network connection failed.', { cause: error });
 }
 export class PaymentGatewayError extends Error {
   constructor(

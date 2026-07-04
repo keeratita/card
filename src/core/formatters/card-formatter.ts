@@ -29,10 +29,10 @@ export function formatExpiry(value: string): string {
   if (clean.length === 0) return '';
 
   let month = clean.substring(0, 2);
-  if (month.length === 2) {
-    const m = Number.parseInt(month, 10);
-    if (m < 1) month = '01';
-    if (m > 12) month = '12';
+  // Clamp invalid months to 12
+  const monthNum = Number.parseInt(month, 10);
+  if (monthNum < 1 || monthNum > 12) {
+    month = '12';
   }
 
   const year = clean.substring(2, 4);

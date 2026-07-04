@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import { COUNTRIES } from '../data/countries';
 
 export interface CountryAutocompleteProps {
@@ -59,7 +65,10 @@ export function CountryAutocomplete({
 
     if (isOpen) {
       try {
-        if (document.activeElement !== popover && !popover.matches(':popover-open')) {
+        if (
+          document.activeElement !== popover &&
+          !popover.matches(':popover-open')
+        ) {
           popover.showPopover();
         }
       } catch {
@@ -197,7 +206,10 @@ export function CountryAutocomplete({
     };
     const handleResize = () => updatePosition();
 
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    window.addEventListener('scroll', handleScroll, {
+      passive: true,
+      capture: true,
+    });
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
@@ -237,7 +249,9 @@ export function CountryAutocomplete({
   // Scroll highlighted item into view
   useEffect(() => {
     if (highlightedIndex >= 0 && listRef.current) {
-      const items = listRef.current.querySelectorAll('.country-autocomplete-item');
+      const items = listRef.current.querySelectorAll(
+        '.country-autocomplete-item',
+      );
       const item = items[highlightedIndex] as HTMLElement;
       if (item) {
         item.scrollIntoView({ block: 'nearest' });
@@ -245,50 +259,59 @@ export function CountryAutocomplete({
     }
   }, [highlightedIndex]);
 
-  const handleSelect = useCallback((countryCode: string) => {
-    onChange(countryCode);
-    setIsOpen(false);
-  }, [onChange]);
-
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
+  const handleSelect = useCallback(
+    (countryCode: string) => {
+      onChange(countryCode);
       setIsOpen(false);
-      if (inputRef.current) inputRef.current.focus();
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      e.stopPropagation();
-      setHighlightedIndex((prev) =>
-        prev < filteredCountries.length - 1 ? prev + 1 : 0
-      );
-      return;
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      e.stopPropagation();
-      setHighlightedIndex((prev) =>
-        prev > 0 ? prev - 1 : filteredCountries.length - 1
-      );
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-      if (
-        highlightedIndex >= 0 &&
-        highlightedIndex < filteredCountries.length
-      ) {
-        handleSelect(filteredCountries[highlightedIndex].code);
+    },
+    [onChange],
+  );
+
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchTerm(e.target.value);
+    },
+    [],
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(false);
+        if (inputRef.current) inputRef.current.focus();
+        return;
       }
-    }
-  }, [filteredCountries, highlightedIndex, handleSelect]);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((prev) =>
+          prev < filteredCountries.length - 1 ? prev + 1 : 0,
+        );
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setHighlightedIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredCountries.length - 1,
+        );
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (
+          highlightedIndex >= 0 &&
+          highlightedIndex < filteredCountries.length
+        ) {
+          handleSelect(filteredCountries[highlightedIndex].code);
+        }
+      }
+    },
+    [filteredCountries, highlightedIndex, handleSelect],
+  );
 
   const handleMainInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -311,13 +334,13 @@ export function CountryAutocomplete({
         case 'ArrowDown':
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev < filteredCountries.length - 1 ? prev + 1 : 0
+            prev < filteredCountries.length - 1 ? prev + 1 : 0,
           );
           break;
         case 'ArrowUp':
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev > 0 ? prev - 1 : filteredCountries.length - 1
+            prev > 0 ? prev - 1 : filteredCountries.length - 1,
           );
           break;
         case 'Enter':
@@ -331,7 +354,7 @@ export function CountryAutocomplete({
           break;
       }
     },
-    [isOpen, filteredCountries, highlightedIndex, handleSelect, openDropdown]
+    [isOpen, filteredCountries, highlightedIndex, handleSelect, openDropdown],
   );
 
   // Lazy loading indicator
@@ -339,12 +362,15 @@ export function CountryAutocomplete({
   const displayedCountries = filteredCountries.slice(0, visibleCount);
 
   return (
-    <div ref={containerRef} className={`country-autocomplete-wrapper ${className}`}>
+    <div
+      ref={containerRef}
+      className={`country-autocomplete-wrapper ${className}`}
+    >
       <input
         ref={inputRef}
         id={id}
-        type="text"
-        className="country-autocomplete-input"
+        type='text'
+        className='country-autocomplete-input'
         value={displayText}
         readOnly
         onClick={() => {
@@ -352,45 +378,47 @@ export function CountryAutocomplete({
         }}
         onKeyDown={handleMainInputKeyDown}
         placeholder={placeholder}
-        aria-haspopup="listbox"
+        aria-haspopup='listbox'
         aria-expanded={isOpen}
         aria-controls={`country-popover-${id}`}
         aria-label={placeholder}
-        role="combobox"
+        role='combobox'
         tabIndex={0}
       />
       <div
-        ref={popoverRef}
+        ref={(el) => {
+          popoverRef.current = el;
+          if (el) el.setAttribute('popover', 'auto');
+        }}
         id={`country-popover-${id}`}
-        {...{ popover: 'auto' }}
-        className="country-autocomplete-dropdown-container"
+        className='country-autocomplete-dropdown-container'
         style={getDropdownStyle()}
       >
         {isOpen && (
-          <div className="country-autocomplete-dropdown">
+          <div className='country-autocomplete-dropdown'>
             <input
               ref={searchInputRef}
-              type="text"
-              className="country-autocomplete-search"
+              type='text'
+              className='country-autocomplete-search'
               placeholder={searchPlaceholder}
               value={searchTerm}
               onChange={handleSearchChange}
               onKeyDown={handleSearchKeyDown}
-              autoComplete="off"
-              aria-label="Search countries"
+              autoComplete='off'
+              aria-label='Search countries'
             />
             <ul
               ref={listRef}
-              className="country-autocomplete-list"
-              role="listbox"
-              aria-label="Country list"
+              className='country-autocomplete-list'
+              role='listbox'
+              aria-label='Country list'
               onScroll={handleListScroll}
             >
               {displayedCountries.map((country, index) => (
                 <li
                   key={country.code}
                   className={`country-autocomplete-item ${country.code === value ? 'selected' : ''} ${index === highlightedIndex ? 'highlighted' : ''}`}
-                  role="option"
+                  role='option'
                   aria-selected={country.code === value}
                   data-code={country.code}
                   data-index={index}
@@ -403,16 +431,19 @@ export function CountryAutocomplete({
                   }}
                   tabIndex={index === highlightedIndex ? 0 : -1}
                 >
-                  <span className="country-autocomplete-flag">{country.emoji}</span>
-                  <span className="country-autocomplete-name">{country.name}</span>
-                  <span className="country-autocomplete-code">{country.code}</span>
+                  <span className='country-autocomplete-flag'>
+                    {country.emoji}
+                  </span>
+                  <span className='country-autocomplete-name'>
+                    {country.name}
+                  </span>
+                  <span className='country-autocomplete-code'>
+                    {country.code}
+                  </span>
                 </li>
               ))}
               {hasMore && (
-                <li
-                  className="country-autocomplete-loading"
-                  role="status"
-                >
+                <li className='country-autocomplete-loading' role='status'>
                   {`Scroll or type to find more (${filteredCountries.length - visibleCount} more)`}
                 </li>
               )}
