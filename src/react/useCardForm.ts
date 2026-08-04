@@ -2,21 +2,16 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, PaymentGateway, Token } from '../core/domain/card';
 import { detectCardBrand } from '../core/domain/brand';
 import {
-  cleanDigits,
   formatCardNumber,
   formatExpiry,
   formatCvc,
 } from '../core/formatters/card-formatter';
 import {
-  luhnCheck,
-  validateExpiry,
-  validateCvc,
-  validateName,
-  validateEmail,
-  validatePhone,
-  validatePostalCode,
-  validateCountry,
-} from '../core/domain/validation';
+  validateField as validateFieldCore,
+  getFieldErrorMessage,
+  buildCard,
+} from '../core/form';
+import type { CardFormValuesLike } from '../core/form';
 import { OPTIONAL_FIELD_KEYS } from '../core/domain/optional-fields';
 
 export interface CardFormValues {
@@ -40,17 +35,6 @@ export interface UseCardFormParams {
   onSubmit?: (data: { token: Token }) => Promise<void> | void;
   onError?: (error: Error) => void;
 }
-
-const ERROR_LABELS: Record<string, string> = {
-  number: 'Card number',
-  expiry: 'Expiry date',
-  cvc: 'CVC',
-  name: 'Cardholder name',
-  email: 'Email',
-  phone: 'Phone',
-  postalCode: 'Postal code',
-  country: 'Country',
-};
 
 export function useCardForm(params: UseCardFormParams) {
   const [values, setValues] = useState<CardFormValues>({
@@ -133,39 +117,10 @@ export function useCardForm(params: UseCardFormParams) {
 
   const getFieldError = useCallback(
     (name: string, value: string): string | null => {
-      let isValid: boolean;
-
-      if (name === 'number') {
-        const cleanNum = cleanDigits(value);
-        isValid = luhnCheck(cleanNum);
-      } else if (name === 'expiry') {
-        const cleanExp = cleanDigits(value);
-        if (cleanExp.length !== 4) {
-          isValid = false;
-        } else {
-          isValid = validateExpiry(
-            cleanExp.substring(0, 2),
-            cleanExp.substring(2, 4),
-          );
-        }
-      } else if (name === 'cvc') {
-        const cleanCvc = cleanDigits(value);
-        isValid = validateCvc(cleanCvc, valuesRef.current.number);
-      } else if (name === 'name') {
-        isValid = validateName(value);
-      } else if (name === 'email') {
-        isValid = validateEmail(value);
-      } else if (name === 'phone') {
-        isValid = validatePhone(value);
-      } else if (name === 'postalCode') {
-        isValid = validatePostalCode(value);
-      } else if (name === 'country') {
-        isValid = validateCountry(value);
-      } else {
-        isValid = value.trim().length > 0;
-      }
-
-      return isValid ? null : `Invalid ${ERROR_LABELS[name] || name}.`;
+      const { isValid } = validateFieldCore(name, value, {
+        cardNumber: valuesRef.current.number,
+      });
+      return isValid ? null : getFieldErrorMessage(name);
     },
     [],
   );
@@ -231,26 +186,10 @@ export function useCardForm(params: UseCardFormParams) {
       setIsTokenizing(true);
       setPaymentError(null);
 
-      const cleanExp = cleanDigits(current.expiry);
-      const expMonth = cleanExp.substring(0, 2);
-      const expYear = cleanExp.substring(2, 4);
-
-      // Build card data with type-safe optional field handling
-      const baseCard: Card = {
-        number: cleanDigits(current.number),
-        expMonth,
-        expYear,
-        cvc: cleanDigits(current.cvc),
-        name: current.name.trim(),
-      };
-
-      // Conditionally spread optional fields into result
-      const optionalEntries = OPTIONAL_FIELD_KEYS.map((key) => {
-        const val = current[key as keyof CardFormValues];
-        return val ? { [key]: val } : null;
-      }).filter(Boolean);
-
-      const cardData: Card = Object.assign(baseCard, ...optionalEntries);
+      const cardData: Card = buildCard(
+        current as CardFormValuesLike,
+        OPTIONAL_FIELD_KEYS,
+      );
 
       try {
         const token = await params.adapter.tokenize(cardData);

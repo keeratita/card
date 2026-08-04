@@ -77,7 +77,8 @@ describe('CardNumberInput', () => {
     expect(input.autocomplete).toBe('cc-number');
     expect(input.inputMode).toBe('numeric');
     expect(input.required).toBe(true);
-    expect(input.maxLength).toBe(19);
+    // 23 = 19 digits + 4 spaces, so 19-digit cards aren't truncated by maxLength
+    expect(input.maxLength).toBe(23);
   });
 
   it('should accept custom label', () => {

@@ -10,6 +10,11 @@ import {
 import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
 import { escapeHtml } from '../core/security';
+import {
+  filterCountries,
+  moveHighlight,
+  findCountryByCode,
+} from '../core/form';
 
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
@@ -275,17 +280,12 @@ export class CountrySelectComponent {
   selectedCountry = computed(() => {
     const value = this.value();
     if (!value) return null;
-    return this.countries.find(c => c.code === value) || null;
+    return findCountryByCode(value) || null;
   });
 
   // Filtered countries based on search query
   filteredCountries = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    if (!query) return this.countries;
-    return this.countries.filter(c =>
-      c.name.toLowerCase().includes(query) ||
-      c.code.toLowerCase().includes(query)
-    );
+    return filterCountries(this.searchQuery());
   });
 
   // Reference to search input for focus management
@@ -338,14 +338,16 @@ export class CountrySelectComponent {
     switch (event.key) {
       case 'ArrowDown': {
         event.preventDefault();
-        this.highlightedIndex.update(i => 
-          i < this.filteredCountries().length - 1 ? i + 1 : i
+        this.highlightedIndex.update((i) =>
+          moveHighlight(i, 'down', this.filteredCountries().length),
         );
         break;
       }
       case 'ArrowUp': {
         event.preventDefault();
-        this.highlightedIndex.update(i => (i > 0 ? i - 1 : i));
+        this.highlightedIndex.update((i) =>
+          moveHighlight(i, 'up', this.filteredCountries().length),
+        );
         break;
       }
       case 'Enter': {
@@ -362,15 +364,6 @@ export class CountrySelectComponent {
         break;
       }
     }
-  }
-
-  onInputChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    // Emit change event for Angular forms integration
-    const customEvent = new CustomEvent('kgCountryChange', {
-      detail: { name: this.controlName(), value: target.value },
-    });
-    (event.target as HTMLElement).dispatchEvent(customEvent);
   }
 }
 

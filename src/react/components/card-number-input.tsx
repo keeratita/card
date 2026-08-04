@@ -46,7 +46,7 @@ export function CardNumberInput({
         inputMode="numeric"
         autoComplete="cc-number"
         required
-        maxLength={19}
+        maxLength={23}
       />
     </div>
   );

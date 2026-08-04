@@ -295,6 +295,17 @@ export class AutocompleteDropdown {
   private open(): void {
     this.isOpen = true;
 
+    // Reset search state so reopening always shows the full list with an
+    // empty search box (the previous filter must not persist).
+    const searchInput = this.dropdownEl.querySelector(
+      '.autocomplete-search-input',
+    ) as HTMLInputElement;
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    this.filteredOptions = [...this.originalOptions];
+    this.renderResults();
+
     // Position the dropdown using fixed positioning to escape all parent overflow constraints
     // Get the actual input element's position (not the wrapper)
     const inputRect = this.inputEl.getBoundingClientRect();
@@ -323,9 +334,13 @@ export class AutocompleteDropdown {
     }
     
     this.inputEl.setAttribute('aria-expanded', 'true');
-    
+
+    // Recalculate the position now that the dropdown is displayed, so the
+    // actual rendered height (which may differ from the estimate) is used to
+    // decide whether to render above or below the input.
+    this.repositionDropdown();
+
     // Focus search input
-    const searchInput = this.dropdownEl.querySelector('.autocomplete-search-input') as HTMLInputElement;
     setTimeout(() => {
       searchInput.focus();
       searchInput.select();
@@ -384,18 +399,29 @@ export class AutocompleteDropdown {
 
   private filterOptions(query: string): void {
     const searchQuery = query.toLowerCase().trim();
-    
+
     if (!searchQuery) {
       this.filteredOptions = [...this.options];
     } else {
-      this.filteredOptions = this.options.filter((option) => {
-        return (
-          option.label.toLowerCase().includes(searchQuery) ||
-          option.value.toLowerCase().includes(searchQuery)
-        );
-      });
+      // Prioritize options that start with the query, then those that merely
+      // contain it. This keeps the list relevant when typing a single letter
+      // (e.g. "T" surfaces Thailand/Taiwan before Afghanistan).
+      const startsWith: AutocompleteOption[] = [];
+      const contains: AutocompleteOption[] = [];
+
+      for (const option of this.options) {
+        const label = option.label.toLowerCase();
+        const value = option.value.toLowerCase();
+        if (label.startsWith(searchQuery) || value.startsWith(searchQuery)) {
+          startsWith.push(option);
+        } else if (label.includes(searchQuery) || value.includes(searchQuery)) {
+          contains.push(option);
+        }
+      }
+
+      this.filteredOptions = [...startsWith, ...contains];
     }
-    
+
     this.highlightedIndex = this.filteredOptions.length > 0 ? 0 : -1;
     this.renderResults();
   }

@@ -16,9 +16,10 @@ export function formatCardNumber(value: string): string {
     ].filter(Boolean);
     return parts.join(' ');
   } else {
+    const digits = clean.slice(0, 19);
     const parts = [];
-    for (let i = 0; i < clean.length && i < 16; i += 4) {
-      parts.push(clean.substring(i, i + 4));
+    for (let i = 0; i < digits.length; i += 4) {
+      parts.push(digits.substring(i, i + 4));
     }
     return parts.join(' ');
   }

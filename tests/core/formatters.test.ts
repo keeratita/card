@@ -57,9 +57,14 @@ describe('Core Formatters', () => {
       expect(formatCardNumber('371111111111111')).toBe('3711 111111 11111');
     });
 
-    it('should truncate very long card numbers', () => {
+    it('should truncate very long card numbers to 19 digits', () => {
       const veryLong = '4'.repeat(100);
-      expect(formatCardNumber(veryLong).length).toBeLessThan(20); // Should be truncated
+      expect(formatCardNumber(veryLong)).toBe('4444 4444 4444 4444 444');
+    });
+
+    it('should preserve all digits of a 19-digit card number', () => {
+      const nineteen = '4111111111111111111';
+      expect(formatCardNumber(nineteen)).toBe('4111 1111 1111 1111 111');
     });
 
     it('should handle empty string', () => {
@@ -117,7 +122,7 @@ describe('Formatter Security Edge Cases', () => {
 
     it('should handle control characters', () => {
       const result = formatCardNumber('4111\x001111111111111');
-      expect(result).toBe('4111 1111 1111 1111'); // Control chars removed
+      expect(result).toBe('4111 1111 1111 1111 1'); // Control chars removed, all 17 digits preserved
     });
   });
 

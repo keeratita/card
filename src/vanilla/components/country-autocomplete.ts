@@ -7,6 +7,7 @@
 
 import { AutocompleteDropdown, AutocompleteOption } from './autocomplete-dropdown';
 import { COUNTRIES } from '../../data/countries';
+import { findCountryByCode } from '../../core/form';
 
 export interface CountryAutocompleteConfig {
   container: HTMLElement | string;
@@ -22,7 +23,7 @@ export interface CountryAutocompleteConfig {
  * Extracted to avoid creating a new closure per country.
  */
 function renderCountryOption(option: AutocompleteOption): string {
-  const countryData = COUNTRIES.find((c) => c.code === option.value);
+  const countryData = findCountryByCode(option.value);
   const emoji = countryData?.emoji || '';
   const name = countryData?.name || option.label;
   return `
@@ -53,7 +54,7 @@ export class CountryAutocomplete {
       maxHeight: config.maxHeight,
       showIcons: true,
       onSelect: (value: string, _option: AutocompleteOption) => {
-        const country = COUNTRIES.find((c) => c.code === value);
+        const country = findCountryByCode(value);
         if (country) {
           config.onSelect(country.code, country);
         }
@@ -73,7 +74,7 @@ export class CountryAutocomplete {
   public getSelectedCountry(): typeof COUNTRIES[0] | undefined {
     const selected = this.autocomplete.getSelectedOption();
     if (selected) {
-      return COUNTRIES.find((c) => c.code === selected.value);
+      return findCountryByCode(selected.value);
     }
     return undefined;
   }

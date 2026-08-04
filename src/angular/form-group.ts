@@ -1,4 +1,5 @@
 import { FormGroup, FormControl, Validators, ValidatorFn } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { CardFormPreset, OptionalCardField } from '../core/domain/card';
 import { resolveActiveFields } from '../core/domain/optional-fields';
 import {
@@ -20,6 +21,9 @@ export interface CardFormGroupConfig {
 export interface UpdateCardFormGroupConfig extends CardFormGroupConfig {
   resetValues?: boolean;
 }
+
+/** Tracks the internal CVC cross-validation subscription per form group for cleanup. */
+const cvcSubscriptions = new WeakMap<FormGroup<CardFormControls>, Subscription>();
 
 /**
  * The value type for a card form group containing all core and optional fields.
@@ -100,13 +104,10 @@ export function createCardFormGroup(
   const group = new FormGroup(controls);
 
   // Cross-validate CVC when card number changes to reactively update CVC length constraints (e.g. Amex vs Visa)
-  if (controls.number.valueChanges) {
-    controls.number.valueChanges.subscribe(() => {
-      if (controls.cvc.updateValueAndValidity) {
-        controls.cvc.updateValueAndValidity({ onlySelf: true });
-      }
-    });
-  }
+  const subscription = controls.number.valueChanges.subscribe(() => {
+    controls.cvc.updateValueAndValidity({ onlySelf: true });
+  });
+  cvcSubscriptions.set(group, subscription);
 
   // Add required validator to active optional fields
   activeOptionalFields.forEach((field) => {
@@ -173,5 +174,20 @@ export function updateCardFormGroup(
     allOptionalFields.forEach((field) => {
       group.controls[field].reset('');
     });
+  }
+}
+
+/**
+ * Releases the internal CVC cross-validation subscription created by
+ * `createCardFormGroup`. Call this when the form group is no longer needed
+ * (e.g. on component destroy) to prevent memory leaks.
+ */
+export function disposeCardFormGroup(
+  group: FormGroup<CardFormControls>,
+): void {
+  const subscription = cvcSubscriptions.get(group);
+  if (subscription) {
+    subscription.unsubscribe();
+    cvcSubscriptions.delete(group);
   }
 }

@@ -39,6 +39,29 @@ export {
 // Utility
 export { cleanDigits } from './core/formatters/card-formatter';
 
+// Shared form logic (framework-agnostic)
+export {
+  validateField,
+  getFieldErrorMessage,
+  parseExpiry,
+  buildCard,
+  getCardNumberMaxLength,
+  restoreCaret,
+  maskSensitiveValue,
+  filterCountries,
+  moveHighlight,
+  findCountryByCode,
+  buildSuccessSummary,
+} from './core/form';
+export type {
+  CardFieldName,
+  ValidateFieldContext,
+  FieldValidationResult,
+  ParsedExpiry,
+  CardFormValuesLike,
+  SuccessSummaryItem,
+} from './core/form';
+
 // REST Gateway Adapters
 export {
   PaymentGatewayError,

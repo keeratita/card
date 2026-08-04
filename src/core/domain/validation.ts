@@ -99,8 +99,8 @@ export function validateCardNumber(cardNumber: string): boolean {
   const clean = cardNumber.replace(/\D/g, '').slice(0, MAX_CARD_NUMBER_LENGTH);
   if (clean.length < 13 || clean.length > 19) return false;
 
-  const brand = detectCardBrand(clean);
-  if (brand === 'unknown') return false;
-
+  // Note: brand is intentionally not required here. Rejecting unrecognized
+  // brands (e.g. UnionPay, Maestro, newer ranges) would decline valid cards
+  // that still pass Luhn. Luhn + length is the acceptance gate.
   return luhnCheck(clean);
 }

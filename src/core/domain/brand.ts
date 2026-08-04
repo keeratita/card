@@ -12,10 +12,6 @@ export function detectCardBrand(cardNumber: string): CardBrand {
 
   const cleanNumber = cardNumber.replace(/\D/g, '').slice(0, 19);
 
-  if (cleanNumber.length < 6) {
-    return 'unknown';
-  }
-
   // Visa: starts with 4
   if (cleanNumber.startsWith('4')) {
     return 'visa';

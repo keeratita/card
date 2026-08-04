@@ -54,7 +54,7 @@ function buildOmisePayload(
     'card[expiration_month]': cleanDigits(card.expMonth).slice(0, 2),
     'card[expiration_year]': expYear,
     'card[security_code]': cleanDigits(card.cvc).slice(0, MAX_CVC_LENGTH),
-    'card[name]': card.name.trim().slice(0, MAX_NAME_LENGTH),
+    'card[name]': sanitizeInput(card.name).trim().slice(0, MAX_NAME_LENGTH),
   };
 
   if (card.addressLine1)

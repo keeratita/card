@@ -62,7 +62,7 @@ export class StripeAdapter implements PaymentGateway {
       'card[exp_month]': card.expMonth.replace(/\D/g, '').slice(0, 2),
       'card[exp_year]': expYear,
       'card[cvc]': card.cvc.replace(/\D/g, '').slice(0, MAX_CVC_LENGTH),
-      'card[name]': card.name.trim().slice(0, MAX_NAME_LENGTH),
+      'card[name]': sanitizeInput(card.name).trim().slice(0, MAX_NAME_LENGTH),
     };
 
     if (card.addressLine1)
