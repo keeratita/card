@@ -24,29 +24,29 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
       h2 {
         font-size: 28px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         margin: 0 0 8px 0;
       }
       .subtitle {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0 0 24px 0;
         font-size: 15px;
       }
       .success-msg {
         padding: 16px;
-        background-color: #f0fdf4;
+        background-color: rgba(48, 209, 88, 0.1);
         border-radius: 8px;
         margin-bottom: 20px;
-        border: 1px solid #bbf7d0;
-        color: #166534;
+        border: 1px solid rgba(48, 209, 88, 0.25);
+        color: #30d158;
       }
       .error-msg {
         padding: 16px;
-        background-color: #fef2f2;
+        background-color: rgba(255, 69, 58, 0.1);
         border-radius: 8px;
         margin-bottom: 20px;
-        border: 1px solid #fecaca;
-        color: #991b1b;
+        border: 1px solid rgba(255, 69, 58, 0.25);
+        color: #ff453a;
       }
       form {
         display: flex;
@@ -59,65 +59,75 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
         font-family: 'SF Mono', Monaco, Consolas, monospace;
       }
       input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
       }
       input.invalid {
-        border-color: #cf222e;
+        border-color: #ff453a;
+        background-color: rgba(255, 69, 58, 0.08);
       }
       input::placeholder {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.2);
       }
       .submit-btn {
         width: 100%;
-        padding: 14px;
+        padding: 16px 20px;
         background-color: #f05138;
         color: white;
         border: none;
-        border-radius: 6px;
-        font-size: 15px;
+        border-radius: 9999px;
+        font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s ease;
         margin-top: 8px;
+        box-shadow: 0 8px 20px rgba(240, 81, 56, 0.35);
       }
       .submit-btn:hover:not(:disabled) {
         background-color: #d64530;
+        box-shadow: 0 10px 24px rgba(240, 81, 56, 0.45);
+        transform: translateY(-1px);
       }
       .submit-btn:disabled {
-        opacity: 0.6;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.55);
+        box-shadow: none;
         cursor: not-allowed;
+        transform: none;
       }
       .code-section {
         margin-top: 32px;
         padding: 20px;
-        background-color: #161b22;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
         overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .code-section h4 {
-        color: #fff;
+        color: #ffffff;
         margin: 0 0 12px 0;
         font-size: 14px;
         font-weight: 600;
       }
       .code-section pre {
-        color: #c9d1d9;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 12px;
         margin: 0;
         line-height: 1.6;
@@ -274,21 +284,21 @@ async function handleSubmit(data) {
       h2 {
         font-size: 28px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         margin: 0 0 8px 0;
       }
       .subtitle {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0 0 24px 0;
         font-size: 15px;
       }
       .success-msg {
         padding: 16px;
-        background-color: #f0fdf4;
+        background-color: rgba(48, 209, 88, 0.1);
         border-radius: 8px;
         margin-bottom: 20px;
-        border: 1px solid #bbf7d0;
-        color: #166534;
+        border: 1px solid rgba(48, 209, 88, 0.25);
+        color: #30d158;
       }
       form {
         display: flex;
@@ -301,65 +311,75 @@ async function handleSubmit(data) {
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
         font-family: 'SF Mono', Monaco, Consolas, monospace;
       }
       input:focus {
         outline: none;
         border-color: #635bff;
-        box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+        box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
       }
       input.invalid {
-        border-color: #cf222e;
+        border-color: #ff453a;
+        background-color: rgba(255, 69, 58, 0.08);
       }
       input::placeholder {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.2);
       }
       .submit-btn {
         width: 100%;
-        padding: 14px;
+        padding: 16px 20px;
         background-color: #635bff;
         color: white;
         border: none;
-        border-radius: 6px;
-        font-size: 15px;
+        border-radius: 9999px;
+        font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s ease;
         margin-top: 8px;
+        box-shadow: 0 8px 20px rgba(99, 91, 255, 0.35);
       }
       .submit-btn:hover:not(:disabled) {
         background-color: #544de6;
+        box-shadow: 0 10px 24px rgba(99, 91, 255, 0.45);
+        transform: translateY(-1px);
       }
       .submit-btn:disabled {
-        opacity: 0.6;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.55);
+        box-shadow: none;
         cursor: not-allowed;
+        transform: none;
       }
       .code-section {
         margin-top: 32px;
         padding: 20px;
-        background-color: #161b22;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
         overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .code-section h4 {
-        color: #fff;
+        color: #ffffff;
         margin: 0 0 12px 0;
         font-size: 14px;
         font-weight: 600;
       }
       .code-section pre {
-        color: #c9d1d9;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 12px;
         margin: 0;
         line-height: 1.6;

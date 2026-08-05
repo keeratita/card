@@ -26,43 +26,52 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
       h2 {
         font-size: 28px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         margin: 0 0 8px 0;
       }
       .subtitle {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0 0 24px 0;
         font-size: 15px;
       }
       .info-box {
-        background-color: #fff8c5;
-        border: 1px solid #f1c40f;
+        background-color: rgba(255, 204, 0, 0.08);
+        border: 1px solid rgba(255, 204, 0, 0.25);
         padding: 16px;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-bottom: 24px;
       }
       .info-box h4 {
         margin: 0 0 8px 0;
-        color: #856404;
+        color: #ffd60a;
         font-size: 14px;
       }
       .info-box p {
         margin: 0;
-        color: #856404;
+        color: rgba(255, 214, 10, 0.8);
         font-size: 13px;
         line-height: 1.5;
       }
+      .info-box code {
+        background-color: rgba(255, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
       .form-section {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.03);
         padding: 24px;
-        border-radius: 8px;
+        border-radius: 16px;
         margin-bottom: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .form-section h3 {
         margin: 0 0 16px 0;
         font-size: 16px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .form-group {
         margin-bottom: 16px;
@@ -71,31 +80,37 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       .form-input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       .form-input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+      }
+      .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
       }
       .country-display {
         display: flex;
         align-items: center;
         gap: 12px;
         padding: 16px;
-        background-color: #f1f8ff;
-        border: 1px solid #b3d7ff;
-        border-radius: 8px;
+        background-color: rgba(10, 132, 255, 0.08);
+        border: 1px solid rgba(10, 132, 255, 0.25);
+        border-radius: 12px;
         margin-top: 16px;
       }
       .country-flag {
@@ -106,15 +121,15 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
       }
       .country-name {
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         font-size: 16px;
       }
       .country-code {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 13px;
       }
       .country-dial-code {
-        background-color: #0366d6;
+        background-color: #0a84ff;
         color: white;
         padding: 4px 12px;
         border-radius: 16px;
@@ -127,23 +142,29 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
       .search-input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       .search-input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+      }
+      .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
       }
       .country-list {
         max-height: 200px;
         overflow-y: auto;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
-        background: white;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.03);
       }
       .country-item {
         display: flex;
@@ -154,37 +175,38 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         transition: background-color 0.15s ease;
       }
       .country-item:hover {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.05);
       }
       .country-item.selected {
-        background-color: #f1f8ff;
-        border-left: 3px solid #0366d6;
+        background-color: rgba(10, 132, 255, 0.12);
+        border-left: 3px solid #0a84ff;
       }
       .country-item-flag {
         font-size: 20px;
       }
       .country-item-name {
         flex: 1;
-        color: #24292e;
+        color: #ffffff;
         font-size: 14px;
       }
       .country-item-code {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 12px;
       }
       .code-example {
-        background-color: #161b22;
+        background-color: rgba(255, 255, 255, 0.03);
         padding: 16px;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-top: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .code-example h4 {
-        color: #fff;
+        color: #ffffff;
         margin: 0 0 12px 0;
         font-size: 14px;
       }
       .code-example pre {
-        color: #c9d1d9;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 12px;
         margin: 0;
         line-height: 1.6;
@@ -194,18 +216,19 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
       .country-select {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
-        background-color: white;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
         cursor: pointer;
       }
       .country-select:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
       }
       .country-select-wrapper {
         position: relative;
@@ -215,22 +238,24 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         align-items: center;
         justify-content: space-between;
         padding: 12px 14px;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
-        background-color: #fff;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.05);
         cursor: pointer;
         transition: all 0.15s ease;
         font-size: 15px;
+        color: #ffffff;
       }
       .country-select-trigger:hover {
-        border-color: #0366d6;
+        border-color: #0a84ff;
       }
       .country-select-trigger.open {
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
       }
       .country-select-trigger.invalid {
-        border-color: #cf222e;
+        border-color: #ff453a;
+        background-color: rgba(255, 69, 58, 0.08);
       }
       .country-select-display {
         display: flex;
@@ -241,13 +266,13 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         font-size: 20px;
       }
       .country-select-name {
-        color: #24292e;
+        color: #ffffff;
       }
       .country-select-placeholder {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.2);
       }
       .country-select-arrow {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         transition: transform 0.2s ease;
       }
       .country-select-arrow.open {
@@ -258,30 +283,38 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         top: calc(100% + 4px);
         left: 0;
         right: 0;
-        background: #fff;
-        border: 1px solid #d0d7de;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        background: rgba(10, 11, 14, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         z-index: 1000;
         overflow: hidden;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .country-select-search {
         padding: 12px;
-        border-bottom: 1px solid #e1e4e8;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       }
       .country-select-search-input {
         width: 100%;
         padding: 10px 12px;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
         font-size: 14px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       .country-select-search-input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+      }
+      .country-select-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
       }
       .country-select-list {
         max-height: 240px;
@@ -296,28 +329,28 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
         transition: background-color 0.15s ease;
       }
       .country-select-item:hover {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.05);
       }
       .country-select-item.selected {
-        background-color: #f1f8ff;
-        border-left: 3px solid #0366d6;
+        background-color: rgba(10, 132, 255, 0.12);
+        border-left: 3px solid #0a84ff;
       }
       .country-select-item-flag {
         font-size: 20px;
       }
       .country-select-item-name {
         flex: 1;
-        color: #24292e;
+        color: #ffffff;
         font-size: 14px;
       }
       .country-select-item-code {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 12px;
       }
       .country-select-no-results {
         padding: 20px;
         text-align: center;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
     `,
@@ -368,7 +401,7 @@ import { COUNTRIES, type Country } from '@keeratita/card/angular';
             }
           </div>
         } @else {
-          <p style="color: #586069; text-align: center; padding: 20px;">
+          <p style="color: rgba(255,255,255,0.55); text-align: center; padding: 20px;">
             No countries found matching "{{ searchQuery() }}"
           </p>
         }

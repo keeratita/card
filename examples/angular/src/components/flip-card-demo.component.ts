@@ -28,11 +28,11 @@ import {
       h2 {
         font-size: 28px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         margin: 0 0 8px 0;
       }
       .subtitle {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0 0 24px 0;
         font-size: 15px;
       }
@@ -94,20 +94,23 @@ import {
       }
       .flip-hint {
         text-align: center;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
         margin-bottom: 24px;
       }
       .form-section {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.03);
         padding: 24px;
-        border-radius: 8px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .form-section h3 {
         margin: 0 0 16px 0;
         font-size: 16px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .form-group {
         margin-bottom: 16px;
@@ -116,22 +119,28 @@ import {
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       .form-input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       .form-input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+      }
+      .form-input::placeholder {
+        color: rgba(255, 255, 255, 0.2);
       }
       .form-grid {
         display: grid;
@@ -139,22 +148,28 @@ import {
         gap: 16px;
       }
       .info-box {
-        background-color: #fff8c5;
-        border: 1px solid #f1c40f;
+        background-color: rgba(255, 204, 0, 0.08);
+        border: 1px solid rgba(255, 204, 0, 0.25);
         padding: 16px;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-top: 24px;
       }
       .info-box h4 {
         margin: 0 0 8px 0;
-        color: #856404;
+        color: #ffd60a;
         font-size: 14px;
       }
       .info-box p {
         margin: 0;
-        color: #856404;
+        color: rgba(255, 214, 10, 0.8);
         font-size: 13px;
         line-height: 1.5;
+      }
+      .info-box code {
+        background-color: rgba(255, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
       }
     `,
   ],

@@ -27,27 +27,29 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
       align-items: center;
       justify-content: space-between;
       padding: 12px 14px;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      background-color: #fff;
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.05);
       cursor: pointer;
       transition: all 0.15s ease;
       font-size: 15px;
       box-sizing: border-box;
       height: 45px;
+      color: #ffffff;
     }
 
     .country-select-trigger:hover {
-      border-color: #0366d6;
+      border-color: #0a84ff;
     }
 
     .country-select-trigger.open {
-      border-color: #0366d6;
-      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+      border-color: #0a84ff;
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
     }
 
     .country-select-trigger.invalid {
-      border-color: #cf222e;
+      border-color: #ff453a;
+      background-color: rgba(255, 69, 58, 0.08);
     }
 
     .country-select-display {
@@ -61,15 +63,15 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
     }
 
     .country-select-name {
-      color: #24292e;
+      color: #ffffff;
     }
 
     .country-select-placeholder {
-      color: #6e7781;
+      color: rgba(255, 255, 255, 0.2);
     }
 
     .country-select-arrow {
-      color: #586069;
+      color: rgba(255, 255, 255, 0.55);
       transition: transform 0.2s ease;
     }
 
@@ -82,33 +84,42 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
       top: calc(100% + 4px);
       left: 0;
       right: 0;
-      background: #fff;
-      border: 1px solid #d0d7de;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      background: rgba(10, 11, 14, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       z-index: 1000;
       overflow: hidden;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .country-select-search {
       padding: 12px;
-      border-bottom: 1px solid #e1e4e8;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .country-select-search-input {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
       font-size: 14px;
       transition: all 0.15s ease;
       box-sizing: border-box;
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      font-family: inherit;
     }
 
     .country-select-search-input:focus {
       outline: none;
-      border-color: #0366d6;
-      box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+      border-color: #0a84ff;
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+    }
+
+    .country-select-search-input::placeholder {
+      color: rgba(255, 255, 255, 0.2);
     }
 
     .country-select-list {
@@ -127,12 +138,12 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
 
     .country-select-item:hover,
     .country-select-item.highlighted {
-      background-color: #f6f8fa;
+      background-color: rgba(255, 255, 255, 0.05);
     }
 
     .country-select-item.selected {
-      background-color: #f1f8ff;
-      border-left: 3px solid #0366d6;
+      background-color: rgba(10, 132, 255, 0.12);
+      border-left: 3px solid #0a84ff;
     }
 
     .country-select-item-flag {
@@ -141,19 +152,19 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
 
     .country-select-item-name {
       flex: 1;
-      color: #24292e;
+      color: #ffffff;
       font-size: 14px;
     }
 
     .country-select-item-code {
-      color: #586069;
+      color: rgba(255, 255, 255, 0.55);
       font-size: 12px;
     }
 
     .country-select-no-results {
       padding: 20px;
       text-align: center;
-      color: #586069;
+      color: rgba(255, 255, 255, 0.55);
       font-size: 14px;
     }
 
@@ -165,7 +176,7 @@ import { getFieldDisplayText } from '../../../../src/core/domain/optional-fields
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
-      color: #24292e;
+      color: rgba(255, 255, 255, 0.55);
       font-size: 14px;
     }
   `],

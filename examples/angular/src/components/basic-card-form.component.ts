@@ -43,31 +43,34 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
       h2 {
         font-size: 28px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
         margin: 0 0 8px 0;
       }
       .subtitle {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0 0 24px 0;
         font-size: 15px;
       }
       .config-section {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.03);
         padding: 20px;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-bottom: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .config-section h3 {
         margin: 0 0 16px 0;
         font-size: 16px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .gateway-label {
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       .gateway-buttons {
@@ -77,35 +80,39 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
       .gateway-btn {
         flex: 1;
         padding: 10px 16px;
-        border: 1px solid #e1e4e8;
-        border-radius: 6px;
-        background-color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.05);
         cursor: pointer;
         font-weight: 500;
         font-size: 14px;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         transition: all 0.15s ease;
       }
+      .gateway-btn:hover {
+        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.08);
+      }
       .gateway-btn.active {
-        border-color: #0366d6;
-        background-color: #f1f8ff;
-        color: #0366d6;
+        border-color: #0a84ff;
+        background-color: rgba(10, 132, 255, 0.12);
+        color: #0a84ff;
       }
       .success-msg {
         padding: 16px;
-        background-color: #f0fdf4;
+        background-color: rgba(48, 209, 88, 0.1);
         border-radius: 8px;
         margin-bottom: 20px;
-        border: 1px solid #bbf7d0;
-        color: #166534;
+        border: 1px solid rgba(48, 209, 88, 0.25);
+        color: #30d158;
       }
       .error-msg {
         padding: 16px;
-        background-color: #fef2f2;
+        background-color: rgba(255, 69, 58, 0.1);
         border-radius: 8px;
         margin-bottom: 20px;
-        border: 1px solid #fecaca;
-        color: #991b1b;
+        border: 1px solid rgba(255, 69, 58, 0.25);
+        color: #ff453a;
       }
       form {
         display: flex;
@@ -118,28 +125,32 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
       }
       input.invalid {
-        border-color: #cf222e;
+        border-color: #ff453a;
+        background-color: rgba(255, 69, 58, 0.08);
       }
       input::placeholder {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.2);
       }
       .input-grid {
         display: grid;
@@ -148,44 +159,51 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
         margin-bottom: 16px;
       }
       .error-text {
-        color: #cf222e;
+        color: #ff453a;
         font-size: 13px;
         margin-top: 4px;
       }
       .submit-btn {
         width: 100%;
-        padding: 14px;
-        background-color: #2da44e;
+        padding: 16px 20px;
+        background-color: #0a84ff;
         color: white;
         border: none;
-        border-radius: 6px;
-        font-size: 15px;
+        border-radius: 9999px;
+        font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px rgba(10, 132, 255, 0.35);
       }
       .submit-btn:hover:not(:disabled) {
-        background-color: #2c974b;
+        opacity: 0.95;
+        box-shadow: 0 10px 24px rgba(10, 132, 255, 0.45);
+        transform: translateY(-1px);
       }
       .submit-btn:disabled {
-        opacity: 0.6;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.55);
+        box-shadow: none;
         cursor: not-allowed;
+        transform: none;
       }
       .code-section {
         margin-top: 32px;
         padding: 20px;
-        background-color: #161b22;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
         overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .code-section h4 {
-        color: #fff;
+        color: #ffffff;
         margin: 0 0 12px 0;
         font-size: 14px;
         font-weight: 600;
       }
       .code-section pre {
-        color: #c9d1d9;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 12px;
         margin: 0;
         line-height: 1.6;

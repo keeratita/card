@@ -34,21 +34,21 @@ export function BasicCardForm() {
 
   return (
     <div>
-      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#24292e', marginBottom: '8px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#ffffff', marginBottom: '8px' }}>
         Basic Card Form
       </h2>
-      <p style={{ color: '#586069', marginBottom: '24px', fontSize: '14px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontSize: '14px' }}>
         A simple integration example with default settings.
       </p>
 
       {token && (
         <div style={{ 
           padding: '16px', 
-          backgroundColor: '#f0fdf4', 
+          backgroundColor: 'rgba(48,209,88,0.1)', 
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #bbf7d0',
-          color: '#166534'
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>✓ Success!</strong> Token: {token.id}
         </div>
@@ -57,11 +57,11 @@ export function BasicCardForm() {
       {error && (
         <div style={{ 
           padding: '16px', 
-          backgroundColor: '#fef2f2', 
+          backgroundColor: 'rgba(255,69,58,0.1)', 
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b'
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a'
         }}>
           <strong>⚠ Error:</strong> {error}
         </div>
@@ -97,17 +97,19 @@ export function BasicCardFormWithHook() {
 
   return (
     <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h2>Card Form with Hook</h2>
-      <p style={{ color: '#666', marginBottom: '20px' }}>
+      <h2 style={{ color: '#ffffff' }}>Card Form with Hook</h2>
+      <p style={{ color: 'rgba(255,255,255,0.55)', marginBottom: '20px' }}>
         Using the useCardForm hook for custom handling.
       </p>
 
       {result?.success && (
         <div style={{ 
           padding: '16px', 
-          backgroundColor: '#d4edda', 
+          backgroundColor: 'rgba(48,209,88,0.1)', 
           borderRadius: '8px',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>Payment successful!</strong>
         </div>
@@ -116,9 +118,11 @@ export function BasicCardFormWithHook() {
       {result?.error && (
         <div style={{ 
           padding: '16px', 
-          backgroundColor: '#f8d7da', 
+          backgroundColor: 'rgba(255,69,58,0.1)', 
           borderRadius: '8px',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a'
         }}>
           <strong>Error:</strong> {result.error}
         </div>

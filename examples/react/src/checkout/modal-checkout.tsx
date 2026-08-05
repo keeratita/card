@@ -41,30 +41,32 @@ function Modal({ isOpen, onClose, children, title }: ModalProps) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
+          backgroundColor: '#1c1c1e',
+          borderRadius: '16px',
           maxWidth: '500px',
           width: '100%',
           maxHeight: '90vh',
           overflow: 'auto',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
         }}
       >
         {title && (
           <div style={{
             padding: '16px 24px',
-            borderBottom: '1px solid #e1e4e8',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#24292e' }}>{title}</h3>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#ffffff' }}>{title}</h3>
             <button onClick={onClose} style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               padding: '4px',
               fontSize: '20px',
-              color: '#586069'
+              color: 'rgba(255,255,255,0.55)'
             }}>×</button>
           </div>
         )}
@@ -121,30 +123,32 @@ export function ModalCheckout() {
     return {
       width: '100%',
       padding: '12px 14px',
-      borderRadius: '6px',
-      border: `1px solid ${hasError ? '#cf222e' : '#d0d7de'}`,
+      borderRadius: '8px',
+      border: `1.5px solid ${hasError ? '#ff453a' : 'rgba(255,255,255,0.1)'}`,
       fontSize: '15px',
       fontFamily: "'SF Mono', Monaco, Consolas, monospace",
       boxSizing: 'border-box',
+      backgroundColor: hasError ? 'rgba(255,69,58,0.08)' : 'rgba(255,255,255,0.05)',
+      color: '#ffffff',
     };
   };
 
   return (
     <div>
-      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#24292e', marginBottom: '8px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#ffffff', marginBottom: '8px' }}>
         Modal Checkout
       </h2>
-      <p style={{ color: '#586069', marginBottom: '24px', fontSize: '14px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontSize: '14px' }}>
         Click the button below to open the payment modal.
       </p>
 
       {/* Configuration */}
       <div style={{
-        backgroundColor: '#f6f8fa',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         padding: '16px',
-        borderRadius: '8px',
+        borderRadius: '12px',
         marginBottom: '24px',
-        border: '1px solid #e1e4e8'
+        border: '1px solid rgba(255,255,255,0.08)'
       }}>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
           <button
@@ -152,12 +156,12 @@ export function ModalCheckout() {
             style={{
               flex: 1,
               padding: '8px',
-              border: selectedAdapter === 'stripe' ? '2px solid #0366d6' : '1px solid #d0d7de',
-              borderRadius: '6px',
-              backgroundColor: selectedAdapter === 'stripe' ? '#f1f8ff' : 'white',
+              border: selectedAdapter === 'stripe' ? '2px solid #0a84ff' : '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '9999px',
+              backgroundColor: selectedAdapter === 'stripe' ? 'rgba(10,132,255,0.12)' : 'rgba(255,255,255,0.05)',
               cursor: 'pointer',
               fontWeight: 500,
-              color: selectedAdapter === 'stripe' ? '#0366d6' : '#586069',
+              color: selectedAdapter === 'stripe' ? '#0a84ff' : 'rgba(255,255,255,0.55)',
               fontSize: '13px'
             }}
           >
@@ -168,12 +172,12 @@ export function ModalCheckout() {
             style={{
               flex: 1,
               padding: '8px',
-              border: selectedAdapter === 'omise' ? '2px solid #0366d6' : '1px solid #d0d7de',
-              borderRadius: '6px',
-              backgroundColor: selectedAdapter === 'omise' ? '#f1f8ff' : 'white',
+              border: selectedAdapter === 'omise' ? '2px solid #0a84ff' : '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '9999px',
+              backgroundColor: selectedAdapter === 'omise' ? 'rgba(10,132,255,0.12)' : 'rgba(255,255,255,0.05)',
               cursor: 'pointer',
               fontWeight: 500,
-              color: selectedAdapter === 'omise' ? '#0366d6' : '#586069',
+              color: selectedAdapter === 'omise' ? '#0a84ff' : 'rgba(255,255,255,0.55)',
               fontSize: '13px'
             }}
           >
@@ -187,14 +191,16 @@ export function ModalCheckout() {
         onClick={openModal}
         style={{
           width: '100%',
-          padding: '14px',
-          backgroundColor: '#0366d6',
+          padding: '16px 20px',
+          backgroundColor: '#0a84ff',
           color: 'white',
           border: 'none',
-          borderRadius: '6px',
-          fontSize: '15px',
+          borderRadius: '9999px',
+          fontSize: '16px',
           fontWeight: '600',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          boxShadow: '0 8px 20px rgba(10,132,255,0.35)',
+          transition: 'all 0.2s ease'
         }}
       >
         Checkout with Card
@@ -205,10 +211,10 @@ export function ModalCheckout() {
         <div style={{
           marginTop: '20px',
           padding: '16px',
-          backgroundColor: '#f0fdf4',
+          backgroundColor: 'rgba(48,209,88,0.1)',
           borderRadius: '8px',
-          border: '1px solid #bbf7d0',
-          color: '#166534'
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>✓ Payment Successful!</strong>
           <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>Token: {token.id}</p>
@@ -219,17 +225,18 @@ export function ModalCheckout() {
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Secure Payment">
         {token ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px', color: '#28a745' }}>✓</div>
-            <h3 style={{ margin: '0 0 8px 0' }}>Payment Successful!</h3>
-            <p style={{ color: '#586069', margin: 0 }}>Your order has been processed.</p>
+            <div style={{ fontSize: '48px', marginBottom: '16px', color: '#30d158' }}>✓</div>
+            <h3 style={{ margin: '0 0 8px 0', color: '#ffffff' }}>Payment Successful!</h3>
+            <p style={{ color: 'rgba(255,255,255,0.55)', margin: 0 }}>Your order has been processed.</p>
             <button onClick={closeModal} style={{
               marginTop: '20px',
               padding: '12px 24px',
-              backgroundColor: '#0366d6',
+              backgroundColor: '#0a84ff',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
+              borderRadius: '9999px',
+              cursor: 'pointer',
+              boxShadow: '0 8px 20px rgba(10,132,255,0.35)'
             }}>
               Close
             </button>
@@ -238,11 +245,11 @@ export function ModalCheckout() {
           error && (
             <div style={{
               padding: '12px 16px',
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '6px',
+              backgroundColor: 'rgba(255,69,58,0.1)',
+              border: '1px solid rgba(255,69,58,0.25)',
+              borderRadius: '8px',
               marginBottom: '16px',
-              color: '#991b1b',
+              color: '#ff453a',
               fontSize: '13px'
             }}>
               {error}
@@ -251,39 +258,39 @@ export function ModalCheckout() {
         )}
         <form onSubmit={onFormSubmit}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
               Card Number
             </label>
             <input name="number" type="text" value={values.number} onChange={handleChange} onBlur={handleBlur}
               placeholder="4242 4242 4242 4242" style={inputStyle('number')} />
-            {errors.number && <span style={{ color: '#cf222e', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.number}</span>}
+            {errors.number && <span style={{ color: '#ff453a', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.number}</span>}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
               Expiry Date
             </label>
             <input name="expiry" type="text" value={values.expiry} onChange={handleChange} onBlur={handleBlur}
               placeholder="MM / YY" style={inputStyle('expiry')} />
-            {errors.expiry && <span style={{ color: '#cf222e', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.expiry}</span>}
+            {errors.expiry && <span style={{ color: '#ff453a', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.expiry}</span>}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
               CVC
             </label>
             <input name="cvc" type="password" value={values.cvc} onChange={handleChange} onBlur={handleCvcBlur} onFocus={handleCvcFocus}
               style={inputStyle('cvc')} />
-            {errors.cvc && <span style={{ color: '#cf222e', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.cvc}</span>}
+            {errors.cvc && <span style={{ color: '#ff453a', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.cvc}</span>}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
               Cardholder Name
             </label>
             <input name="name" type="text" value={values.name} onChange={handleChange} onBlur={handleBlur}
               placeholder="Full Name" style={inputStyle('name')} />
-            {errors.name && <span style={{ color: '#cf222e', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.name}</span>}
+            {errors.name && <span style={{ color: '#ff453a', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.name}</span>}
           </div>
 
           <button
@@ -291,15 +298,16 @@ export function ModalCheckout() {
             disabled={!values.number || !values.expiry || !values.cvc}
             style={{
               width: '100%',
-              padding: '14px',
-              backgroundColor: '#0366d6',
+              padding: '16px 20px',
+              backgroundColor: '#0a84ff',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              fontSize: '15px',
+              borderRadius: '9999px',
+              fontSize: '16px',
               fontWeight: '600',
               cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
-              opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1
+              opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1,
+              boxShadow: '0 8px 20px rgba(10,132,255,0.35)'
             }}
           >
             Pay Now
