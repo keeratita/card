@@ -915,3 +915,39 @@ $border-color: rgba(255, 255, 255, 0.08);
     }
   }
 }
+
+/* --- KEYBOARD FOCUS (WCAG 2.4.7 / 2.4.11) --- */
+/* The controls above set outline: none; restore a visible focus ring for
+   keyboard navigation without changing the glass aesthetic for mouse users. */
+.ios-input:focus-visible,
+.card-country-input:focus-visible,
+.pay-btn:focus-visible,
+.modal-close-btn:focus-visible,
+.autocomplete-input:focus-visible,
+.autocomplete-search-input:focus-visible,
+.autocomplete-result:focus-visible,
+.country-autocomplete-input:focus-visible,
+.country-autocomplete-search:focus-visible,
+.country-autocomplete-item:focus-visible {
+  outline: 2px solid $ios-blue;
+  outline-offset: 2px;
+}
+
+/* --- REDUCED MOTION (WCAG 2.3.3) --- */
+@media (prefers-reduced-motion: reduce) {
+  .card-inner {
+    transition: none;
+  }
+
+  .ios-input-row,
+  .autocomplete-result,
+  .pay-btn,
+  .modal-content,
+  .modal-overlay {
+    transition: none;
+  }
+
+  .ios-grouped-list {
+    animation: none !important;
+  }
+}

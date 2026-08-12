@@ -40,7 +40,8 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ creditCard: { value: '1234567890123456' } });
+      // Static descriptor: the raw value (PAN) must never be echoed into errors
+      expect(result).toEqual({ creditCard: true });
     });
 
     it('should accept valid credit card with spaces', () => {
@@ -90,7 +91,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ expiryInvalid: { value: '13/25' } });
+      expect(result).toEqual({ expiryInvalid: true });
     });
 
     it('should reject past expiry dates', () => {
@@ -102,7 +103,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ expiryInvalid: { value: '01/20' } });
+      expect(result).toEqual({ expiryInvalid: true });
     });
 
     it('should return null for empty values', () => {
@@ -126,7 +127,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ expiryInvalid: { value: '12//25' } });
+      expect(result).toEqual({ expiryInvalid: true });
     });
 
     it('should reject invalid MMYY format with wrong length', () => {
@@ -138,7 +139,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ expiryInvalid: { value: '12345' } });
+      expect(result).toEqual({ expiryInvalid: true });
     });
 
     it('should accept valid MMYY format with 4 digits', () => {
@@ -162,7 +163,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ expiryInvalid: { value: '0120' } });
+      expect(result).toEqual({ expiryInvalid: true });
     });
   });
 
@@ -211,7 +212,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ cvcInvalid: { value: '12' } });
+      expect(result).toEqual({ cvcInvalid: true });
     });
 
     it('should return null for empty values', () => {
@@ -287,7 +288,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ emailInvalid: { value: 'invalid-email' } });
+      expect(result).toEqual({ emailInvalid: true });
     });
 
     it('should return null for empty values', () => {
@@ -325,7 +326,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ phoneInvalid: { value: '123' } });
+      expect(result).toEqual({ phoneInvalid: true });
     });
 
     it('should return null for empty values', () => {
@@ -363,7 +364,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ postalCodeInvalid: { value: '123' } });
+      expect(result).toEqual({ postalCodeInvalid: true });
     });
 
     it('should return null for empty values', () => {

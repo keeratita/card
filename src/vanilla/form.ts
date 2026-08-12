@@ -21,6 +21,7 @@ import {
   buildSuccessSummary,
 } from '../core/form';
 import type { CardFormValuesLike } from '../core/form';
+import { isThenable } from '../core/form/is-thenable';
 import { escapeHtml } from './internal/security';
 import { CountryAutocomplete } from './components/country-autocomplete';
 
@@ -30,6 +31,7 @@ export class CardForm {
   private readonly activeFields: OptionalCardField[];
   private formEl!: HTMLFormElement;
   private countryAutocomplete: CountryAutocomplete | null = null;
+  private isSubmitting = false;
   private listeners: Array<{ el: EventTarget | null; event: string; handler: EventListenerOrEventListenerObject | null }> = [];
 
   constructor(container: HTMLElement | string, options: CardFormOptions) {
@@ -516,6 +518,10 @@ export class CardForm {
   }
 
   private async handleSubmit(): Promise<void> {
+    // Ignore re-entrant submits (Enter key / double-click) while a tokenize
+    // request is in flight, preventing duplicate charges.
+    if (this.isSubmitting) return;
+
     let isFormValid = true;
 
     if (!this.validateField('card-number')) isFormValid = false;
@@ -535,6 +541,11 @@ export class CardForm {
         errorMsg.innerText = CARD_FORM_TEXT_EN.validationError;
         errorMsg.style.display = 'block';
       }
+      // Per the documented contract, onError fires for client-side
+      // validation failures as well as gateway/network failures
+      if (this.options.onError) {
+        this.options.onError(new Error(CARD_FORM_TEXT_EN.validationError));
+      }
       return;
     }
 
@@ -548,6 +559,7 @@ export class CardForm {
     const spinner = this.formEl.querySelector('.btn-spinner') as HTMLElement;
     const btnText = this.formEl.querySelector('.btn-text') as HTMLElement;
 
+    this.isSubmitting = true;
     submitBtn.disabled = true;
     spinner.style.display = 'block';
     btnText.innerText = CARD_FORM_TEXT_EN.tokenizing;
@@ -597,7 +609,9 @@ export class CardForm {
 
       if (this.options.onSubmit) {
         const result = this.options.onSubmit({ token });
-        if (result instanceof Promise) {
+        // Await thenables (incl. cross-realm promises) so the double-loading
+        // lifecycle waits for the host backend
+        if (isThenable(result)) {
           await result;
         }
       }
@@ -615,6 +629,10 @@ export class CardForm {
       const lastFour = fullNumber.slice(-4);
       numInput.value = `•••• •••• •••• ${lastFour || ''}`;
       numInput.setAttribute('readonly', 'true');
+
+      // Dereference the CVC (and keep expiry non-sensitive) after success,
+      // mirroring the React binding's cleanup.
+      cvcInput.value = '';
 
       const allInputs = this.formEl.querySelectorAll('input, button');
       allInputs.forEach((el) => {
@@ -659,7 +677,10 @@ export class CardForm {
         tokenDetail.innerHTML = detailsHtml;
         statusPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
+
+      this.isSubmitting = false;
     } catch (err: unknown) {
+      this.isSubmitting = false;
       spinner.style.display = 'none';
       submitBtn.disabled = false;
       btnText.innerText =

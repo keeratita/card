@@ -38,7 +38,7 @@ export function detectCardBrand(cardNumber: string): CardBrand {
   }
 
   // Diners: starts with 300-305, 309, 36, or 38-39
-  if (FIRST_DIGITS_DINERS.has(cleanNumber.substring(0, 3))) {
+  if (FIRST_DIGITS_DINERS.has(cleanNumber.substring(0, 3)) || FIRST_DIGITS_DINERS.has(cleanNumber.substring(0, 2))) {
     return 'diners';
   }
 

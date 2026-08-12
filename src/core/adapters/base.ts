@@ -41,11 +41,34 @@ export async function fetchWithTimeout(
   }
 }
 
+/**
+ * Fetches a URL and parses the JSON body under a single timeout.
+ * Unlike `fetchWithTimeout`, the abort timer stays armed until the body is
+ * consumed, so a stalled response body cannot hang the caller indefinitely.
+ */
+export async function fetchJsonWithTimeout<T = unknown>(
+  url: string,
+  init: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<{ response: Response; data: T }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    const data = (await response.json()) as T;
+    return { response, data };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export function normalizeNetworkError(error: unknown): Error {
-  if (error instanceof Error) return error;
+  // DOMException inherits from Error in modern browsers, so the AbortError
+  // check must come first or timeouts would surface as generic errors.
   if (error instanceof DOMException && error.name === 'AbortError') {
     return new Error('Request timed out.', { cause: error });
   }
+  if (error instanceof Error) return error;
   return new Error('Network connection failed.', { cause: error });
 }
 export class PaymentGatewayError extends Error {

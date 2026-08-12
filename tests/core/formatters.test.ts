@@ -67,6 +67,21 @@ describe('Core Formatters', () => {
       expect(formatCardNumber(nineteen)).toBe('4111 1111 1111 1111 111');
     });
 
+    it('should preserve 17-digit Mastercard/JCB/Discover numbers', () => {
+      expect(formatCardNumber('55555555555555555')).toBe(
+        '5555 5555 5555 5555 5',
+      );
+      expect(formatCardNumber('35281111111111117')).toBe(
+        '3528 1111 1111 1111 7',
+      );
+    });
+
+    it('should not truncate 16-digit Diners Club International numbers', () => {
+      expect(formatCardNumber('3611111111111111')).toBe(
+        '3611 1111 1111 1111',
+      );
+    });
+
     it('should handle empty string', () => {
       expect(formatCardNumber('')).toBe('');
     });
@@ -92,6 +107,33 @@ describe('Core Formatters', () => {
 
     it('should handle partial input', () => {
       expect(formatExpiry('1')).toBe('1');
+    });
+
+    it('should keep a single leading 0 as an intermediate state', () => {
+      expect(formatExpiry('0')).toBe('0');
+    });
+
+    it('should pass through valid single-digit months 1-9', () => {
+      expect(formatExpiry('2')).toBe('2');
+      expect(formatExpiry('9')).toBe('9');
+    });
+
+    it('should interpret a tens-prefixed month as a leading-zero month', () => {
+      // "2" then "0" then "2" then "5" = February 2025, never December
+      expect(formatExpiry('2025')).toBe('02 / 25');
+      expect(formatExpiry('202')).toBe('02 / 2');
+      expect(formatExpiry('20')).toBe('02');
+      expect(formatExpiry('0912')).toBe('09 / 12');
+    });
+
+    it('should clamp months 13-19 to 12', () => {
+      expect(formatExpiry('13')).toBe('12');
+      expect(formatExpiry('1325')).toBe('12 / 25');
+      expect(formatExpiry('19')).toBe('12');
+    });
+
+    it('should not rewrite 00 so validation can reject it', () => {
+      expect(formatExpiry('00')).toBe('00');
     });
   });
 

@@ -1,4 +1,5 @@
 import { detectCardBrand } from '../domain/brand';
+import { MAX_CARD_NUMBER_LENGTH } from '../constants';
 
 export function cleanDigits(value: string): string {
   return value.replace(/\D/g, '');
@@ -16,7 +17,10 @@ export function formatCardNumber(value: string): string {
     ].filter(Boolean);
     return parts.join(' ');
   } else {
-    const digits = clean.slice(0, 19);
+    // Keep up to 19 digits regardless of brand: validation accepts 13-19 digit
+    // numbers for every brand (incl. 19-digit Visa), so the formatter must
+    // never silently truncate a PAN the validators would accept.
+    const digits = clean.slice(0, MAX_CARD_NUMBER_LENGTH);
     const parts = [];
     for (let i = 0; i < digits.length; i += 4) {
       parts.push(digits.substring(i, i + 4));
@@ -30,10 +34,19 @@ export function formatExpiry(value: string): string {
   if (clean.length === 0) return '';
 
   let month = clean.substring(0, 2);
-  // Clamp invalid months to 12
   const monthNum = Number.parseInt(month, 10);
-  if (monthNum < 1 || monthNum > 12) {
-    month = '12';
+
+  if (monthNum > 12) {
+    const firstDigit = month.charAt(0);
+    if (firstDigit >= '2' && firstDigit <= '9') {
+      // "2025" typed without a leading zero means month 02 + year "25":
+      // interpret the first digit as a 0X month. Never rewrite a tens-prefixed
+      // month like "20" into "12" (silent February → December).
+      month = '0' + firstDigit;
+    } else {
+      // "13".."19" clamp to 12; "00" stays as-is so validation rejects it.
+      month = '12';
+    }
   }
 
   const year = clean.substring(2, 4);

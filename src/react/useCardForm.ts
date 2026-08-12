@@ -11,6 +11,7 @@ import {
   getFieldErrorMessage,
   buildCard,
 } from '../core/form';
+import { isThenable } from '../core/form/is-thenable';
 import type { CardFormValuesLike } from '../core/form';
 import { OPTIONAL_FIELD_KEYS } from '../core/domain/optional-fields';
 
@@ -56,6 +57,10 @@ export function useCardForm(params: UseCardFormParams) {
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
+  // Guards against re-entrant submits (Enter key / double-click) while a
+  // tokenize request is in flight, preventing duplicate charges.
+  const isSubmittingRef = useRef(false);
+
   // Memoize brand detection to avoid recomputing on every render
   const brand = useMemo(() => detectCardBrand(values.number), [values.number]);
 
@@ -65,7 +70,10 @@ export function useCardForm(params: UseCardFormParams) {
       let formattedValue = value;
 
       if (name === 'number') {
-        formattedValue = formatCardNumber(value);
+        formattedValue = formatNumberForInput(
+          valuesRef.current.number,
+          value,
+        );
       } else if (name === 'expiry') {
         formattedValue = formatExpiry(value);
       } else if (name === 'cvc') {
@@ -82,6 +90,9 @@ export function useCardForm(params: UseCardFormParams) {
         ...prev,
         [name]: null,
       }));
+
+      // Reset success state when the user edits a field after a successful payment
+      setIsSuccess(false);
     },
     [],
   );
@@ -91,7 +102,10 @@ export function useCardForm(params: UseCardFormParams) {
       let formattedValue = value;
 
       if (name === 'number') {
-        formattedValue = formatCardNumber(value);
+        formattedValue = formatNumberForInput(
+          valuesRef.current.number,
+          value,
+        );
       } else if (name === 'expiry') {
         formattedValue = formatExpiry(value);
       } else if (name === 'cvc') {
@@ -107,12 +121,19 @@ export function useCardForm(params: UseCardFormParams) {
         ...prev,
         [name]: null,
       }));
+
+      // Reset success state when the user edits a field after a successful payment
+      setIsSuccess(false);
     },
     [],
   );
 
   const handleCvcFocus = useCallback(() => {
     setIsFlipped(true);
+  }, []);
+
+  const handleCvcBlur = useCallback(() => {
+    setIsFlipped(false);
   }, []);
 
   const getFieldError = useCallback(
@@ -157,6 +178,9 @@ export function useCardForm(params: UseCardFormParams) {
       const validationErrors: Record<string, string | null> = {};
       let isFormValid = true;
 
+      // Skip re-entrant submits while a tokenize request is in flight
+      if (isSubmittingRef.current) return;
+
       // Validate standard fields
       const fieldsToValidate = ['number', 'expiry', 'cvc', 'name'];
 
@@ -179,12 +203,19 @@ export function useCardForm(params: UseCardFormParams) {
 
       if (!isFormValid) {
         setErrors((prev) => ({ ...prev, ...validationErrors }));
-        setPaymentError('Please correct the invalid fields.');
+        // Per the documented contract, onError fires for client-side
+        // validation failures as well as gateway/network failures
+        const validationError = new Error('Please correct the invalid fields.');
+        setPaymentError(validationError.message);
+        if (params.onError) {
+          params.onError(validationError);
+        }
         return;
       }
 
       setIsTokenizing(true);
       setPaymentError(null);
+      isSubmittingRef.current = true;
 
       const cardData: Card = buildCard(
         current as CardFormValuesLike,
@@ -199,7 +230,9 @@ export function useCardForm(params: UseCardFormParams) {
 
         if (params.onSubmit) {
           const result = params.onSubmit({ token });
-          if (result instanceof Promise) {
+          // Await thenables (incl. cross-realm promises) so the double-loading
+          // lifecycle waits for the host backend
+          if (isThenable(result)) {
             await result;
           }
         }
@@ -214,7 +247,9 @@ export function useCardForm(params: UseCardFormParams) {
 
         setIsProcessing(false);
         setIsSuccess(true);
+        isSubmittingRef.current = false;
       } catch (err) {
+        isSubmittingRef.current = false;
         setIsTokenizing(false);
         setIsProcessing(false);
         const errorMessage =
@@ -242,6 +277,24 @@ export function useCardForm(params: UseCardFormParams) {
     setFieldValue,
     handleBlur,
     handleCvcFocus,
+    handleCvcBlur,
     handleSubmit,
   };
+}
+
+/**
+ * Formats a card number being typed into the live input. If the previous
+ * value is the post-success masked display ("•••• •••• •••• 4242"), strip the
+ * old masked content so re-entering a new number starts clean instead of
+ * appending digits onto the stale last-4.
+ */
+function formatNumberForInput(prevValue: string, rawValue: string): string {
+  const digits = rawValue.replace(/\D/g, '');
+  if (!prevValue.includes('•')) {
+    return formatCardNumber(digits);
+  }
+  const oldLastFour = prevValue.replace(/\D/g, '').slice(-4);
+  return formatCardNumber(
+    digits.startsWith(oldLastFour) ? digits.slice(oldLastFour.length) : digits,
+  );
 }

@@ -295,7 +295,7 @@ interface CardFormProps {
   preset?: CardFormPreset; // Form preset: 'none' | 'us' | 'billing' | 'contact'
   fields?: OptionalCardField[]; // Additional fields to include
   cardLabel?: string; // Label shown on card preview (e.g., "VISA", "OMISE")
-  submitButtonText?: string; // Text for submit button (default: "Pay")
+  submitButtonText?: string; // Text for submit button (default: "Pay Now")
   onSubmit?: (data: { token: Token }) => Promise<void> | void; // Success callback
   onError?: (error: Error) => void; // Error callback
   initialValues?: Partial<CardFormValues>; // Initial form values
@@ -307,7 +307,7 @@ interface CardFormProps {
 | Preset      | Description          | Additional Fields                                                   |
 | ----------- | -------------------- | ------------------------------------------------------------------- |
 | `'none'`    | Core fields only     | Card Number, Expiry, CVC, Name                                      |
-| `'us'`      | US cardholder        | + Postal Code (ZIP)                                                 |
+| `'us'`      | US cardholder        | + Postal Code (ZIP), Country                                         |
 | `'billing'` | Full billing address | + Address Line 1, Address Line 2, City, State, Postal Code, Country |
 | `'contact'` | Contact details      | + Email, Phone                                                      |
 

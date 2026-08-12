@@ -1,16 +1,38 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
+import type { ChangeEvent, FocusEvent } from 'react';
 import { useCardForm, CardFormValues, UseCardFormParams } from '../../src/react/useCardForm';
 import type { PaymentGateway } from '../../src/core/domain/card';
 
-// Mock React
-vi.mock('react', async () => {
-  const actual = await vi.importActual('react');
-  return {
-    ...actual,
-    useState: vi.fn((initialValue) => [initialValue, vi.fn()])
-  };
-});
+/**
+ * Returns a controllable promise so tests can step through the tokenize flow.
+ */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+function createMockAdapter(
+  tokenize: PaymentGateway['tokenize'] = async () => ({
+    id: 'tok_1',
+    gateway: 'stripe',
+    raw: {},
+  }),
+): PaymentGateway {
+  return { name: 'Stripe', tokenize };
+}
+
+const VALID_CARD_VALUES = {
+  number: '4242424242424242',
+  expiry: '12 / 30',
+  cvc: '123',
+  name: 'John Doe',
+};
 
 describe('React useCardForm Hook', () => {
   describe('CardFormValues interface', () => {
@@ -19,7 +41,7 @@ describe('React useCardForm Hook', () => {
         number: '4242424242424242',
         expiry: '12 / 25',
         cvc: '123',
-        name: 'John Doe'
+        name: 'John Doe',
       };
 
       expect(values.number).toBe('4242424242424242');
@@ -40,7 +62,7 @@ describe('React useCardForm Hook', () => {
         postalCode: '10001',
         country: 'US',
         phone: '+1234567890',
-        email: 'john@example.com'
+        email: 'john@example.com',
       };
 
       expect(values.addressLine1).toBe('123 Main St');
@@ -56,10 +78,7 @@ describe('React useCardForm Hook', () => {
   describe('UseCardFormParams interface', () => {
     it('should accept minimal params with just adapter', () => {
       const params: UseCardFormParams = {
-        adapter: {
-          name: 'Stripe',
-          tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-        }
+        adapter: createMockAdapter(),
       };
 
       expect(params.adapter).toBeDefined();
@@ -67,14 +86,11 @@ describe('React useCardForm Hook', () => {
 
     it('should accept params with initialValues', () => {
       const params: UseCardFormParams = {
-        adapter: {
-          name: 'Stripe',
-          tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-        },
+        adapter: createMockAdapter(),
         initialValues: {
           number: '4242',
-          name: 'John'
-        }
+          name: 'John',
+        },
       };
 
       expect(params.initialValues).toBeDefined();
@@ -82,13 +98,10 @@ describe('React useCardForm Hook', () => {
 
     it('should accept params with onSubmit', () => {
       const params: UseCardFormParams = {
-        adapter: {
-          name: 'Stripe',
-          tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-        },
+        adapter: createMockAdapter(),
         onSubmit: async ({ token }) => {
           void token;
-        }
+        },
       };
 
       expect(typeof params.onSubmit).toBe('function');
@@ -96,49 +109,40 @@ describe('React useCardForm Hook', () => {
 
     it('should accept params with onError', () => {
       const params: UseCardFormParams = {
-        adapter: {
-          name: 'Stripe',
-          tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-        },
+        adapter: createMockAdapter(),
         onError: (error: Error) => {
           void error;
-        }
+        },
       };
 
       expect(typeof params.onError).toBe('function');
     });
   });
 
-  describe('useCardForm hook', () => {
+  describe('initial state', () => {
     it('should return all expected properties', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
 
       expect(result.current.values).toBeDefined();
       expect(result.current.brand).toBeDefined();
       expect(result.current.errors).toBeDefined();
-      expect(result.current.isTokenizing).toBeDefined();
-      expect(result.current.isProcessing).toBeDefined();
-      expect(result.current.isSuccess).toBeDefined();
-      expect(result.current.paymentError).toBeDefined();
-      expect(result.current.isFlipped).toBeDefined();
-      expect(result.current.handleChange).toBeDefined();
-      expect(result.current.handleBlur).toBeDefined();
-      expect(result.current.handleCvcFocus).toBeDefined();
-      expect(result.current.handleSubmit).toBeDefined();
+      expect(result.current.isTokenizing).toBe(false);
+      expect(result.current.isProcessing).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+      expect(result.current.paymentError).toBeNull();
+      expect(result.current.isFlipped).toBe(false);
+      expect(typeof result.current.handleChange).toBe('function');
+      expect(typeof result.current.setFieldValue).toBe('function');
+      expect(typeof result.current.handleBlur).toBe('function');
+      expect(typeof result.current.handleCvcFocus).toBe('function');
+      expect(typeof result.current.handleCvcBlur).toBe('function');
+      expect(typeof result.current.handleSubmit).toBe('function');
     });
 
-    it('should initialize with default values', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
+    it('should initialize with default empty values', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
 
       expect(result.current.values.number).toBe('');
       expect(result.current.values.expiry).toBe('');
@@ -147,156 +151,341 @@ describe('React useCardForm Hook', () => {
     });
 
     it('should initialize with initialValues', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({
-        adapter: mockAdapter,
-        initialValues: {
-          number: '4242',
-          name: 'John'
-        }
-      }));
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() =>
+        useCardForm({
+          adapter,
+          initialValues: {
+            number: '4242',
+            name: 'John',
+          },
+        }),
+      );
 
       expect(result.current.values.number).toBe('4242');
       expect(result.current.values.name).toBe('John');
     });
 
-    it('should have initial state for isTokenizing', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
+    it('should detect card brand from number', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() =>
+        useCardForm({
+          adapter,
+          initialValues: { number: '4242424242424242' },
+        }),
+      );
 
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
+      expect(result.current.brand).toBe('visa');
+    });
+  });
 
-      expect(result.current.isTokenizing).toBe(false);
+  describe('handleChange', () => {
+    it('should format the card number with grouping', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'number', value: '4242424242424242' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.values.number).toBe('4242 4242 4242 4242');
     });
 
-    it('should have initial state for isProcessing', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
+    it('should format the expiry with MM / YY', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
 
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'expiry', value: '1230' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
 
+      expect(result.current.values.expiry).toBe('12 / 30');
+    });
+
+    it('should format the CVC per brand (4 digits for Amex)', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() =>
+        useCardForm({ adapter, initialValues: { number: '378282246310005' } }),
+      );
+
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'cvc', value: '1234' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.values.cvc).toBe('1234');
+    });
+
+    it('should clear the field error on change', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        result.current.handleBlur({
+          target: { name: 'number', value: '1234' },
+        } as FocusEvent<HTMLInputElement>);
+      });
+      expect(result.current.errors.number).not.toBeNull();
+
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'number', value: '4242424242424242' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
+      expect(result.current.errors.number).toBeNull();
+    });
+
+    it('should reset the success state when a field changes after success', async () => {
+      const adapter = createMockAdapter();
+      const onSubmit = vi.fn();
+      const { result } = renderHook(() => useCardForm({ adapter, onSubmit }));
+
+      // Seed valid values and submit
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+      expect(result.current.isSuccess).toBe(true);
+
+      act(() => {
+        result.current.setFieldValue('name', 'Jane Doe');
+      });
+      expect(result.current.isSuccess).toBe(false);
+    });
+  });
+
+  describe('handleBlur', () => {
+    it('should validate the blurred field and store its error', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        result.current.handleBlur({
+          target: { name: 'cvc', value: '12' },
+        } as FocusEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.errors.cvc).toContain('security');
+    });
+  });
+
+  describe('CVC flip', () => {
+    it('should flip the card on CVC focus and flip back on blur', () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      expect(result.current.isFlipped).toBe(false);
+      act(() => result.current.handleCvcFocus());
+      expect(result.current.isFlipped).toBe(true);
+      act(() => result.current.handleCvcBlur());
+      expect(result.current.isFlipped).toBe(false);
+    });
+  });
+
+  describe('handleSubmit', () => {
+    it('should reject invalid forms without calling tokenize', async () => {
+      const tokenize = vi.fn(createMockAdapter().tokenize);
+      const adapter = createMockAdapter(tokenize);
+      const onError = vi.fn();
+      const { result } = renderHook(() => useCardForm({ adapter, onError }));
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(tokenize).not.toHaveBeenCalled();
+      expect(result.current.paymentError).toBe(
+        'Please correct the invalid fields.',
+      );
+      // The documented onError contract covers client-side validation failures
+      expect(onError).toHaveBeenCalledWith(
+        new Error('Please correct the invalid fields.'),
+      );
+    });
+
+    it('should tokenize, await onSubmit, then mask the number and clear the CVC', async () => {
+      const tokenize = vi.fn().mockResolvedValue({
+        id: 'tok_1',
+        gateway: 'stripe',
+        raw: {},
+      });
+      const adapter = createMockAdapter(tokenize as PaymentGateway['tokenize']);
+      const onSubmit = vi.fn();
+      const { result } = renderHook(() => useCardForm({ adapter, onSubmit }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(tokenize).toHaveBeenCalledTimes(1);
+      expect(onSubmit).toHaveBeenCalledWith({
+        token: { id: 'tok_1', gateway: 'stripe', raw: {} },
+      });
+      expect(result.current.values.number).toBe('•••• •••• •••• 4242');
+      expect(result.current.values.cvc).toBe('');
+      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.isTokenizing).toBe(false);
       expect(result.current.isProcessing).toBe(false);
     });
 
-    it('should have initial state for isSuccess', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(result.current.isSuccess).toBe(false);
-    });
-
-    it('should have initial state for isFlipped', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(result.current.isFlipped).toBe(false);
-    });
-
-    it('should have initial empty errors', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(result.current.errors).toEqual({});
-    });
-
-    it('should have initial null paymentError', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(result.current.paymentError).toBeNull();
-    });
-  });
-
-  describe('handleChange function', () => {
-    it('should be a function', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(typeof result.current.handleChange).toBe('function');
-    });
-  });
-
-  describe('handleBlur function', () => {
-    it('should be a function', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(typeof result.current.handleBlur).toBe('function');
-    });
-  });
-
-  describe('handleCvcFocus function', () => {
-    it('should be a function', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(typeof result.current.handleCvcFocus).toBe('function');
-    });
-  });
-
-
-  describe('handleSubmit function', () => {
-    it('should be a function', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({ adapter: mockAdapter }));
-
-      expect(typeof result.current.handleSubmit).toBe('function');
-    });
-  });
-
-  describe('brand detection', () => {
-    it('should detect card brand from number', () => {
-      const mockAdapter: PaymentGateway = {
-        name: 'Stripe',
-        tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} })
-      };
-
-      const { result } = renderHook(() => useCardForm({
-        adapter: mockAdapter,
-        initialValues: { number: '4242424242424242' }
+    it('should await non-Promise thenables returned from onSubmit', async () => {
+      const adapter = createMockAdapter();
+      let onSubmitSettled = false;
+      let resolveOnSubmit: () => void = () => {};
+      const onSubmit = vi.fn(() => ({
+        then(resolve: () => void) {
+          resolveOnSubmit = () => {
+            onSubmitSettled = true;
+            resolve();
+          };
+        },
       }));
 
-      expect(result.current.brand).toBe('visa');
+      const { result } = renderHook(() =>
+        useCardForm({
+          adapter,
+          // The hook honors thenables at runtime (cross-realm promises); the
+          // public type only advertises Promise<void> | void, so the test
+          // deliberately crosses the type boundary.
+          onSubmit: onSubmit as never,
+        }),
+      );
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      let submitPromise!: Promise<void>;
+      act(() => {
+        submitPromise = result.current.handleSubmit();
+      });
+
+      // Flush microtasks so the tokenize promise settles and onSubmit runs
+      await act(async () => {});
+
+      // The success state must not be set until the thenable settles
+      expect(onSubmitSettled).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+
+      await act(async () => {
+        resolveOnSubmit();
+        await submitPromise;
+      });
+
+      expect(onSubmitSettled).toBe(true);
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    it('should surface tokenize failures and re-enable the form', async () => {
+      const tokenize = vi
+        .fn()
+        .mockRejectedValue(new Error('Card declined.'));
+      const adapter = createMockAdapter(tokenize as PaymentGateway['tokenize']);
+      const onError = vi.fn();
+      const { result } = renderHook(() => useCardForm({ adapter, onError }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(result.current.paymentError).toBe('Card declined.');
+      expect(result.current.isTokenizing).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+      expect(onError).toHaveBeenCalledWith(new Error('Card declined.'));
+
+      // The guard must be released so a second submit can retry
+      const tokenize2 = vi.fn().mockResolvedValue({
+        id: 'tok_2',
+        gateway: 'stripe',
+        raw: {},
+      });
+      // Replace the failing adapter with a succeeding one on retry
+      const adapter2 = createMockAdapter(tokenize2 as PaymentGateway['tokenize']);
+      const { result: result2 } = renderHook(() => useCardForm({ adapter: adapter2 }));
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result2.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+      await act(async () => {
+        await result2.current.handleSubmit();
+      });
+      expect(tokenize2).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore re-entrant submits while a tokenize is in flight', async () => {
+      const gate = deferred<{ id: string; gateway: string; raw: unknown }>();
+      const tokenize = vi.fn(() => gate.promise);
+      const adapter = createMockAdapter(tokenize as PaymentGateway['tokenize']);
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      let first: Promise<void>;
+      let second: Promise<void>;
+      act(() => {
+        first = result.current.handleSubmit();
+        second = result.current.handleSubmit();
+      });
+
+      await act(async () => {
+        gate.resolve({ id: 'tok_1', gateway: 'stripe', raw: {} });
+        await Promise.all([first, second]);
+      });
+
+      expect(tokenize).toHaveBeenCalledTimes(1);
+    });
+
+    it('should strip the masked number prefix when the user re-enters digits after success', async () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+      expect(result.current.values.number).toBe('•••• •••• •••• 4242');
+
+      // User clicks at the end of the masked input and types a digit
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'number', value: '•••• •••• •••• 42425' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.values.number).toBe('5');
     });
   });
 });

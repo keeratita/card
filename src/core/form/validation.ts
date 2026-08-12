@@ -55,6 +55,8 @@ export function validateField(
     case 'expiry': {
       const clean = cleanDigits(val);
       let isValid = false;
+      // Only MMYY is accepted: every framework input formats expiry via
+      // `formatExpiry`, which truncates to 4 digits.
       if (clean.length === 4) {
         const { month, year } = parseExpiry(clean);
         isValid = validateExpiry(month, year);

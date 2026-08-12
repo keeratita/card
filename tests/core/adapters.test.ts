@@ -41,6 +41,12 @@ describe('Payment Gateway Adapters', () => {
       );
     });
 
+    it('should reject secret keys (sk_) in the browser', () => {
+      expect(() => new StripeAdapter({ publicKey: 'sk_live_secret_key' })).toThrow(
+        /secret/i,
+      );
+    });
+
     it('should correctly format request body and headers for Stripe API', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
@@ -119,6 +125,31 @@ describe('Payment Gateway Adapters', () => {
 
       await expect(adapter.tokenize(card)).rejects.toThrow(NetworkError);
     });
+
+    it('should map an aborted request (timeout) to a timeout NetworkError', async () => {
+      vi.useFakeTimers();
+      try {
+        const fetchMock = vi.fn((_url: string, init: RequestInit) => {
+          return new Promise((_resolve, reject) => {
+            const signal = init.signal as AbortSignal;
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('The operation was aborted.', 'AbortError')),
+            );
+          });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const promise = adapter.tokenize(card);
+        const assertion = expect(promise).rejects.toMatchObject({
+          name: 'NetworkError',
+          message: 'Request timed out.',
+        });
+        await vi.advanceTimersByTimeAsync(30_000);
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('OmiseAdapter', () => {
@@ -127,6 +158,12 @@ describe('Payment Gateway Adapters', () => {
     it('should require an Omise public key', () => {
       expect(() => new OmiseAdapter({ publicKey: '' })).toThrow(
         'Omise public key is required.',
+      );
+    });
+
+    it('should reject secret keys (skey_) in the browser', () => {
+      expect(() => new OmiseAdapter({ publicKey: 'skey_test_secret_key' })).toThrow(
+        /secret/i,
       );
     });
 
@@ -207,6 +244,22 @@ describe('Payment Gateway Adapters', () => {
       );
 
       await expect(adapter.tokenize(card)).rejects.toThrow(NetworkError);
+    });
+
+    it('should not attach the raw card (PAN/CVC) to invalid-email errors', async () => {
+      const error = await adapter
+        .tokenize({ ...card, email: 'not-an-email' })
+        .then(
+          () => null,
+          (err: unknown) => err,
+        );
+
+      expect(error).toBeInstanceOf(ApiValidationError);
+      const raw = (error as ApiValidationError).raw as { email: string };
+      expect(raw.email).toBe('not-an-email');
+      // The serialized raw payload must not contain card data
+      expect(JSON.stringify(error)).not.toContain('4111');
+      expect(JSON.stringify(error)).not.toContain('123');
     });
   });
 });

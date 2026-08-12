@@ -10,6 +10,7 @@ import {
 import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
 import { escapeHtml } from '../core/security';
+import { CARD_FORM_TEXT_EN } from '../lang/en';
 import {
   filterCountries,
   moveHighlight,
@@ -19,8 +20,6 @@ import {
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
-  standalone: true,
-  imports: [],
   styles: [`
     .country-select-wrapper {
       position: relative;
@@ -210,7 +209,7 @@ import {
                 #searchInput
                 type="text"
                 class="country-select-search-input"
-                placeholder="Search countries..."
+                [placeholder]="searchPlaceholder"
                 [value]="searchQuery()"
                 (input)="onSearchChange($event)"
               />
@@ -248,7 +247,8 @@ import {
 })
 export class CountrySelectComponent {
   /**
-   * Using Angular v20+ input() signal API instead of @Input decorator.
+   * Signal-based inputs/outputs (`input()`/`output()`) — the modern Angular
+   * API; components are standalone by default since Angular 19.
    */
   controlName = input<string>('country');
   value = input<string>('');
@@ -258,9 +258,7 @@ export class CountrySelectComponent {
 
   readonly countries = COUNTRIES;
 
-  /**
-   * Using Angular v20+ computed() for derived state instead of getter.
-   */
+  /** Signal-derived label/placeholder (`computed()` instead of getters). */
   readonly label = computed(() => {
     const { label } = getFieldDisplayText('country', this.preset());
     return label;
@@ -270,6 +268,8 @@ export class CountrySelectComponent {
     const { placeholder } = getFieldDisplayText('country', this.preset());
     return placeholder;
   });
+
+  readonly searchPlaceholder = CARD_FORM_TEXT_EN.searchCountries;
 
   // Local state signals
   isOpen = signal(false);
@@ -292,7 +292,7 @@ export class CountrySelectComponent {
   searchInputRef = viewChild<ElementRef>('searchInput');
 
   /**
-   * Output event for Angular forms integration
+   * Output event for Angular forms integration (signal-based `output()`).
    */
   readonly countryChange = output<{ name: string; value: string }>();
 
@@ -369,8 +369,8 @@ export class CountrySelectComponent {
 
 /**
  * Render optional fields as HTML strings.
- * @deprecated Prefer using Angular directives/pipe over raw HTML injection.
- * Use `renderOptionalFieldSafe` for safer HTML output with escaped attributes.
+ * @deprecated Prefer using the Angular directives/components over raw HTML
+ * injection; they escape values and integrate with reactive forms.
  */
 export function renderOptionalFieldHtml(
   field: OptionalCardField,
@@ -387,7 +387,7 @@ export function renderOptionalFieldHtml(
 
   if (field === 'country') {
     const options = COUNTRIES
-      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`)
+      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${escapeHtml(c.emoji)} ${escapeHtml(c.name)}</option>`)
       .join('\n        ');
 
     return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">

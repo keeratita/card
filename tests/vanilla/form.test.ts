@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CardForm } from '../../src/vanilla/form';
-import type { CardFormOptions, PaymentGateway } from '../../src/core/domain/card';
+import type { CardFormOptions, PaymentGateway, Token } from '../../src/core/domain/card';
 
 describe('Vanilla CardForm', () => {
   let mockAdapter: PaymentGateway;
@@ -386,6 +386,67 @@ describe('Vanilla CardForm', () => {
       
       const cardLabel = document.querySelector('.card-gateway-label');
       expect(cardLabel?.textContent).toBe('STRIPE');
+    });
+  });
+
+  describe('Submit lifecycle', () => {
+    function fillForm(formEl: HTMLFormElement): void {
+      const numInput = formEl.querySelector('.card-number-input') as HTMLInputElement;
+      const expInput = formEl.querySelector('.card-expiry-input') as HTMLInputElement;
+      const cvcInput = formEl.querySelector('.card-cvc-input') as HTMLInputElement;
+      const nameInput = formEl.querySelector('.card-name-input') as HTMLInputElement;
+      numInput.value = '4242 4242 4242 4242';
+      expInput.value = '12 / 30';
+      cvcInput.value = '123';
+      nameInput.value = 'John Doe';
+    }
+
+    function submit(formEl: HTMLFormElement): void {
+      formEl.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+
+    it('should ignore re-entrant submits while tokenizing', async () => {
+      let resolveTokenize!: (token: Token) => void;
+      const tokenize = vi.fn(
+        () =>
+          new Promise<Token>((resolve) => {
+            resolveTokenize = resolve;
+          }),
+      );
+      new CardForm('#card-form-container', {
+        adapter: { name: 'Stripe', tokenize },
+      });
+      const formEl = document.querySelector(
+        '.payment-form-el',
+      ) as HTMLFormElement;
+      fillForm(formEl);
+
+      submit(formEl);
+      submit(formEl);
+
+      // The guard is set synchronously, so the second submit never reaches
+      // the adapter
+      expect(tokenize).toHaveBeenCalledTimes(1);
+
+      resolveTokenize({ id: 'tok_1', gateway: 'stripe', raw: {} });
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    it('should clear the CVC input after a successful tokenization', async () => {
+      new CardForm('#card-form-container', { adapter: mockAdapter });
+      const formEl = document.querySelector(
+        '.payment-form-el',
+      ) as HTMLFormElement;
+      fillForm(formEl);
+
+      submit(formEl);
+      await new Promise((r) => setTimeout(r, 0));
+
+      const cvcInput = formEl.querySelector('.card-cvc-input') as HTMLInputElement;
+      const numInput = formEl.querySelector('.card-number-input') as HTMLInputElement;
+      expect(cvcInput.value).toBe('');
+      expect(numInput.value).toContain('4242');
+      expect(numInput.value).toContain('••••');
     });
   });
 });

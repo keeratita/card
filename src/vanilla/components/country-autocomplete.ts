@@ -8,6 +8,7 @@
 import { AutocompleteDropdown, AutocompleteOption } from './autocomplete-dropdown';
 import { COUNTRIES } from '../../data/countries';
 import { findCountryByCode } from '../../core/form';
+import { escapeHtml } from '../../core/security';
 
 export interface CountryAutocompleteConfig {
   container: HTMLElement | string;
@@ -21,14 +22,17 @@ export interface CountryAutocompleteConfig {
 /**
  * Custom render function for country options in the autocomplete dropdown.
  * Extracted to avoid creating a new closure per country.
+ *
+ * Country names/emojis come from the static COUNTRIES constant, but are
+ * escaped anyway so the string is safe regardless of the option source.
  */
 function renderCountryOption(option: AutocompleteOption): string {
   const countryData = findCountryByCode(option.value);
   const emoji = countryData?.emoji || '';
   const name = countryData?.name || option.label;
   return `
-    <span class="country-flag">${emoji}</span>
-    <span class="country-name">${name}</span>
+    <span class="country-flag">${escapeHtml(emoji)}</span>
+    <span class="country-name">${escapeHtml(name)}</span>
   `;
 }
 

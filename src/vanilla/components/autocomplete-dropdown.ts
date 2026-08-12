@@ -460,6 +460,8 @@ export class AutocompleteDropdown {
     resultEl.setAttribute('data-value', option.value);
     
     if (option.customRender) {
+      // customRender output is inserted as trusted HTML — integrators must
+      // escape any user/API-controlled data themselves.
       resultEl.innerHTML = option.customRender(option);
     } else {
       const iconSpan = document.createElement('span');

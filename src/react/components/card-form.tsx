@@ -45,6 +45,7 @@ export function CardForm({
     setFieldValue,
     handleBlur,
     handleCvcFocus,
+    handleCvcBlur,
     handleSubmit,
   } = useCardForm({
     adapter,
@@ -69,7 +70,12 @@ export function CardForm({
       />
 
       {/* Form Fields */}
-      <form onSubmit={handleSubmit} className='payment-form-el'>
+      <form
+        onSubmit={handleSubmit}
+        className='payment-form-el'
+        noValidate
+        aria-busy={isTokenizing || isProcessing}
+      >
         <div>
           <FormFieldsGroup
             values={values}
@@ -81,12 +87,17 @@ export function CardForm({
             setFieldValue={setFieldValue}
             handleBlur={handleBlur}
             handleCvcFocus={handleCvcFocus}
+            handleCvcBlur={handleCvcBlur}
             headerLabel={CARD_FORM_TEXT_EN.paymentMethod}
           />
 
           {/* Error Messages */}
           {(paymentError || errors.number || errors.expiry || errors.cvc || errors.name) && (
-            <div className='error-text validation-error-msg'>
+            <div
+              className='error-text validation-error-msg'
+              role='alert'
+              aria-live='assertive'
+            >
               {paymentError || CARD_FORM_TEXT_EN.validationError}
             </div>
           )}

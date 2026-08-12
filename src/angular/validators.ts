@@ -9,7 +9,9 @@ export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('number', String(control.value));
-    return isValid ? null : { creditCard: { value: control.value } };
+    // Static descriptor: never echo the raw value (PAN) into errors, as
+    // consumers commonly serialize control.errors into logging/analytics.
+    return isValid ? null : { creditCard: true };
   };
 }
 
@@ -36,21 +38,21 @@ export function expiryValidator(): ValidatorFn {
     if (value.includes('/')) {
       const parts = value.split('/');
       if (parts.length !== 2) {
-        return { expiryInvalid: { value: control.value } };
+        return { expiryInvalid: true };
       }
       month = parts[0].trim();
       year = parts[1].trim();
     } else {
       const val = value.replace(/\D/g, '');
       if (val.length !== 4) {
-        return { expiryInvalid: { value: control.value } };
+        return { expiryInvalid: true };
       }
       month = val.substring(0, 2);
       year = val.substring(2, 4);
     }
 
     const isValid = validateExpiry(month, year);
-    return isValid ? null : { expiryInvalid: { value: control.value } };
+    return isValid ? null : { expiryInvalid: true };
   };
 }
 
@@ -76,7 +78,7 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
     }
 
     const { isValid } = validateField('cvc', cvc, { cardNumber });
-    return isValid ? null : { cvcInvalid: { value: control.value } };
+    return isValid ? null : { cvcInvalid: true };
   };
 }
 
@@ -87,7 +89,7 @@ export function cardholderNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('name', String(control.value));
-    return isValid ? null : { cardholderNameInvalid: { value: control.value } };
+    return isValid ? null : { cardholderNameInvalid: true };
   };
 }
 
@@ -98,7 +100,7 @@ export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('email', String(control.value));
-    return isValid ? null : { emailInvalid: { value: control.value } };
+    return isValid ? null : { emailInvalid: true };
   };
 }
 
@@ -109,7 +111,7 @@ export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('phone', String(control.value));
-    return isValid ? null : { phoneInvalid: { value: control.value } };
+    return isValid ? null : { phoneInvalid: true };
   };
 }
 
@@ -120,7 +122,7 @@ export function postalCodeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('postalCode', String(control.value));
-    return isValid ? null : { postalCodeInvalid: { value: control.value } };
+    return isValid ? null : { postalCodeInvalid: true };
   };
 }
 
@@ -131,6 +133,6 @@ export function countryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
     const { isValid } = validateField('country', String(control.value));
-    return isValid ? null : { countryInvalid: { value: control.value } };
+    return isValid ? null : { countryInvalid: true };
   };
 }

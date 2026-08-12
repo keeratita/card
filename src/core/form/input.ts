@@ -5,6 +5,10 @@ import { detectCardBrand } from '../domain/brand';
  * for the spaces added by formatting:
  * - Amex: 15 digits + 2 spaces = 17
  * - Others: 19 digits + 4 spaces = 23
+ *
+ * This is a safe upper bound per brand; `formatCardNumber` enforces the
+ * actual digit limit (19) so inputs can never hold more digits than the
+ * validators accept.
  */
 export function getCardNumberMaxLength(cardNumber: string): number {
   const brand = detectCardBrand(cardNumber);

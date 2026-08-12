@@ -26,6 +26,9 @@ describe('validateField', () => {
   it('validates expiry requiring 4 digits', () => {
     expect(validateField('expiry', '12/30').isValid).toBe(true);
     expect(validateField('expiry', '12345').isValid).toBe(false);
+    // 6-digit MMYYYY is not a supported input format: every formatter
+    // truncates to MMYY before validation runs.
+    expect(validateField('expiry', '122030').isValid).toBe(false);
   });
 
   it('validates CVC using the card number brand', () => {
@@ -133,10 +136,15 @@ describe('buildCard', () => {
 });
 
 describe('getCardNumberMaxLength', () => {
-  it('returns 17 for Amex and 23 otherwise', () => {
+  it('returns 17 for Amex and 23 for every other brand (safe upper bound)', () => {
     expect(getCardNumberMaxLength('34')).toBe(17);
     expect(getCardNumberMaxLength('4')).toBe(23);
+    expect(getCardNumberMaxLength('55')).toBe(23);
+    expect(getCardNumberMaxLength('36')).toBe(23);
     expect(getCardNumberMaxLength('')).toBe(23);
+    // The bound must never be smaller than the formatted length of the
+    // longest accepted PAN (19 digits + 4 spaces)
+    expect(getCardNumberMaxLength('4'.repeat(19))).toBeGreaterThanOrEqual(23);
   });
 });
 

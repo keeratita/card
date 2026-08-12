@@ -2,6 +2,11 @@
 
 This document provides comprehensive guidance on integrating the @keeratita/card library with Angular applications using reactive forms and directives.
 
+> **Requirements**: Angular `>= 21` (the Angular entry point uses signal-based
+> APIs — `input()`/`output()`/`computed()` — the `@if`/`@for` control flow,
+> `inject()` DI, and standalone-by-default components/directives).
+> Tested against the latest stable Angular release.
+
 ## Table of Contents
 
 1. [Reactive Forms Integration](#reactive-forms-integration)
@@ -30,7 +35,7 @@ export class CheckoutComponent {
 
   constructor() {
     // Automatically compiles controls for number, expiry, cvc, name,
-    // and postalCode (via 'us' preset) with correct validators attached.
+    // and postalCode + country (via 'us' preset) with correct validators.
     this.checkoutForm = createCardFormGroup({ preset: 'us' });
   }
 }
@@ -39,16 +44,20 @@ export class CheckoutComponent {
 ### Available Presets
 
 - `'none'`: Default core layout (Card Number, Expiry, CVC, Cardholder Name)
-- `'us'`: Core fields + Postal Code (ZIP Code visual mapping)
+- `'us'`: Core fields + Postal Code (ZIP Code visual mapping) and Country
 - `'billing'`: Core fields + Address Line 1, City, State, Postal Code, Country
 - `'contact'`: Core fields + Email, Phone
+
+> All fields activated by a preset or listed in `fields` are required (except
+> `addressLine2`): the HTML renderer, `createCardFormGroup`, and the
+> `kgCard*` masking directives all enforce the same rule.
 
 ## Manual Form Configuration
 
 For more control, you can manually configure form fields using individual validator functions.
 
 ```typescript
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   creditCardValidator,
@@ -61,9 +70,11 @@ import {
   templateUrl: './checkout.component.html',
 })
 export class CheckoutComponent {
+  private readonly fb = inject(FormBuilder);
+
   checkoutForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.checkoutForm = this.fb.group({
       cardNumber: ['', [Validators.required, creditCardValidator()]],
       expiry: ['', [Validators.required, expiryValidator()]],
@@ -87,7 +98,6 @@ import {
 
 @Component({
   selector: 'app-checkout',
-  standalone: true,
   imports: [CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   template: `
     <!-- Card Number formatting -->
@@ -114,7 +124,7 @@ export class CheckoutComponent {
 
 #### `cardNumber`
 
-- **Type**: `string` (using Angular v20+ `input()` signal)
+- **Type**: `string` (signal-based `input()`)
 - **Description**: Used for cross-validation of CVC against card number to ensure proper length validation
 
 ## Validator Functions & Error Keys
@@ -219,10 +229,13 @@ country: ['', [Validators.required, countryValidator()]];
 Here's a complete working example combining all components:
 
 ```typescript
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import {
-  createCardFormGroup,
+  CardNumberDirective,
+  CardExpiryDirective,
+  CardCvcDirective,
   creditCardValidator,
   expiryValidator,
   cvcValidator,
@@ -235,10 +248,7 @@ import {
 
 @Component({
   selector: 'app-checkout',
-  standalone: true,
-  imports: [
-    // Add any required directives here
-  ],
+  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   template: `
     <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()">
       <div class="form-row">
@@ -248,15 +258,9 @@ import {
           placeholder="•••• •••• •••• ••••"
           kgCardNumber
         />
-        <div
-          *ngIf="
-            checkoutForm.get('cardNumber')?.invalid &&
-            checkoutForm.get('cardNumber')?.touched
-          "
-          class="error"
-        >
-          Invalid card number
-        </div>
+        @if (checkoutForm.get('cardNumber')?.invalid && checkoutForm.get('cardNumber')?.touched) {
+          <div class="error">Invalid card number</div>
+        }
       </div>
 
       <div class="form-row">
@@ -266,15 +270,9 @@ import {
           placeholder="MM/YY"
           kgCardExpiry
         />
-        <div
-          *ngIf="
-            checkoutForm.get('expiry')?.invalid &&
-            checkoutForm.get('expiry')?.touched
-          "
-          class="error"
-        >
-          Invalid expiry date
-        </div>
+        @if (checkoutForm.get('expiry')?.invalid && checkoutForm.get('expiry')?.touched) {
+          <div class="error">Invalid expiry date</div>
+        }
       </div>
 
       <div class="form-row">
@@ -285,14 +283,9 @@ import {
           kgCardCvc
           [cardNumber]="checkoutForm.get('cardNumber')?.value"
         />
-        <div
-          *ngIf="
-            checkoutForm.get('cvc')?.invalid && checkoutForm.get('cvc')?.touched
-          "
-          class="error"
-        >
-          Invalid CVC
-        </div>
+        @if (checkoutForm.get('cvc')?.invalid && checkoutForm.get('cvc')?.touched) {
+          <div class="error">Invalid CVC</div>
+        }
       </div>
 
       <div class="form-row">
@@ -301,28 +294,16 @@ import {
           formControlName="cardholderName"
           placeholder="Cardholder Name"
         />
-        <div
-          *ngIf="
-            checkoutForm.get('cardholderName')?.invalid &&
-            checkoutForm.get('cardholderName')?.touched
-          "
-          class="error"
-        >
-          Invalid cardholder name
-        </div>
+        @if (checkoutForm.get('cardholderName')?.invalid && checkoutForm.get('cardholderName')?.touched) {
+          <div class="error">Invalid cardholder name</div>
+        }
       </div>
 
       <div class="form-row">
         <input type="email" formControlName="email" placeholder="Email" />
-        <div
-          *ngIf="
-            checkoutForm.get('email')?.invalid &&
-            checkoutForm.get('email')?.touched
-          "
-          class="error"
-        >
-          Invalid email
-        </div>
+        @if (checkoutForm.get('email')?.invalid && checkoutForm.get('email')?.touched) {
+          <div class="error">Invalid email</div>
+        }
       </div>
 
       <button type="submit" [disabled]="checkoutForm.invalid">Pay Now</button>
@@ -341,10 +322,12 @@ import {
     `,
   ],
 })
-export class CheckoutComponent implements OnInit {
+export class CheckoutComponent {
+  private readonly fb = inject(FormBuilder);
+
   checkoutForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     // Create a form with all required fields and validators
     this.checkoutForm = this.fb.group({
       cardNumber: ['', [Validators.required, creditCardValidator()]],
@@ -358,14 +341,12 @@ export class CheckoutComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    // Additional initialization if needed
-  }
-
   onSubmit(): void {
     if (this.checkoutForm.valid) {
-      // Process the form data
-      console.log(this.checkoutForm.value);
+      // Forward the token to your backend — never log the raw form value,
+      // it contains the PAN and CVC.
+      const tokenId = this.checkoutForm.get('cardNumber')?.value;
+      void tokenId;
     } else {
       // Mark all fields as touched to show validation errors
       this.markFormGroupTouched(this.checkoutForm);
@@ -394,7 +375,6 @@ import { CountrySelectComponent } from '@keeratita/card/angular';
 
 @Component({
   selector: 'app-checkout',
-  standalone: true,
   imports: [CountrySelectComponent],
   template: `
     <kg-country-select

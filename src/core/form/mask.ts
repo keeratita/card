@@ -16,7 +16,7 @@ export function maskSensitiveValue(
   switch (field) {
     case 'email':
       if (value.length <= 1) return '*';
-      return `${value.charAt(0)}***@***.com`;
+      return `${escapeHtml(value.charAt(0))}***@***.com`;
     case 'phone': {
       const digits = value.replace(/\D/g, '');
       if (digits.length <= 2) return '***-***';

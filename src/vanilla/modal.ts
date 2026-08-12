@@ -1,5 +1,6 @@
 import { CardForm } from './form';
 import { CardFormOptions } from '../core/domain/card';
+import { isThenable } from '../core/form/is-thenable';
 
 const MODAL_CLOSE_DELAY_MS = 1500;
 
@@ -54,7 +55,9 @@ export class CardModal {
       onSubmit: async (data) => {
         if (originalOnSubmit) {
           const result = originalOnSubmit(data);
-          if (result instanceof Promise) {
+          // Await thenables (incl. cross-realm promises) so the double-loading
+          // lifecycle waits for the host backend
+          if (isThenable(result)) {
             await result;
           }
         }
@@ -113,13 +116,14 @@ export class CardModal {
     this.overlayEl.classList.remove('active');
     modalRegistry.delete(this);
 
+    // Always remove both listeners when this modal closes
+    document.removeEventListener('keydown', this.handleEscape);
+    document.removeEventListener('keydown', this.handleFocusTrap);
+
     // Restore overflow when last modal closes
     if (modalRegistry.size === 0) {
       document.body.style.overflow = '';
-      document.removeEventListener('keydown', this.handleFocusTrap);
     }
-
-    document.removeEventListener('keydown', this.handleEscape);
 
     if (this.previousFocus && (this.previousFocus as HTMLElement).focus) {
       (this.previousFocus as HTMLElement).focus();
