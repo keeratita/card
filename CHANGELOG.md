@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-13
+
 ### Added
 
 - **Angular 22 support**: peer dependencies now require Angular `>= 21` and the
