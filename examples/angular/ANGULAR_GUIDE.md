@@ -3,7 +3,8 @@
 This guide provides comprehensive documentation for integrating the `@keeratita/card` library with Angular applications.
 
 > **Requirements**: Angular `>= 21`, signal-based APIs (`input()`/`output()`/`computed()`),
-> the `@if`/`@for` control flow, `inject()` DI, and standalone-by-default components.
+> the `@if`/`@for` control flow, `inject()` DI, and standalone components
+> (shipped with explicit `standalone: true`).
 
 ## Table of Contents
 

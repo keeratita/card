@@ -221,7 +221,8 @@ export default function CustomCheckoutForm() {
 
 The Angular entry point targets the latest Angular (v21+, signal-based APIs)
 — `input()`/`output()`/`computed()` signal syntax, the `@if`/`@for` control
-flow, `inject()` DI, and standalone-by-default components/directives.
+flow, `inject()` DI, and standalone components/directives (shipped with an
+explicit `standalone: true` so consumer AOT builds can resolve them).
 
 #### A. Reactive Forms Configuration
 

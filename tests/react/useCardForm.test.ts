@@ -487,5 +487,31 @@ describe('React useCardForm Hook', () => {
 
       expect(result.current.values.number).toBe('5');
     });
+
+    it('should not flag the masked number as invalid when blurred after success', async () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+      expect(result.current.values.number).toBe('•••• •••• •••• 4242');
+
+      // Focus-then-blur without typing: the masked display value must not
+      // produce an "Invalid card number." error.
+      act(() => {
+        result.current.handleBlur({
+          target: { name: 'number', value: '•••• •••• •••• 4242' },
+        } as FocusEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.errors.number).toBeNull();
+    });
   });
 });

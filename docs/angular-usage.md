@@ -4,7 +4,9 @@ This document provides comprehensive guidance on integrating the @keeratita/card
 
 > **Requirements**: Angular `>= 21` (the Angular entry point uses signal-based
 > APIs — `input()`/`output()`/`computed()` — the `@if`/`@for` control flow,
-> `inject()` DI, and standalone-by-default components/directives).
+> `inject()` DI, and standalone components/directives). The library ships
+> components/directives with an explicit `standalone: true` so consumer AOT
+> builds can resolve them regardless of how the app compiles.
 > Tested against the latest stable Angular release.
 
 ## Table of Contents
@@ -51,6 +53,38 @@ export class CheckoutComponent {
 > All fields activated by a preset or listed in `fields` are required (except
 > `addressLine2`): the HTML renderer, `createCardFormGroup`, and the
 > `kgCard*` masking directives all enforce the same rule.
+
+### Cleanup (`disposeCardFormGroup`)
+
+`createCardFormGroup` subscribes to the card-number control so the CVC length
+constraint revalidates reactively when the brand changes (Amex vs standard).
+Release that subscription when the form group is no longer needed — e.g. on
+component destroy — with `disposeCardFormGroup`:
+
+```typescript
+import { Component, DestroyRef, inject } from '@angular/core';
+import {
+  createCardFormGroup,
+  disposeCardFormGroup,
+} from '@keeratita/card/angular';
+
+@Component({
+  selector: 'app-checkout',
+  templateUrl: './checkout.component.html',
+})
+export class CheckoutComponent {
+  private readonly destroyRef = inject(DestroyRef);
+  checkoutForm: FormGroup;
+
+  constructor() {
+    this.checkoutForm = createCardFormGroup({ preset: 'us' });
+    this.destroyRef.onDestroy(() => disposeCardFormGroup(this.checkoutForm));
+  }
+}
+```
+
+This prevents a per-form-subscription leak if the form group outlives the
+component (e.g. forms created in a loop or re-created on route change).
 
 ## Manual Form Configuration
 

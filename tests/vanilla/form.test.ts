@@ -449,4 +449,61 @@ describe('Vanilla CardForm', () => {
       expect(numInput.value).toContain('••••');
     });
   });
+
+  describe('Inline field error messages', () => {
+    it('renders the inline error for an invalid optional field (email)', () => {
+      new CardForm('#card-form-container', {
+        adapter: mockAdapter,
+        fields: ['email'],
+      });
+      const formEl = document.querySelector(
+        '.payment-form-el',
+      ) as HTMLFormElement;
+
+      const numInput = formEl.querySelector('.card-number-input') as HTMLInputElement;
+      const expInput = formEl.querySelector('.card-expiry-input') as HTMLInputElement;
+      const cvcInput = formEl.querySelector('.card-cvc-input') as HTMLInputElement;
+      const nameInput = formEl.querySelector('.card-name-input') as HTMLInputElement;
+      const emailInput = formEl.querySelector('.card-email-input') as HTMLInputElement;
+      numInput.value = '4242 4242 4242 4242';
+      expInput.value = '12 / 30';
+      cvcInput.value = '123';
+      nameInput.value = 'John Doe';
+      emailInput.value = 'not-an-email';
+
+      formEl.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+
+      // The optional-field error span must be populated (was never matched
+      // when the lookup used `#<fieldId>-error` instead of `#card-<fieldId>-error`)
+      const errorEl = document.getElementById('card-email-error');
+      expect(errorEl).not.toBeNull();
+      expect(errorEl?.textContent).toContain('email');
+
+      // And the row must be flagged invalid
+      expect(emailInput.closest('.ios-input-row')?.classList.contains('invalid')).toBe(
+        true,
+      );
+    });
+
+    it('keeps the inline error empty once the optional field is valid', () => {
+      new CardForm('#card-form-container', {
+        adapter: mockAdapter,
+        fields: ['email'],
+      });
+      const formEl = document.querySelector(
+        '.payment-form-el',
+      ) as HTMLFormElement;
+      const emailInput = formEl.querySelector('.card-email-input') as HTMLInputElement;
+      emailInput.value = 'a@b.com';
+
+      formEl.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+
+      const errorEl = document.getElementById('card-email-error');
+      expect(errorEl?.textContent).toBe('');
+    });
+  });
 });

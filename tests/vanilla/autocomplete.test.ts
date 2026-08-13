@@ -350,7 +350,7 @@ describe('AutocompleteDropdown Public API', () => {
         { value: 'af', label: 'Afghanistan' },
         { value: 'tz', label: 'Tanzania' },
       ];
-      const dropdown = new AutocompleteDropdown({
+      new AutocompleteDropdown({
         container,
         options,
         onSelect: onSelectMock,
@@ -381,7 +381,7 @@ describe('AutocompleteDropdown Public API', () => {
 
   describe('Dropdown Positioning', () => {
     it('should display and position the dropdown when opened', () => {
-      const dropdown = new AutocompleteDropdown({
+      new AutocompleteDropdown({
         container,
         options: testOptions,
         onSelect: onSelectMock
@@ -399,7 +399,7 @@ describe('AutocompleteDropdown Public API', () => {
     });
 
     it('should recalculate position on reopen', () => {
-      const dropdown = new AutocompleteDropdown({
+      new AutocompleteDropdown({
         container,
         options: testOptions,
         onSelect: onSelectMock

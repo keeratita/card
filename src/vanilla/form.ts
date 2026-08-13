@@ -492,8 +492,11 @@ export class CardForm {
     }
     el.setAttribute('aria-invalid', String(!isValid));
 
+    // The markup always emits `card-<base>-error` (e.g. `card-email-error`);
+    // map the internal fieldId (`card-number`, or a bare optional field name
+    // like `email`) to that id via the core field name.
     const errorEl = this.formEl.querySelector(
-      `#${fieldId}-error`,
+      `#card-${this.toCoreFieldName(fieldId)}-error`,
     ) as HTMLElement | null;
     if (errorEl) {
       errorEl.textContent = isValid ? '' : getFieldErrorMessage(fieldName);

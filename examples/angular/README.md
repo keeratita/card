@@ -77,9 +77,10 @@ import { StripeAdapter } from '@keeratita/card';
 
 ## Module Setup
 
-All library components and directives are **standalone** (standalone is the
-default since Angular 19), so import them directly into your component's
-`imports` — no NgModule wiring required:
+All library components and directives are **standalone** — shipped with an
+explicit `standalone: true` flag so consumer AOT builds can resolve them — so
+import them directly into your component's `imports` — no NgModule wiring
+required:
 
 ```typescript
 import { Component } from '@angular/core';

@@ -12,8 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Angular 22 support**: peer dependencies now require Angular `>= 21` and the
   library is built/tested against the latest stable release (22.x). The Angular
   entry point uses modern signal-based syntax throughout: `input()`/`output()`/
-  `computed()`, the `@if`/`@for` control flow, `inject()` DI, and
-  standalone-by-default components and directives.
+  `computed()`, the `@if`/`@for` control flow, `inject()` DI, and standalone
+  components/directives (shipped with explicit `standalone: true` so consumer
+  AOT builds can resolve them).
+- `disposeCardFormGroup` releases the internal CVC cross-validation
+  subscription created by `createCardFormGroup` (call it when the form group is
+  no longer needed, e.g. on component destroy, to avoid a per-form leak).
 - Stripe/Omise adapters throw immediately at **construction** when given a
   secret-looking key (`sk_` / `skey_`) instead of sending it to the vault.
 - Shared `isThenable` helper so the double-loading `onSubmit` lifecycle awaits
@@ -40,7 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   response body read, not just the headers.
 - React: editing a field after a successful payment resets the success state,
   and re-entering a card number strips the masked `•••• •••• •••• 4242` prefix
-  instead of appending digits to it.
+  instead of appending digits to it; blurring the masked number (without
+  typing) no longer surfaces an "Invalid card number." error.
+- Card-number caret position: typing the 5th digit (which makes the formatter
+  insert a space) no longer jumps the caret in front of the new space; caret
+  restoration now positions against the raw typed value.
+- Vanilla: the inline error message under an optional field (email, phone,
+  postal code, city, …, country) is now rendered — previously only the red
+  invalid highlight appeared.
 - Vanilla: the CVC input is cleared after successful tokenization (previously
   it stayed in the DOM, e.g. across modal open/close cycles).
 - Angular: custom country option text and the email mask are now escaped;

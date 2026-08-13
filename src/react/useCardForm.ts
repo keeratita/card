@@ -161,6 +161,12 @@ export function useCardForm(params: UseCardFormParams) {
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
+      // After a successful payment the card-number input holds the masked
+      // display value ("•••• •••• •••• 4242"); blurring it must not surface a
+      // validation error for a value the user never typed.
+      if (name === 'number' && value.includes('•')) {
+        return;
+      }
       validateField(name, value);
     },
     [validateField],

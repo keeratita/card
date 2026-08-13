@@ -112,7 +112,7 @@ New exports must be re-exported from the matching entry file, and types must be 
 2. `npm run deploy` — builds and publishes to npm (`access: public`).
 3. Version bumps are the only intentional edit to `PACKAGE_VERSION` in `src/core/constants.ts`.
 
-The GitHub Actions workflow (`demo-pages.yml`) builds the package and deploys the demo site to GitHub Pages on `main` (Node 20, `npm ci`).
+The GitHub Actions workflow (`demo-pages.yml`) builds the package and deploys the demo site to GitHub Pages on `main` (Node 22, `npm ci`).
 
 ## Validation Checklist
 
