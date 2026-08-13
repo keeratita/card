@@ -39,28 +39,28 @@ export function CustomFormWithPresets() {
 
   return (
     <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#24292e', margin: '0 0 8px 0' }}>
+      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#ffffff', margin: '0 0 8px 0' }}>
         Form with Presets
       </h2>
-      <p style={{ color: '#586069', margin: '0 0 24px 0', fontSize: '15px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', margin: '0 0 24px 0', fontSize: '15px' }}>
         Use the preset prop to automatically include the right fields and validators.
       </p>
 
       {/* Configuration Panel */}
       <div style={{
-        backgroundColor: '#f6f8fa',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         padding: '24px',
-        borderRadius: '8px',
+        borderRadius: '12px',
         marginBottom: '24px',
-        border: '1px solid #e1e4e8'
+        border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 16px 0' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 16px 0' }}>
           Configuration
         </h3>
 
         {/* Payment Gateway Selection */}
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
             Payment Gateway
           </label>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -69,12 +69,12 @@ export function CustomFormWithPresets() {
               style={{
                 flex: 1,
                 padding: '10px',
-                border: selectedAdapter === 'stripe' ? '2px solid #0366d6' : '1px solid #d0d7de',
-                borderRadius: '6px',
-                backgroundColor: selectedAdapter === 'stripe' ? '#f1f8ff' : 'white',
+                border: selectedAdapter === 'stripe' ? '2px solid #0a84ff' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '9999px',
+                backgroundColor: selectedAdapter === 'stripe' ? 'rgba(10,132,255,0.12)' : 'rgba(255,255,255,0.05)',
                 cursor: 'pointer',
                 fontWeight: 500,
-                color: selectedAdapter === 'stripe' ? '#0366d6' : '#586069',
+                color: selectedAdapter === 'stripe' ? '#0a84ff' : 'rgba(255,255,255,0.55)',
                 fontSize: '14px'
               }}
             >
@@ -85,12 +85,12 @@ export function CustomFormWithPresets() {
               style={{
                 flex: 1,
                 padding: '10px',
-                border: selectedAdapter === 'omise' ? '2px solid #0366d6' : '1px solid #d0d7de',
-                borderRadius: '6px',
-                backgroundColor: selectedAdapter === 'omise' ? '#f1f8ff' : 'white',
+                border: selectedAdapter === 'omise' ? '2px solid #0a84ff' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '9999px',
+                backgroundColor: selectedAdapter === 'omise' ? 'rgba(10,132,255,0.12)' : 'rgba(255,255,255,0.05)',
                 cursor: 'pointer',
                 fontWeight: 500,
-                color: selectedAdapter === 'omise' ? '#0366d6' : '#586069',
+                color: selectedAdapter === 'omise' ? '#0a84ff' : 'rgba(255,255,255,0.55)',
                 fontSize: '14px'
               }}
             >
@@ -101,7 +101,7 @@ export function CustomFormWithPresets() {
 
         {/* Preset Selection */}
         <div style={{ marginBottom: '8px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: '#24292e', fontSize: '14px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
             Form Preset
           </label>
           <select
@@ -110,10 +110,11 @@ export function CustomFormWithPresets() {
             style={{
               width: '100%',
               padding: '10px',
-              borderRadius: '6px',
-              border: '1px solid #d0d7de',
+              borderRadius: '8px',
+              border: '1.5px solid rgba(255,255,255,0.1)',
               fontSize: '14px',
-              backgroundColor: 'white'
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              color: '#ffffff'
             }}
           >
             <option value="none">None (Core fields only)</option>
@@ -121,7 +122,7 @@ export function CustomFormWithPresets() {
             <option value="billing">Full Billing Address</option>
             <option value="contact">Contact Details</option>
           </select>
-          <p style={{ fontSize: '13px', color: '#586069', margin: '4px 0 0 0' }}>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', margin: '4px 0 0 0' }}>
             {presetDescriptions[selectedPreset]}
           </p>
         </div>
@@ -130,11 +131,11 @@ export function CustomFormWithPresets() {
       {/* Current Preset Info */}
       <div style={{
         padding: '16px',
-        backgroundColor: '#fff3cd',
-        borderRadius: '8px',
+        backgroundColor: 'rgba(255,204,0,0.08)',
+        borderRadius: '12px',
         marginBottom: '24px',
-        border: '1px solid #ffe066',
-        color: '#826301'
+        border: '1px solid rgba(255,204,0,0.25)',
+        color: '#ffd60a'
       }}>
         <strong>Current Preset:</strong> {selectedPreset}
         <br />
@@ -145,11 +146,11 @@ export function CustomFormWithPresets() {
       {token && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#f0fdf4',
+          backgroundColor: 'rgba(48,209,88,0.1)',
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #bbf7d0',
-          color: '#166534'
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>✓ Success!</strong> Token: {token.id}
         </div>
@@ -159,11 +160,11 @@ export function CustomFormWithPresets() {
       {error && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#fef2f2',
+          backgroundColor: 'rgba(255,69,58,0.1)',
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b'
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a'
         }}>
           <strong>⚠ Error:</strong> {error}
         </div>
@@ -173,7 +174,7 @@ export function CustomFormWithPresets() {
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
         {/* Card Preview */}
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 12px 0' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 12px 0' }}>
             Card Preview
           </h3>
           <CreditCardPreview
@@ -189,7 +190,7 @@ export function CustomFormWithPresets() {
 
         {/* Card Form */}
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 12px 0' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 12px 0' }}>
             Payment Form
           </h3>
           <CardForm
@@ -207,13 +208,14 @@ export function CustomFormWithPresets() {
       <div style={{
         marginTop: '32px',
         padding: '20px',
-        backgroundColor: '#161b22',
-        borderRadius: '8px'
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <h4 style={{ color: '#fff', margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
+        <h4 style={{ color: '#ffffff', margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
           Code Example
         </h4>
-        <pre style={{ color: '#c9d1d9', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
+        <pre style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
 {`// Import the CardForm component and adapters
 import { CardForm, CreditCardPreview } from '@keeratita/card/react';
 import { stripeAdapter } from '../shared/adapters';

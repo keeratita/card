@@ -63,4 +63,13 @@ export const CARD_FORM_TEXT_EN = {
   cardBrand: 'Card Brand',
   tokenId: 'Token ID',
   searchCountries: 'Search countries...',
+  invalidCardNumber: 'Invalid card number.',
+  invalidExpiry: 'Invalid or expired date.',
+  invalidCvc: 'Invalid security code.',
+  invalidName: 'Enter the cardholder name.',
+  invalidEmail: 'Enter a valid email.',
+  invalidPhone: 'Enter a valid phone number.',
+  invalidPostalCode: 'Enter a valid postal code.',
+  invalidCountry: 'Select a country.',
+  invalidField: 'This field is required.',
 } as const;

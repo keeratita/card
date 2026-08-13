@@ -2,6 +2,10 @@
 
 This guide provides comprehensive documentation for integrating the `@keeratita/card` library with Angular applications.
 
+> **Requirements**: Angular `>= 21`, signal-based APIs (`input()`/`output()`/`computed()`),
+> the `@if`/`@for` control flow, `inject()` DI, and standalone components
+> (shipped with explicit `standalone: true`).
+
 ## Table of Contents
 
 1. [Installation](#installation)
@@ -50,7 +54,9 @@ export class CheckoutComponent {
 
   onSubmit(): void {
     if (this.checkoutForm.valid) {
-      console.log(this.checkoutForm.value);
+      // Send the token to your backend — never log checkoutForm.value,
+      // it contains the raw PAN and CVC.
+      void this.checkoutForm.value;
     }
   }
 }
@@ -61,7 +67,7 @@ export class CheckoutComponent {
 ### Available Presets
 
 - `'none'`: Default core layout (Card Number, Expiry, CVC, Cardholder Name)
-- `'us'`: Core fields + Postal Code (ZIP Code visual mapping)
+- `'us'`: Core fields + Postal Code (ZIP Code visual mapping) and Country
 - `'billing'`: Core fields + Address Line 1, City, State, Postal Code, Country
 - `'contact'`: Core fields + Email, Phone
 
@@ -70,7 +76,7 @@ export class CheckoutComponent {
 For more control, manually configure form fields using individual validator functions:
 
 ```typescript
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   creditCardValidator,
@@ -90,9 +96,11 @@ import {
   `,
 })
 export class CheckoutComponent {
+  private readonly fb = inject(FormBuilder);
+
   checkoutForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.checkoutForm = this.fb.group({
       cardNumber: ['', [Validators.required, creditCardValidator()]],
       expiry: ['', [Validators.required, expiryValidator()]],
@@ -116,7 +124,6 @@ import {
 
 @Component({
   selector: 'app-checkout',
-  standalone: true,
   imports: [CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   template: `
     <!-- Card Number formatting -->
@@ -143,7 +150,7 @@ export class CheckoutComponent {
 
 #### `cardNumber`
 
-- **Type**: `string` (using Angular v20+ `input()` signal)
+- **Type**: `string` (signal-based `input()`)
 - **Description**: Used for cross-validation of CVC against card number to ensure proper length validation
 
 ## Validator Functions

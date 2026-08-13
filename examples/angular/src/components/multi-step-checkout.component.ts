@@ -57,20 +57,20 @@ const sampleCart: CartItem[] = [
         margin-right: 8px;
       }
       .step-number.active {
-        background-color: #0366d6;
+        background-color: #0a84ff;
       }
       .step-number.inactive {
-        background-color: #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.1);
       }
       .step-label {
         font-size: 14px;
       }
       .step-label.active {
-        color: #24292e;
+        color: #ffffff;
         font-weight: 600;
       }
       .step-label.inactive {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.55);
         font-weight: 400;
       }
       .step-connector {
@@ -79,83 +79,96 @@ const sampleCart: CartItem[] = [
         margin-left: 16px;
       }
       .step-connector.active {
-        background-color: #0366d6;
+        background-color: #0a84ff;
       }
       .step-connector.inactive {
-        background-color: #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.1);
       }
       .content-card {
-        background-color: #ffffff;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
         padding: 32px;
-        border: 1px solid #e1e4e8;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .content-card h2 {
         margin-top: 0;
         font-size: 24px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .cart-item {
         display: flex;
         justify-content: space-between;
         padding: 12px 0;
-        border-bottom: 1px solid #e1e4e8;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       }
       .cart-item-name {
         font-weight: 500;
-        color: #24292e;
+        color: #ffffff;
       }
       .cart-item-price {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       .cart-item-total {
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .cart-total {
         display: flex;
         justify-content: space-between;
         padding: 16px 0;
-        border-top: 2px solid #24292e;
+        border-top: 2px solid rgba(255, 255, 255, 0.2);
         font-weight: 600;
         font-size: 18px;
+        color: #ffffff;
       }
       .btn {
         width: 100%;
-        padding: 14px;
-        border-radius: 6px;
-        font-size: 15px;
+        padding: 16px 20px;
+        border-radius: 9999px;
+        font-size: 16px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s ease;
       }
       .btn-primary {
-        background-color: #0366d6;
+        background-color: #0a84ff;
         color: white;
         border: none;
+        box-shadow: 0 8px 20px rgba(10, 132, 255, 0.35);
       }
       .btn-primary:hover:not(:disabled) {
-        background-color: #0255b3;
+        opacity: 0.95;
+        box-shadow: 0 10px 24px rgba(10, 132, 255, 0.45);
+        transform: translateY(-1px);
+      }
+      .btn-primary:disabled {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.55);
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
       }
       .btn-secondary {
-        background-color: #f6f8fa;
-        color: #24292e;
-        border: 1px solid #d0d7de;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
       .btn-secondary:hover {
-        background-color: #f0f0f0;
+        background-color: rgba(255, 255, 255, 0.08);
       }
       .btn-back {
         background-color: transparent;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         border: none;
         margin-top: 16px;
       }
       .btn-back:hover {
-        color: #24292e;
+        color: #ffffff;
       }
       .form-group {
         margin-bottom: 16px;
@@ -164,25 +177,28 @@ const sampleCart: CartItem[] = [
         display: block;
         margin-bottom: 8px;
         font-weight: 500;
-        color: #24292e;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 14px;
       }
       .form-input {
         width: 100%;
         padding: 12px 14px;
-        border-radius: 6px;
-        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
         font-size: 15px;
         transition: all 0.15s ease;
         box-sizing: border-box;
+        background-color: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-family: inherit;
       }
       .form-input:focus {
         outline: none;
-        border-color: #0366d6;
-        box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+        border-color: #0a84ff;
+        box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
       }
       .form-input::placeholder {
-        color: #6e7781;
+        color: rgba(255, 255, 255, 0.2);
       }
       .form-grid {
         display: grid;
@@ -197,36 +213,38 @@ const sampleCart: CartItem[] = [
       .gateway-btn {
         flex: 1;
         padding: 10px;
-        border-radius: 6px;
+        border-radius: 8px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.15s ease;
       }
       .gateway-btn.active {
-        border: 2px solid #0366d6;
-        background-color: #f1f8ff;
-        color: #0366d6;
+        border: 2px solid #0a84ff;
+        background-color: rgba(10, 132, 255, 0.12);
+        color: #0a84ff;
       }
       .gateway-btn.inactive {
-        border: 1px solid #d0d7de;
-        background-color: #ffffff;
-        color: #24292e;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.55);
       }
       .confirmation-icon {
         font-size: 64px;
         margin-bottom: 20px;
-        color: #28a745;
+        color: #30d158;
       }
       .confirmation-text {
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin-bottom: 20px;
       }
       .transaction-id {
-        background-color: #f6f8fa;
+        background-color: rgba(255, 255, 255, 0.03);
         padding: 12px;
-        border-radius: 6px;
+        border-radius: 8px;
         margin-bottom: 24px;
         font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
     `,
   ],

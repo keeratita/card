@@ -5,7 +5,7 @@ import {
   PaymentGatewayError,
   toFormUrlEncoded,
   enforceHttps,
-  fetchWithTimeout,
+  fetchJsonWithTimeout,
   normalizeNetworkError,
 } from './base';
 import { sanitizeInput } from '../security';
@@ -41,6 +41,11 @@ export class StripeAdapter implements PaymentGateway {
     if (!options.publicKey) {
       throw new Error('Stripe public key is required.');
     }
+    if (options.publicKey.startsWith('sk_')) {
+      throw new Error(
+        'Stripe secret keys (sk_) must never be exposed in the browser. Provide a publishable key (pk_).',
+      );
+    }
     this.publicKey = options.publicKey;
   }
 
@@ -62,7 +67,7 @@ export class StripeAdapter implements PaymentGateway {
       'card[exp_month]': card.expMonth.replace(/\D/g, '').slice(0, 2),
       'card[exp_year]': expYear,
       'card[cvc]': card.cvc.replace(/\D/g, '').slice(0, MAX_CVC_LENGTH),
-      'card[name]': card.name.trim().slice(0, MAX_NAME_LENGTH),
+      'card[name]': sanitizeInput(card.name).trim().slice(0, MAX_NAME_LENGTH),
     };
 
     if (card.addressLine1)
@@ -79,7 +84,13 @@ export class StripeAdapter implements PaymentGateway {
       payload['card[address_country]'] = sanitizeInput(card.country).trim().toUpperCase().slice(0, MAX_COUNTRY_LENGTH);
 
     try {
-      const response = await fetchWithTimeout('https://api.stripe.com/v1/tokens', {
+      const { response, data } = await fetchJsonWithTimeout<{
+        id?: string;
+        error?: {
+          message?: string;
+          code?: string;
+        };
+      }>('https://api.stripe.com/v1/tokens', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.publicKey}`,
@@ -89,8 +100,6 @@ export class StripeAdapter implements PaymentGateway {
         body: toFormUrlEncoded(payload),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
         throw new ApiValidationError(
           data.error?.message || 'Tokenization failed via Stripe API.',
@@ -99,7 +108,11 @@ export class StripeAdapter implements PaymentGateway {
         );
       }
 
-      return { id: data.id, gateway: 'stripe', raw: data };
+      return {
+        id: data.id || '',
+        gateway: 'stripe',
+        raw: data,
+      };
     } catch (error) {
       if (error instanceof PaymentGatewayError) throw error;
       throw new NetworkError(

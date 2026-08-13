@@ -1,13 +1,5 @@
-import {
-  luhnCheck,
-  validateExpiry,
-  validateCvc,
-  validateName,
-  validateEmail,
-  validatePhone,
-  validatePostalCode,
-  validateCountry,
-} from '../core/domain/validation';
+import { validateField } from '../core/form';
+import { validateExpiry } from '../core/domain/validation';
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 /**
@@ -16,16 +8,20 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const clean = String(control.value).replace(/\D/g, '');
-    // If there is any input, it must be a valid length (13-19 digits) and pass Luhn's algorithm
-    const isValid = clean.length >= 13 && clean.length <= 19 && luhnCheck(clean);
-    return isValid ? null : { creditCard: { value: control.value } };
+    const { isValid } = validateField('number', String(control.value));
+    // Static descriptor: never echo the raw value (PAN) into errors, as
+    // consumers commonly serialize control.errors into logging/analytics.
+    return isValid ? null : { creditCard: true };
   };
 }
 
 /**
  * Validates that the card expiry date is in MM/YY format and is in the future.
  * If no value is provided, it generates a valid expiry date.
+ *
+ * Note: this keeps its own slash-aware parsing (rejecting malformed formats
+ * like "12//25") rather than delegating to the shared `validateField('expiry')`,
+ * which is intentionally more lenient for the vanilla/React input masks.
  */
 export function expiryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -35,28 +31,28 @@ export function expiryValidator(): ValidatorFn {
       return null;
     }
 
-    // Handle formats like MM/YY or MMYY
     const value = String(control.value);
-    let month, year;
+    let month: string;
+    let year: string;
 
     if (value.includes('/')) {
       const parts = value.split('/');
       if (parts.length !== 2) {
-        return { expiryInvalid: { value: control.value } };
+        return { expiryInvalid: true };
       }
       month = parts[0].trim();
       year = parts[1].trim();
     } else {
       const val = value.replace(/\D/g, '');
       if (val.length !== 4) {
-        return { expiryInvalid: { value: control.value } };
+        return { expiryInvalid: true };
       }
       month = val.substring(0, 2);
       year = val.substring(2, 4);
     }
 
     const isValid = validateExpiry(month, year);
-    return isValid ? null : { expiryInvalid: { value: control.value } };
+    return isValid ? null : { expiryInvalid: true };
   };
 }
 
@@ -81,8 +77,8 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
       }
     }
 
-    const isValid = validateCvc(cvc, cardNumber);
-    return isValid ? null : { cvcInvalid: { value: control.value } };
+    const { isValid } = validateField('cvc', cvc, { cardNumber });
+    return isValid ? null : { cvcInvalid: true };
   };
 }
 
@@ -92,8 +88,8 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
 export function cardholderNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const isValid = validateName(String(control.value));
-    return isValid ? null : { cardholderNameInvalid: { value: control.value } };
+    const { isValid } = validateField('name', String(control.value));
+    return isValid ? null : { cardholderNameInvalid: true };
   };
 }
 
@@ -103,8 +99,8 @@ export function cardholderNameValidator(): ValidatorFn {
 export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const isValid = validateEmail(String(control.value));
-    return isValid ? null : { emailInvalid: { value: control.value } };
+    const { isValid } = validateField('email', String(control.value));
+    return isValid ? null : { emailInvalid: true };
   };
 }
 
@@ -114,8 +110,8 @@ export function emailValidator(): ValidatorFn {
 export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const isValid = validatePhone(String(control.value));
-    return isValid ? null : { phoneInvalid: { value: control.value } };
+    const { isValid } = validateField('phone', String(control.value));
+    return isValid ? null : { phoneInvalid: true };
   };
 }
 
@@ -125,8 +121,8 @@ export function phoneValidator(): ValidatorFn {
 export function postalCodeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const isValid = validatePostalCode(String(control.value));
-    return isValid ? null : { postalCodeInvalid: { value: control.value } };
+    const { isValid } = validateField('postalCode', String(control.value));
+    return isValid ? null : { postalCodeInvalid: true };
   };
 }
 
@@ -136,7 +132,7 @@ export function postalCodeValidator(): ValidatorFn {
 export function countryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const isValid = validateCountry(String(control.value));
-    return isValid ? null : { countryInvalid: { value: control.value } };
+    const { isValid } = validateField('country', String(control.value));
+    return isValid ? null : { countryInvalid: true };
   };
 }

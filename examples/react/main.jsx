@@ -102,10 +102,10 @@ function App() {
     return (
       <div className="content">
         <div style={{ padding: '16px 0 48px 0' }}>
-          <h2 style={{ fontSize: '32px', color: '#24292e', fontWeight: '600', margin: 0, lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: '32px', color: '#ffffff', fontWeight: '600', margin: 0, lineHeight: 1.2 }}>
             Card Form Examples
           </h2>
-          <p style={{ fontSize: '16px', color: '#586069', margin: '8px 0 0 0', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.55)', margin: '8px 0 0 0', lineHeight: 1.6 }}>
             Explore different ways to integrate the card form library in your React applications.
           </p>
         </div>
@@ -115,7 +115,7 @@ function App() {
             <h3 style={{
               fontSize: '13px',
               fontWeight: '600',
-              color: '#586069',
+              color: 'rgba(255,255,255,0.55)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               margin: '0 0 12px 0',
@@ -128,20 +128,20 @@ function App() {
                   key={example.id}
                   onClick={() => (window.location.hash = example.id)}
                   style={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '8px',
+                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    borderRadius: '12px',
                     padding: '20px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    border: '1px solid #e1e4e8',
+                    border: '1px solid rgba(255,255,255,0.08)',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)')}
                   onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
                 >
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#24292e', fontWeight: '600' }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#ffffff', fontWeight: '600' }}>
                     {example.title}
                   </h3>
-                  <p style={{ margin: 0, color: '#586069', fontSize: '13px', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: '13px', lineHeight: 1.5 }}>
                     {example.description}
                   </p>
                 </div>

@@ -60,34 +60,37 @@ type ExampleView =
       .container {
         min-height: 100vh;
         display: flex;
-        background-color: #fafbfc;
+        background-color: #050608;
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
       }
       .sidebar {
         width: 220px;
-        background-color: #f6f8fa;
-        border-right: 1px solid #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.02);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
         padding: 24px 16px;
         display: flex;
         flex-direction: column;
         flex-shrink: 0;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .sidebar-header {
         padding: 0 8px 20px 8px;
-        border-bottom: 1px solid #e1e4e8;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         margin-bottom: 16px;
       }
       .sidebar-header h1 {
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: #24292e;
+        color: #ffffff;
       }
       .sidebar-header p {
         margin: 4px 0 0 0;
         font-size: 12px;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
       }
       .nav {
         display: flex;
@@ -103,19 +106,23 @@ type ExampleView =
         font-size: 13px;
         font-weight: 500;
         transition: all 0.15s ease;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         background-color: transparent;
         white-space: nowrap;
       }
+      .nav-button:hover {
+        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.04);
+      }
       .nav-button.active {
-        color: #0366d6;
-        background-color: #f1f8ff;
+        color: #0a84ff;
+        background-color: rgba(10, 132, 255, 0.12);
       }
       .main {
         flex: 1;
         padding: 40px 48px;
         overflow-y: auto;
-        background-color: #fafbfc;
+        background-color: #050608;
       }
       .content {
         max-width: 800px;
@@ -126,14 +133,14 @@ type ExampleView =
       .header h2 {
         font-size: 32px;
         margin-bottom: 16px;
-        color: #24292e;
+        color: #ffffff;
         font-weight: 600;
         margin: 0;
         line-height: 1.2;
       }
       .header p {
         font-size: 16px;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         margin: 0;
         line-height: 1.6;
       }
@@ -143,34 +150,39 @@ type ExampleView =
         gap: 16px;
       }
       .card {
-        background-color: #ffffff;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
         padding: 20px;
         cursor: pointer;
         transition: all 0.2s ease;
-        border: 1px solid #e1e4e8;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
       .card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.16);
       }
       .card h3 {
         margin: 0 0 8px 0;
         font-size: 15px;
-        color: #24292e;
+        color: #ffffff;
         font-weight: 600;
       }
       .card p {
         margin: 0;
-        color: #586069;
+        color: rgba(255, 255, 255, 0.55);
         font-size: 13px;
         line-height: 1.5;
       }
       .content-card {
-        background-color: #ffffff;
-        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
         padding: 32px;
-        border: 1px solid #e1e4e8;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
       }
     `,
   ],

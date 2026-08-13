@@ -28,6 +28,16 @@ describe('Domain Validations', () => {
     it('should ignore non-digit separators in card numbers', () => {
       expect(luhnCheck('4242-4242-4242-4242')).toBe(true);
     });
+
+    it('should reject all-zero card numbers', () => {
+      // All-zero PANs pass the Luhn checksum but are never real cards.
+      expect(luhnCheck('0000 0000 0000 0000')).toBe(false);
+      expect(luhnCheck('0000000000000')).toBe(false);
+      expect(luhnCheck('0000000000000000000')).toBe(false);
+      // And therefore the public card-number validator rejects them too.
+      expect(validateCardNumber('0000 0000 0000 0000')).toBe(false);
+      expect(validateCardNumber('0000000000000000000')).toBe(false);
+    });
   });
 
   describe('Expiry Validation', () => {

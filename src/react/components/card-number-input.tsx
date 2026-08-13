@@ -1,5 +1,6 @@
 import React from 'react';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
+import { getCardNumberMaxLength } from '../../core/form';
 
 export interface CardNumberInputProps {
   value: string;
@@ -46,7 +47,7 @@ export function CardNumberInput({
         inputMode="numeric"
         autoComplete="cc-number"
         required
-        maxLength={19}
+        maxLength={getCardNumberMaxLength(value)}
       />
     </div>
   );

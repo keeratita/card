@@ -23,6 +23,7 @@ export interface FormFieldsGroupProps {
   setFieldValue: (name: keyof CardFormValues, value: string) => void;
   handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleCvcFocus: () => void;
+  handleCvcBlur?: () => void;
   className?: string;
   headerLabel?: string;
 }
@@ -37,6 +38,7 @@ export function FormFieldsGroup({
   setFieldValue,
   handleBlur,
   handleCvcFocus,
+  handleCvcBlur,
   className = '',
   headerLabel,
 }: Readonly<FormFieldsGroupProps>) {
@@ -70,6 +72,7 @@ export function FormFieldsGroup({
             onChange={handleChange}
             onBlur={handleBlur}
             onFocus={handleCvcFocus}
+            handleCvcBlur={handleCvcBlur}
             maxLength={brand === 'amex' ? 4 : 3}
           />
         </div>
@@ -98,7 +101,7 @@ export function FormFieldsGroup({
                       setFieldValue('country', countryCode);
                     }}
                     placeholder={placeholder}
-                    searchPlaceholder="Search countries..."
+                    searchPlaceholder={CARD_FORM_TEXT_EN.searchCountries}
                     className=""
                   />
                 </div>

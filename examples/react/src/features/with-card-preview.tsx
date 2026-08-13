@@ -42,10 +42,10 @@ export function CardFormWithLivePreview() {
 
   return (
     <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#24292e', margin: '0 0 8px 0' }}>
+      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#ffffff', margin: '0 0 8px 0' }}>
         Card Form with Live Preview
       </h2>
-      <p style={{ color: '#586069', margin: '0 0 24px 0', fontSize: '15px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', margin: '0 0 24px 0', fontSize: '15px' }}>
         Use the useCardForm hook for full control over the form while getting live card detection.
       </p>
 
@@ -53,11 +53,11 @@ export function CardFormWithLivePreview() {
       {token && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#f0fdf4',
+          backgroundColor: 'rgba(48,209,88,0.1)',
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #bbf7d0',
-          color: '#166534'
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>✓ Success!</strong> Token: {token.id}
         </div>
@@ -67,11 +67,11 @@ export function CardFormWithLivePreview() {
       {error && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#fef2f2',
+          backgroundColor: 'rgba(255,69,58,0.1)',
           borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b'
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a'
         }}>
           <strong>⚠ Error:</strong> {error}
         </div>
@@ -81,11 +81,11 @@ export function CardFormWithLivePreview() {
       {paymentError && (
         <div style={{
           padding: '12px 16px',
-          backgroundColor: '#fef2f2',
-          borderRadius: '6px',
+          backgroundColor: 'rgba(255,69,58,0.1)',
+          borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a',
           fontSize: '14px'
         }}>
           {paymentError}
@@ -95,7 +95,7 @@ export function CardFormWithLivePreview() {
       <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
         {/* Card Info Preview Section */}
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 12px 0' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 12px 0' }}>
             Live Card Preview
           </h3>
           <CreditCardPreview
@@ -111,7 +111,7 @@ export function CardFormWithLivePreview() {
 
         {/* Card Form Section - Using FormField with validation */}
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 12px 0' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 12px 0' }}>
             Enter Card Details
           </h3>
           <form onSubmit={onFormSubmit}>
@@ -169,17 +169,18 @@ export function CardFormWithLivePreview() {
               disabled={!values.number || !values.expiry || !values.cvc}
               style={{
                 width: '100%',
-                padding: '14px',
-                backgroundColor: '#0366d6',
+                padding: '16px 20px',
+                backgroundColor: '#0a84ff',
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
-                fontSize: '15px',
+                borderRadius: '9999px',
+                fontSize: '16px',
                 fontWeight: '600',
                 cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.2s ease',
                 opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1,
-                marginTop: '8px'
+                marginTop: '8px',
+                boxShadow: '0 8px 20px rgba(10,132,255,0.35)'
               }}
             >
               Pay Now
@@ -192,13 +193,14 @@ export function CardFormWithLivePreview() {
       <div style={{
         marginTop: '32px',
         padding: '20px',
-        backgroundColor: '#161b22',
-        borderRadius: '8px'
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <h4 style={{ color: '#fff', margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
+        <h4 style={{ color: '#ffffff', margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>
           Code Example - Using FormField with Validation
         </h4>
-        <pre style={{ color: '#c9d1d9', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
+        <pre style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', margin: 0, lineHeight: 1.6, fontFamily: "'SF Mono', Monaco, Consolas, monospace" }}>
 {`import { useCardForm, CreditCardPreview, FormField } from '@keeratita/card/react';
 import { stripeAdapter } from '../shared/adapters';
 

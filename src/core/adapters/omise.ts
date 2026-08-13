@@ -5,7 +5,7 @@ import {
   PaymentGatewayError,
   toFormUrlEncoded,
   enforceHttps,
-  fetchWithTimeout,
+  fetchJsonWithTimeout,
   normalizeNetworkError,
 } from './base';
 import { cleanDigits } from '../formatters/card-formatter';
@@ -54,7 +54,7 @@ function buildOmisePayload(
     'card[expiration_month]': cleanDigits(card.expMonth).slice(0, 2),
     'card[expiration_year]': expYear,
     'card[security_code]': cleanDigits(card.cvc).slice(0, MAX_CVC_LENGTH),
-    'card[name]': card.name.trim().slice(0, MAX_NAME_LENGTH),
+    'card[name]': sanitizeInput(card.name).trim().slice(0, MAX_NAME_LENGTH),
   };
 
   if (card.addressLine1)
@@ -107,6 +107,11 @@ export class OmiseAdapter implements PaymentGateway {
     if (!options.publicKey) {
       throw new Error('Omise public key is required.');
     }
+    if (options.publicKey.startsWith('skey_')) {
+      throw new Error(
+        'Omise secret keys (skey_) must never be exposed in the browser. Provide a public key (pkey_).',
+      );
+    }
     this.publicKey = options.publicKey;
   }
 
@@ -118,21 +123,27 @@ export class OmiseAdapter implements PaymentGateway {
       throw new ApiValidationError(
         'Invalid email address.',
         'invalid_email',
-        card,
+        // Never attach the card object here: it holds the raw PAN and CVC.
+        { email: card.email },
       );
     }
     if (card.phone && !validatePhone(card.phone)) {
       throw new ApiValidationError(
         'Invalid phone number.',
         'invalid_phone',
-        card,
+        // Never attach the card object here: it holds the raw PAN and CVC.
+        { phone: card.phone },
       );
     }
 
     const { body, auth } = buildOmisePayload(card, this.publicKey);
 
     try {
-      const response = await fetchWithTimeout('https://vault.omise.co/tokens', {
+      const { response, data } = await fetchJsonWithTimeout<{
+        id?: string;
+        message?: string;
+        code?: string;
+      }>('https://vault.omise.co/tokens', {
         method: 'POST',
         headers: {
           Authorization: auth,
@@ -142,8 +153,6 @@ export class OmiseAdapter implements PaymentGateway {
         body,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
         throw new ApiValidationError(
           data.message || 'Tokenization failed via Omise API.',
@@ -152,7 +161,11 @@ export class OmiseAdapter implements PaymentGateway {
         );
       }
 
-      return { id: data.id, gateway: 'omise', raw: data };
+      return {
+        id: data.id || '',
+        gateway: 'omise',
+        raw: data,
+      };
     } catch (error) {
       if (error instanceof PaymentGatewayError) throw error;
       throw new NetworkError(normalizeNetworkError(error).message, error);

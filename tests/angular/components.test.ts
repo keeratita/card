@@ -39,6 +39,15 @@ describe('Angular Components - renderOptionalFieldHtml', () => {
       
       expect(html).toContain('Country');
     });
+
+    it('should render the country select as required for every preset that renders it', () => {
+      // Required-ness must match createCardFormGroup / React / vanilla:
+      // fields rendered because a preset activates them are required.
+      const usHtml = renderOptionalFieldHtml('country', 'us', 'country');
+      const noneHtml = renderOptionalFieldHtml('country', 'none', 'country');
+      expect(usHtml).toContain('required');
+      expect(noneHtml).toContain('required');
+    });
   });
 
   describe('Address line 1 field rendering', () => {
@@ -79,8 +88,8 @@ describe('Angular Components - renderOptionalFieldHtml', () => {
     it('should render addressLine2 without required attribute', () => {
       const html = renderOptionalFieldHtml('addressLine2', 'billing', 'addressLine2');
       
-      // addressLine2 should not have required="true"
-      expect(html).not.toContain('required="true"');
+      // addressLine2 is the only optional-optional field and must not be required
+      expect(html).not.toContain('required');
     });
   });
 

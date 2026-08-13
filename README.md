@@ -219,6 +219,11 @@ export default function CustomCheckoutForm() {
 
 ### 3. Angular Integration Helpers
 
+The Angular entry point targets the latest Angular (v21+, signal-based APIs)
+— `input()`/`output()`/`computed()` signal syntax, the `@if`/`@for` control
+flow, `inject()` DI, and standalone components/directives (shipped with an
+explicit `standalone: true` so consumer AOT builds can resolve them).
+
 #### A. Reactive Forms Configuration
 
 Initialize a pre-validated `FormGroup` automatically using the `createCardFormGroup` helper:
@@ -246,7 +251,7 @@ export class CheckoutComponent {
 Or configure fields manually using the individual validator helpers:
 
 ```typescript
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   creditCardValidator,
@@ -259,9 +264,11 @@ import {
   templateUrl: './checkout.component.html',
 })
 export class CheckoutComponent {
+  private readonly fb = inject(FormBuilder);
+
   checkoutForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.checkoutForm = this.fb.group({
       cardNumber: ['', [Validators.required, creditCardValidator()]],
       expiry: ['', [Validators.required, expiryValidator()]],
@@ -285,7 +292,6 @@ import {
 
 @Component({
   selector: 'app-checkout',
-  standalone: true,
   imports: [CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   template: `
     <!-- Card Number formatting -->
@@ -321,24 +327,29 @@ export class CheckoutComponent {
 | `fields`           | `OptionalCardField[]` | No       | Array of optional elements to render                              |
 | `cardLabel`        | `string`              | No       | Overrides gateway text displayed in preview top-right             |
 | `submitButtonText` | `string`              | No       | Custom submit button label (default: `'Pay Now'`)                 |
-| `onSubmit`         | `Function`            | No       | Callback triggered after token retrieval; supports async Promises |
-| `onError`          | `Function`            | No       | Hook fired on validation errors or request failures               |
+| `onSubmit`         | `Function`            | No       | Callback triggered after token retrieval; supports async Promises (and thenables) |
+| `onError`          | `Function`            | No       | Hook fired on client-side validation errors or gateway/request failures   |
 
 ### Optional Fields presets (`CardFormPreset`)
 
 - `'none'`: Default core layout (Card Number, Expiry, CVC, Cardholder Name).
-- `'us'`: core fields + Postal Code (ZIP Code visual mapping).
+- `'us'`: core fields + Postal Code (ZIP Code visual mapping) and Country.
 - `'billing'`: core fields + Address Line 1, City, State, Postal Code, Country.
 - `'contact'`: core fields + Email, Phone.
+
+> All fields activated by a preset (or listed in `fields`) are required, except
+> `addressLine2`. This applies consistently across Vanilla, React, and Angular.
 
 ---
 
 ## 🛡️ Security & Anti-Leak Compliance
 
 1. **Vault CORS Requests Only**: Data is sent straight to the secure token vault servers from the client's browser session. Your server context never touches raw PAN details.
-2. **Strict Heap Sanitation**: Sensitive data properties (`Card` data structures, raw input buffers) are assigned to `null` immediately after vault POST calls finish to ensure immediate garbage collection.
-3. **Zero Logs**: The library does not contain loggers tracing card details.
-4. **Accessible Semantics**: Supports accessibility keyboard focus tags, overlays ARIA markers, autocomplete attributes, and manages focus traps.
+2. **Strict Heap Sanitation**: Sensitive field values (CVC, PAN) are cleared or masked immediately after tokenization so they are never retained or echoed back into error objects.
+3. **Zero Logs**: The library does not contain loggers tracing card details, and its examples never `console.log` raw card values.
+4. **HTTPS Required**: Tokenization throws on insecure origins (`http:`), with `localhost`/`127.0.0.1` exempt for local development.
+5. **Accessible Semantics**: Supports accessibility keyboard focus tags, overlays ARIA markers, autocomplete attributes, and manages focus traps.
+6. **Publishable Keys Only — Never Secret Keys in Env**: The library only ever needs your **public** keys (`pk_…` Stripe, `pkey_…` Omise), read straight from the browser. If you use env vars (e.g. `VITE_STRIPE_PUBLIC_KEY`, `VITE_OMISE_PUBLIC_KEY`), they may hold **public keys only** — never put **secret** keys (`sk_…` Stripe, `skey_…` Omise) into `.env` files or any frontend config: everything shipped to the browser is visible to every visitor. As a safety net, the Stripe/Omise adapters throw at construction when handed a secret-looking key.
 
 ---
 
@@ -421,7 +432,7 @@ import { COUNTRIES } from '@keeratita/card';
 // The package.json references "file:../.." to use local dist
 ```
 
-> **Note:** Pre-built React components (`CardForm`, `CreditCardPreview`) are not yet available. Use the `useCardForm` hook to build custom UIs. The `vanilla` entry point provides full pre-built UI components (`CardForm`, `CardModal`) that require zero framework setup.
+> **Pre-built React components are available**: `CardForm`, `CreditCardPreview`, and the headless `useCardForm` hook. See [docs/react-usage.md](docs/react-usage.md) for the full component API. The `vanilla` entry point provides pre-built UI components (`CardForm`, `CardModal`) that require zero framework setup.
 
 ### Angular Examples
 
@@ -471,8 +482,9 @@ import {
 // Using country selection component
 import { CountrySelectComponent } from '@keeratita/card/angular';
 
-// In angular.json for styles:
-// "styles": ["../../dist/vanilla/styles.css", "src/styles.scss"]
+// In angular.json for styles, reference the compiled library stylesheet:
+// "styles": ["node_modules/@keeratita/card/dist/vanilla/styles.css", "src/styles.scss"]
+// (The checked-in examples import their own copies for the demo site.)
 ```
 
 ### Project Structure
@@ -485,7 +497,7 @@ card/
 │   └── vanilla/            # Vanilla JS builds
 ├── examples/
 │   ├── react/              # React examples
-│   │   ├── package.json    # References "@keeratita/card": "file:../.."
+│   │   ├── package.json    # References "@keeratita/card": "file:../../dist"
 │   │   ├── vite.config.js
 │   │   └── *.tsx           # Example components
 │   └── angular/            # Angular examples

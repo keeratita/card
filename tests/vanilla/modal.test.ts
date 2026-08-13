@@ -216,17 +216,61 @@ describe('Vanilla CardModal', () => {
       expect(() => modal2.close()).not.toThrow();
     });
 
-    it('should remove keydown event listener when closed', () => {
-      expect(document.body.style.overflow).toBe('hidden');
+    it('should remove the keydown listeners added on open when closed', () => {
+      // Close the beforeEach-opened modal so the registry is clean, then
+      // install spies BEFORE opening a fresh modal
       modal.close();
-      
-      // Verify overflow is restored
-      expect(document.body.style.overflow).toBe('');
-      
-      // After close, the keydown listener is removed
-      // The modal should not respond to escape key
-      const overlay = document.querySelector('.modal-overlay');
-      expect(overlay?.classList.contains('active')).toBe(false);
+
+      const added: Array<[string, unknown]> = [];
+      const addSpy = vi
+        .spyOn(document, 'addEventListener')
+        .mockImplementation(((type: string, handler: EventListenerOrEventListenerObject) => {
+          added.push([type, handler]);
+        }) as typeof document.addEventListener);
+      const removeSpy = vi
+        .spyOn(document, 'removeEventListener')
+        .mockImplementation(((type: string, handler: EventListenerOrEventListenerObject) => {
+          const idx = added.findIndex(([t, h]) => t === type && h === handler);
+          if (idx >= 0) added.splice(idx, 1);
+        }) as typeof document.removeEventListener);
+
+      try {
+        const freshModal = new CardModal({ adapter: mockAdapter });
+        freshModal.open();
+        expect(added.length).toBeGreaterThan(0);
+
+        freshModal.close();
+
+        // Every keydown listener registered by open() must be removed on close
+        expect(added).toHaveLength(0);
+      } finally {
+        addSpy.mockRestore();
+        removeSpy.mockRestore();
+      }
+    });
+
+    it('should remove the old focus-trap listener when a non-last modal closes', () => {
+      const modal2 = new CardModal({ adapter: mockAdapter });
+
+      const removed: Array<[string, unknown]> = [];
+      const removeSpy = vi
+        .spyOn(document, 'removeEventListener')
+        .mockImplementation(((type: string, handler: EventListenerOrEventListenerObject) => {
+          removed.push([type, handler]);
+        }) as typeof document.removeEventListener);
+
+      try {
+        modal.open();
+        modal2.open();
+        modal.close();
+
+        const escapeRemovals = removed.filter(([t]) => t === 'keydown');
+        expect(escapeRemovals.length).toBeGreaterThanOrEqual(2);
+      } finally {
+        removeSpy.mockRestore();
+      }
+
+      modal2.close();
     });
   });
 

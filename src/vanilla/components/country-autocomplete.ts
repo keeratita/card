@@ -7,6 +7,8 @@
 
 import { AutocompleteDropdown, AutocompleteOption } from './autocomplete-dropdown';
 import { COUNTRIES } from '../../data/countries';
+import { findCountryByCode } from '../../core/form';
+import { escapeHtml } from '../../core/security';
 
 export interface CountryAutocompleteConfig {
   container: HTMLElement | string;
@@ -20,14 +22,17 @@ export interface CountryAutocompleteConfig {
 /**
  * Custom render function for country options in the autocomplete dropdown.
  * Extracted to avoid creating a new closure per country.
+ *
+ * Country names/emojis come from the static COUNTRIES constant, but are
+ * escaped anyway so the string is safe regardless of the option source.
  */
 function renderCountryOption(option: AutocompleteOption): string {
-  const countryData = COUNTRIES.find((c) => c.code === option.value);
+  const countryData = findCountryByCode(option.value);
   const emoji = countryData?.emoji || '';
   const name = countryData?.name || option.label;
   return `
-    <span class="country-flag">${emoji}</span>
-    <span class="country-name">${name}</span>
+    <span class="country-flag">${escapeHtml(emoji)}</span>
+    <span class="country-name">${escapeHtml(name)}</span>
   `;
 }
 
@@ -53,7 +58,7 @@ export class CountryAutocomplete {
       maxHeight: config.maxHeight,
       showIcons: true,
       onSelect: (value: string, _option: AutocompleteOption) => {
-        const country = COUNTRIES.find((c) => c.code === value);
+        const country = findCountryByCode(value);
         if (country) {
           config.onSelect(country.code, country);
         }
@@ -73,7 +78,7 @@ export class CountryAutocomplete {
   public getSelectedCountry(): typeof COUNTRIES[0] | undefined {
     const selected = this.autocomplete.getSelectedOption();
     if (selected) {
-      return COUNTRIES.find((c) => c.code === selected.value);
+      return findCountryByCode(selected.value);
     }
     return undefined;
   }

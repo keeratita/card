@@ -5,7 +5,11 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { COUNTRIES } from '../data/countries';
+import {
+  filterCountries,
+  moveHighlight,
+  findCountryByCode,
+} from '../core/form';
 
 export interface CountryAutocompleteProps {
   value: string;
@@ -39,21 +43,13 @@ export function CountryAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
 
   // Filter countries based on search term
-  const filteredCountries = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return COUNTRIES.filter((country) => {
-      return (
-        country.name.toLowerCase().includes(term) ||
-        country.code.toLowerCase().includes(term)
-      );
-    });
-  }, [searchTerm]);
+  const filteredCountries = useMemo(() => filterCountries(searchTerm), [searchTerm]);
 
   // Get selected country display
-  const selectedCountry = COUNTRIES.find((c) => c.code === value);
+  const selectedCountry = findCountryByCode(value);
   const displayText = selectedCountry
     ? `${selectedCountry.emoji} ${selectedCountry.name}`
     : placeholder;
@@ -287,7 +283,7 @@ export function CountryAutocomplete({
         e.preventDefault();
         e.stopPropagation();
         setHighlightedIndex((prev) =>
-          prev < filteredCountries.length - 1 ? prev + 1 : 0,
+          moveHighlight(prev, 'down', filteredCountries.length),
         );
         return;
       }
@@ -295,7 +291,7 @@ export function CountryAutocomplete({
         e.preventDefault();
         e.stopPropagation();
         setHighlightedIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredCountries.length - 1,
+          moveHighlight(prev, 'up', filteredCountries.length),
         );
         return;
       }
@@ -334,13 +330,13 @@ export function CountryAutocomplete({
         case 'ArrowDown':
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev < filteredCountries.length - 1 ? prev + 1 : 0,
+            moveHighlight(prev, 'down', filteredCountries.length),
           );
           break;
         case 'ArrowUp':
           e.preventDefault();
           setHighlightedIndex((prev) =>
-            prev > 0 ? prev - 1 : filteredCountries.length - 1,
+            moveHighlight(prev, 'up', filteredCountries.length),
           );
           break;
         case 'Enter':

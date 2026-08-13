@@ -10,12 +10,21 @@ import {
 import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
 import { escapeHtml } from '../core/security';
+import { CARD_FORM_TEXT_EN } from '../lang/en';
+import {
+  filterCountries,
+  moveHighlight,
+  findCountryByCode,
+} from '../core/form';
 
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
+  // Explicitly standalone: the library ships runtime decorators (esbuild/tsup),
+  // not ngtsc partial declarations, so the Angular AOT compiler only recognizes
+  // standalone metadata when the flag is present ("standalone by default"
+  // applies to app sources compiled by ngtsc, not to external libs).
   standalone: true,
-  imports: [],
   styles: [`
     .country-select-wrapper {
       position: relative;
@@ -205,7 +214,7 @@ import { escapeHtml } from '../core/security';
                 #searchInput
                 type="text"
                 class="country-select-search-input"
-                placeholder="Search countries..."
+                [placeholder]="searchPlaceholder"
                 [value]="searchQuery()"
                 (input)="onSearchChange($event)"
               />
@@ -243,7 +252,8 @@ import { escapeHtml } from '../core/security';
 })
 export class CountrySelectComponent {
   /**
-   * Using Angular v20+ input() signal API instead of @Input decorator.
+   * Signal-based inputs/outputs (`input()`/`output()`) — the modern Angular
+   * API; components are standalone by default since Angular 19.
    */
   controlName = input<string>('country');
   value = input<string>('');
@@ -253,9 +263,7 @@ export class CountrySelectComponent {
 
   readonly countries = COUNTRIES;
 
-  /**
-   * Using Angular v20+ computed() for derived state instead of getter.
-   */
+  /** Signal-derived label/placeholder (`computed()` instead of getters). */
   readonly label = computed(() => {
     const { label } = getFieldDisplayText('country', this.preset());
     return label;
@@ -266,6 +274,8 @@ export class CountrySelectComponent {
     return placeholder;
   });
 
+  readonly searchPlaceholder = CARD_FORM_TEXT_EN.searchCountries;
+
   // Local state signals
   isOpen = signal(false);
   searchQuery = signal('');
@@ -275,24 +285,19 @@ export class CountrySelectComponent {
   selectedCountry = computed(() => {
     const value = this.value();
     if (!value) return null;
-    return this.countries.find(c => c.code === value) || null;
+    return findCountryByCode(value) || null;
   });
 
   // Filtered countries based on search query
   filteredCountries = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    if (!query) return this.countries;
-    return this.countries.filter(c =>
-      c.name.toLowerCase().includes(query) ||
-      c.code.toLowerCase().includes(query)
-    );
+    return filterCountries(this.searchQuery());
   });
 
   // Reference to search input for focus management
   searchInputRef = viewChild<ElementRef>('searchInput');
 
   /**
-   * Output event for Angular forms integration
+   * Output event for Angular forms integration (signal-based `output()`).
    */
   readonly countryChange = output<{ name: string; value: string }>();
 
@@ -338,14 +343,16 @@ export class CountrySelectComponent {
     switch (event.key) {
       case 'ArrowDown': {
         event.preventDefault();
-        this.highlightedIndex.update(i => 
-          i < this.filteredCountries().length - 1 ? i + 1 : i
+        this.highlightedIndex.update((i) =>
+          moveHighlight(i, 'down', this.filteredCountries().length),
         );
         break;
       }
       case 'ArrowUp': {
         event.preventDefault();
-        this.highlightedIndex.update(i => (i > 0 ? i - 1 : i));
+        this.highlightedIndex.update((i) =>
+          moveHighlight(i, 'up', this.filteredCountries().length),
+        );
         break;
       }
       case 'Enter': {
@@ -363,21 +370,12 @@ export class CountrySelectComponent {
       }
     }
   }
-
-  onInputChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    // Emit change event for Angular forms integration
-    const customEvent = new CustomEvent('kgCountryChange', {
-      detail: { name: this.controlName(), value: target.value },
-    });
-    (event.target as HTMLElement).dispatchEvent(customEvent);
-  }
 }
 
 /**
  * Render optional fields as HTML strings.
- * @deprecated Prefer using Angular directives/pipe over raw HTML injection.
- * Use `renderOptionalFieldSafe` for safer HTML output with escaped attributes.
+ * @deprecated Prefer using the Angular directives/components over raw HTML
+ * injection; they escape values and integrate with reactive forms.
  */
 export function renderOptionalFieldHtml(
   field: OptionalCardField,
@@ -394,7 +392,7 @@ export function renderOptionalFieldHtml(
 
   if (field === 'country') {
     const options = COUNTRIES
-      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${c.emoji} ${escapeHtml(c.name)}</option>`)
+      .map((c) => `<option value="${escapeHtml(c.code)}" ${c.code === value ? 'selected' : ''}>${escapeHtml(c.emoji)} ${escapeHtml(c.name)}</option>`)
       .join('\n        ');
 
     return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">

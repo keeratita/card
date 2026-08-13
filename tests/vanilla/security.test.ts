@@ -39,12 +39,14 @@ describe('Edge Case & Security Validation', () => {
       expect(detectCardBrand(xssInput)).toBe('unknown');
     });
 
-    it('should handle numbers starting with valid patterns but too short', () => {
-      expect(detectCardBrand('4')).toBe('unknown');
-      expect(detectCardBrand('41')).toBe('unknown');
-      expect(detectCardBrand('411')).toBe('unknown');
-      expect(detectCardBrand('4111')).toBe('unknown');
-      expect(detectCardBrand('41111')).toBe('unknown');
+    it('should detect brands from partial numbers for early feedback', () => {
+      expect(detectCardBrand('4')).toBe('visa');
+      expect(detectCardBrand('41')).toBe('visa');
+      expect(detectCardBrand('411')).toBe('visa');
+      expect(detectCardBrand('4111')).toBe('visa');
+      expect(detectCardBrand('41111')).toBe('visa');
+      expect(detectCardBrand('34')).toBe('amex');
+      expect(detectCardBrand('51')).toBe('mastercard');
     });
 
     it('should handle numbers with letters mixed in', () => {

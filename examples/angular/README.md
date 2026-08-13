@@ -31,6 +31,19 @@ npm run build
 
 4. Open your browser to `http://localhost:4200`
 
+## Demo Keys & Environment
+
+The demos fall back to mock test keys and can be overridden with env vars:
+
+- `VITE_STRIPE_PUBLIC_KEY` — your Stripe **publishable** key (`pk_test_…` / `pk_live_…`)
+- `VITE_OMISE_PUBLIC_KEY` — your Omise **public** key (`pkey_test_…` / `pkey_live_…`)
+
+⚠️ **Only public keys may ever go into `.env`.** Secret keys
+(`sk_…` Stripe, `skey_…` Omise) must never be placed in env vars or any frontend
+config — everything bundled for the browser is visible to users. The adapters
+reject secret-looking keys at construction, and tokenization happens
+client-side only, so secret keys are never needed anywhere in this app.
+
 ## Examples
 
 ### 1. Basic Card Form (`basic-card-form.component.ts`)
@@ -77,28 +90,34 @@ import { StripeAdapter } from '@keeratita/card';
 
 ## Module Setup
 
-For Angular applications using NgModules, import the necessary modules:
+All library components and directives are **standalone** — shipped with an
+explicit `standalone: true` flag so consumer AOT builds can resolve them — so
+import them directly into your component's `imports` — no NgModule wiring
+required:
 
 ```typescript
-import { NgModule } from '@angular/core';
+import { Component } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@keeratita/card/angular';
 
-@NgModule({
-  declarations: [
-    YourComponent,
-    CardNumberDirective,
-    CardExpiryDirective,
-    CardCvcDirective
-  ],
-  imports: [
-    ReactiveFormsModule
-  ]
+@Component({
+  selector: 'app-checkout',
+  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective, CardCvcDirective],
+  template: `
+    <input type="text" kgCardNumber placeholder="•••• •••• •••• ••••" />
+    <input type="text" kgCardExpiry placeholder="MM/YY" />
+    <input type="password" kgCardCvc placeholder="•••" />
+  `,
 })
-export class YourModule { }
+export class YourComponent {}
 ```
 
-For standalone components (Angular 14+):
+> Note: do **not** list standalone directives in an NgModule `declarations`
+> array (that fails compilation with NG9110).
+
+## Examples
+
+All examples are standalone components (Angular 21+):
 
 ```typescript
 import { Component } from '@angular/core';
@@ -107,7 +126,6 @@ import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@kee
 
 @Component({
   selector: 'app-your-component',
-  standalone: true,
   imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   templateUrl: './your-component.html'
 })

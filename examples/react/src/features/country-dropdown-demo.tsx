@@ -66,25 +66,25 @@ export function CountryDropdownDemo() {
 
   return (
     <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#24292e', margin: '0 0 8px 0' }}>
+      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#ffffff', margin: '0 0 8px 0' }}>
         Country Dropdown Demo
       </h2>
-      <p style={{ color: '#586069', margin: '0 0 24px 0', fontSize: '15px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', margin: '0 0 24px 0', fontSize: '15px' }}>
         Interactive country selection with flags and dial codes.
       </p>
 
       {/* Info Box */}
       <div style={{
-        backgroundColor: '#fff8c5',
-        border: '1px solid #f1c40f',
+        backgroundColor: 'rgba(255,204,0,0.08)',
+        border: '1px solid rgba(255,204,0,0.25)',
         padding: '16px',
-        borderRadius: '8px',
+        borderRadius: '12px',
         marginBottom: '24px'
       }}>
-        <h4 style={{ margin: '0 0 8px 0', color: '#856404', fontSize: '14px' }}>
+        <h4 style={{ margin: '0 0 8px 0', color: '#ffd60a', fontSize: '14px' }}>
           Using Library's Country Data
         </h4>
-        <p style={{ margin: 0, color: '#856404', fontSize: '13px', lineHeight: '1.5' }}>
+        <p style={{ margin: 0, color: 'rgba(255,214,10,0.8)', fontSize: '13px', lineHeight: '1.5' }}>
           This demo uses the <code>COUNTRIES</code> array exported from{' '}
           <code>@keeratita/card</code>. It includes 60+ countries with flags, ISO codes, and dial codes.
         </p>
@@ -92,12 +92,15 @@ export function CountryDropdownDemo() {
 
       {/* Search Box */}
       <div style={{
-        backgroundColor: '#f6f8fa',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         padding: '24px',
-        borderRadius: '8px',
-        marginBottom: '24px'
+        borderRadius: '16px',
+        marginBottom: '24px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)'
       }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#24292e' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#ffffff' }}>
           Search Countries
         </h3>
         <div style={{ marginBottom: '16px' }}>
@@ -109,10 +112,13 @@ export function CountryDropdownDemo() {
             style={{
               width: '100%',
               padding: '12px 14px',
-              borderRadius: '6px',
-              border: '1px solid #d0d7de',
+              borderRadius: '8px',
+              border: '1.5px solid rgba(255,255,255,0.1)',
               fontSize: '15px',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              color: '#ffffff',
+              fontFamily: 'inherit'
             }}
           />
         </div>
@@ -122,9 +128,9 @@ export function CountryDropdownDemo() {
           <div style={{
             maxHeight: '200px',
             overflowY: 'auto',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            background: 'white'
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            background: 'rgba(255,255,255,0.03)'
           }}>
             {filteredCountries.map((country) => (
               <div
@@ -136,13 +142,13 @@ export function CountryDropdownDemo() {
                   gap: '12px',
                   padding: '10px 14px',
                   cursor: 'pointer',
-                  backgroundColor: selectedCountry?.code === country.code ? '#f1f8ff' : 'transparent',
-                  borderLeft: selectedCountry?.code === country.code ? '3px solid #0366d6' : 'none',
+                  backgroundColor: selectedCountry?.code === country.code ? 'rgba(10,132,255,0.12)' : 'transparent',
+                  borderLeft: selectedCountry?.code === country.code ? '3px solid #0a84ff' : 'none',
                   transition: 'background-color 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
                   if (selectedCountry?.code !== country.code) {
-                    e.currentTarget.style.backgroundColor = '#f6f8fa';
+                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -152,13 +158,13 @@ export function CountryDropdownDemo() {
                 }}
               >
                 <span style={{ fontSize: '20px' }}>{country.emoji}</span>
-                <span style={{ flex: 1, color: '#24292e', fontSize: '14px' }}>{country.name}</span>
-                <span style={{ color: '#586069', fontSize: '12px' }}>{country.code}</span>
+                <span style={{ flex: 1, color: '#ffffff', fontSize: '14px' }}>{country.name}</span>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px' }}>{country.code}</span>
               </div>
             ))}
           </div>
         ) : (
-          <p style={{ color: '#586069', textAlign: 'center', padding: '20px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'center', padding: '20px' }}>
             No countries found matching "{searchQuery}"
           </p>
         )}
@@ -171,19 +177,19 @@ export function CountryDropdownDemo() {
           alignItems: 'center',
           gap: '12px',
           padding: '16px',
-          backgroundColor: '#f1f8ff',
-          border: '1px solid #b3d7ff',
-          borderRadius: '8px',
+          backgroundColor: 'rgba(10,132,255,0.08)',
+          border: '1px solid rgba(10,132,255,0.25)',
+          borderRadius: '12px',
           marginBottom: '24px'
         }}>
           <span style={{ fontSize: '32px' }}>{selectedCountry.emoji}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: '600', color: '#24292e', fontSize: '16px' }}>{selectedCountry.name}</div>
-            <div style={{ color: '#586069', fontSize: '13px' }}>ISO Code: {selectedCountry.code}</div>
+            <div style={{ fontWeight: '600', color: '#ffffff', fontSize: '16px' }}>{selectedCountry.name}</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px' }}>ISO Code: {selectedCountry.code}</div>
           </div>
           {selectedCountry.dialCode && (
             <span style={{
-              backgroundColor: '#0366d6',
+              backgroundColor: '#0a84ff',
               color: 'white',
               padding: '4px 12px',
               borderRadius: '16px',
@@ -198,15 +204,18 @@ export function CountryDropdownDemo() {
 
       {/* Card Form with Country Select - Uses core library CardForm with full validation */}
       <div style={{
-        backgroundColor: '#f6f8fa',
+        backgroundColor: 'rgba(255,255,255,0.03)',
         padding: '24px',
-        borderRadius: '8px',
-        marginTop: '24px'
+        borderRadius: '16px',
+        marginTop: '24px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)'
       }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#24292e' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#ffffff' }}>
           Card Form with Country Select
         </h3>
-        <p style={{ color: '#586069', margin: '0 0 16px 0', fontSize: '13px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.55)', margin: '0 0 16px 0', fontSize: '13px' }}>
           This form uses the core library's <code>CardForm</code> component with built-in validation for card number (Luhn check), expiry, CVC, cardholder name, and country fields.
         </p>
         <CardForm

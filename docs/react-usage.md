@@ -295,7 +295,7 @@ interface CardFormProps {
   preset?: CardFormPreset; // Form preset: 'none' | 'us' | 'billing' | 'contact'
   fields?: OptionalCardField[]; // Additional fields to include
   cardLabel?: string; // Label shown on card preview (e.g., "VISA", "OMISE")
-  submitButtonText?: string; // Text for submit button (default: "Pay")
+  submitButtonText?: string; // Text for submit button (default: "Pay Now")
   onSubmit?: (data: { token: Token }) => Promise<void> | void; // Success callback
   onError?: (error: Error) => void; // Error callback
   initialValues?: Partial<CardFormValues>; // Initial form values
@@ -307,7 +307,7 @@ interface CardFormProps {
 | Preset      | Description          | Additional Fields                                                   |
 | ----------- | -------------------- | ------------------------------------------------------------------- |
 | `'none'`    | Core fields only     | Card Number, Expiry, CVC, Name                                      |
-| `'us'`      | US cardholder        | + Postal Code (ZIP)                                                 |
+| `'us'`      | US cardholder        | + Postal Code (ZIP), Country                                         |
 | `'billing'` | Full billing address | + Address Line 1, Address Line 2, City, State, Postal Code, Country |
 | `'contact'` | Contact details      | + Email, Phone                                                      |
 
@@ -499,6 +499,13 @@ interface CountryAutocompleteProps {
 ## Payment Adapters
 
 The library provides adapter implementations for popular payment processors.
+
+> ⚠️ **Use publishable keys only.** The adapters run in the browser and must be
+> configured with **public** keys (`pk_…` Stripe, `pkey_…` Omise). You may load
+> them from client-side env vars (e.g. `VITE_STRIPE_PUBLIC_KEY`), but those env
+> vars must hold **public keys only** — never **secret** keys (`sk_…` Stripe,
+> `skey_…` Omise). Anything in the client bundle is visible to every user, and
+> the adapters throw at construction when given a secret-looking key.
 
 ### Stripe Adapter
 

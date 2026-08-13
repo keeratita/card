@@ -38,6 +38,8 @@ describe('AutocompleteDropdown Public API', () => {
     // Clean up any dropdown elements in body
     const dropdowns = document.querySelectorAll('.autocomplete-dropdown-wrapper');
     dropdowns.forEach(d => d.remove());
+    const dropdownEls = document.querySelectorAll('.autocomplete-dropdown');
+    dropdownEls.forEach(d => d.remove());
   });
 
   describe('Public Methods - Value Management', () => {
@@ -264,6 +266,156 @@ describe('AutocompleteDropdown Public API', () => {
       });
       
       expect(dropdown).toBeDefined();
+    });
+  });
+
+  describe('Dropdown Reopen State Reset', () => {
+    let dropdown: AutocompleteDropdown;
+
+    beforeEach(() => {
+      dropdown = new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock
+      });
+    });
+
+    it('should reset the search input and show all options when reopened after filtering', () => {
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+
+      // Open the dropdown
+      input.click();
+
+      // Type in the search input to filter down to a single result
+      const searchInput = document.querySelector<HTMLInputElement>('.autocomplete-search-input')!;
+      searchInput.value = 'apple';
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      let results = document.querySelectorAll('.autocomplete-result');
+      expect(results.length).toBe(1);
+
+      // Select the filtered option (Enter)
+      searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      // Reopen the dropdown
+      input.click();
+
+      // The search input must be empty again
+      const reopenedSearch = document.querySelector<HTMLInputElement>('.autocomplete-search-input')!;
+      expect(reopenedSearch.value).toBe('');
+
+      // All options must be shown again (not the stale filtered list)
+      results = document.querySelectorAll('.autocomplete-result');
+      expect(results.length).toBe(testOptions.length);
+    });
+
+    it('should show all options when reopened after closing with a filter applied', () => {
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+
+      input.click();
+      const searchInput = document.querySelector<HTMLInputElement>('.autocomplete-search-input')!;
+      searchInput.value = 'banana';
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      expect(document.querySelectorAll('.autocomplete-result').length).toBe(1);
+
+      // Close via Escape
+      searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      // Reopen
+      input.click();
+
+      const reopenedSearch = document.querySelector<HTMLInputElement>('.autocomplete-search-input')!;
+      expect(reopenedSearch.value).toBe('');
+      expect(document.querySelectorAll('.autocomplete-result').length).toBe(testOptions.length);
+    });
+
+    it('should re-open the dropdown with the selected option highlighted', () => {
+      // Select a value (e.g. externally restored state)
+      dropdown.setValue('cherry');
+
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+      input.click();
+
+      // Exactly one option must be highlighted, and it must be the selection
+      const highlighted = document.querySelectorAll('.autocomplete-result.highlighted');
+      expect(highlighted.length).toBe(1);
+      expect(highlighted[0].textContent).toContain('Cherry');
+    });
+
+    it('should prioritize starts-with matches when filtering', () => {
+      const options = [
+        { value: 'th', label: 'Thailand' },
+        { value: 'tw', label: 'Taiwan' },
+        { value: 'af', label: 'Afghanistan' },
+        { value: 'tz', label: 'Tanzania' },
+      ];
+      new AutocompleteDropdown({
+        container,
+        options,
+        onSelect: onSelectMock,
+      });
+
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+      input.click();
+
+      // Scope to this dropdown (the last one appended to body), since the
+      // beforeEach dropdown also exists in the DOM.
+      const dropdownEls = document.querySelectorAll('.autocomplete-dropdown');
+      const myDropdown = dropdownEls[dropdownEls.length - 1];
+      const searchInput = myDropdown.querySelector<HTMLInputElement>('.autocomplete-search-input')!;
+      searchInput.value = 't';
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      const values = [...myDropdown.querySelectorAll('.autocomplete-result')].map(
+        (r) => r.getAttribute('data-value'),
+      );
+
+      // Starts-with matches (Thailand, Taiwan, Tanzania) come before the
+      // contains-only match (Afghanistan).
+      expect(values.indexOf('th')).toBeLessThan(values.indexOf('af'));
+      expect(values.indexOf('tw')).toBeLessThan(values.indexOf('af'));
+      expect(values.indexOf('tz')).toBeLessThan(values.indexOf('af'));
+    });
+  });
+
+  describe('Dropdown Positioning', () => {
+    it('should display and position the dropdown when opened', () => {
+      new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock
+      });
+
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+      input.click();
+
+      const dropdownEl = document.querySelector<HTMLElement>('.autocomplete-dropdown')!;
+      expect(dropdownEl.style.display).toBe('block');
+      expect(dropdownEl.style.position).toBe('fixed');
+      expect(dropdownEl.style.top).not.toBe('');
+      expect(dropdownEl.style.left).not.toBe('');
+      expect(dropdownEl.style.width).not.toBe('');
+    });
+
+    it('should recalculate position on reopen', () => {
+      new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock
+      });
+
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+      input.click();
+      const dropdownEl = document.querySelector<HTMLElement>('.autocomplete-dropdown')!;
+      const firstTop = dropdownEl.style.top;
+
+      // Close and reopen
+      input.click();
+      input.click();
+
+      expect(dropdownEl.style.top).toBe(firstTop);
+      expect(dropdownEl.style.display).toBe('block');
     });
   });
 });

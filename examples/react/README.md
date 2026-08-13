@@ -31,62 +31,51 @@ npm run build
 
 4. Open your browser to the URL shown in the terminal (typically `http://localhost:5173`)
 
-### Using Create React App
+## Demo Keys & Environment
 
-1. Navigate to the example directory:
-   ```bash
-   cd examples/react
-   ```
+The demos fall back to mock test keys and can be overridden with env vars:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+- `VITE_STRIPE_PUBLIC_KEY` — your Stripe **publishable** key (`pk_test_…` / `pk_live_…`)
+- `VITE_OMISE_PUBLIC_KEY` — your Omise **public** key (`pkey_test_…` / `pkey_live_…`)
 
-3. Start the development server:
-   ```bash
-   npm start
-   ```
+⚠️ **Only public keys may ever go into `.env`.** Secret keys
+(`sk_…` Stripe, `skey_…` Omise) must never be placed in env vars or any frontend
+config — everything bundled for the browser is visible to users. The adapters
+reject secret-looking keys at construction, and tokenization happens
+client-side only, so secret keys are never needed anywhere in this app.
 
 ## Examples
 
-### 1. Basic Card Form (`basic-card-form.tsx`)
+All example components live under `src/` (Vite single-page app — see `src/App.tsx`):
 
-A simple implementation showing the basic card form component with default settings.
+### 1. Basic Card Form (`src/basic/basic-card-form.tsx`)
 
-### 2. Custom Form with Presets (`custom-form-with-presets.tsx`)
+A simple implementation showing the pre-built `CardForm` component with default settings.
+
+### 2. Custom Form with Presets (`src/forms/custom-form-with-presets.tsx`)
 
 Demonstrates how to use different form presets (US, billing, contact) and customize the form fields.
 
-### 3. Modal Checkout (`modal-checkout.tsx`)
+### 3. Modal Checkout (`src/checkout/`)
 
-Shows how to implement a modal-based checkout flow that can be triggered from any button.
+`modal-checkout.tsx` shows a modal-based checkout flow; `multi-step-checkout.tsx` is a complete
+multi-step flow with billing address and order summary.
 
-### 4. Form with Custom Validation (`form-with-custom-validation.tsx`)
+### 4. Form with Custom Validation (`src/forms/form-with-custom-validation.tsx`)
 
 Example of integrating custom validation logic and error handling.
 
-### 5. Multi-step Checkout (`multi-step-checkout.tsx`)
+### 5. Component showcase (`src/features/`)
 
-A complete multi-step checkout flow with card details, billing address, and order summary.
+Individual feature demos: card preview, flip card, directives, and country dropdown.
 
 ## Library Reference
 
-All examples reference the library from the `dist` folder:
-
-```typescript
-import { CardForm, CreditCardPreview, useCardForm } from '../../dist/react/index.mjs';
-import { StripeAdapter } from '../../dist/index.mjs';
-```
-
-For production use, install the package via npm:
-
-```bash
-npm install @keeratita/card
-```
-
-Then import from the package:
+Every example imports from the built package entry points — unless you rewire them, do
+**not** copy the relative `../../dist/...` paths from older versions of this README; use the
+exported subpaths:
 
 ```typescript
 import { CardForm, CreditCardPreview, useCardForm } from '@keeratita/card/react';
 import { StripeAdapter } from '@keeratita/card';
+```

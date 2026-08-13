@@ -22,6 +22,25 @@ describe('Card Brand Detection', () => {
     expect(detectCardBrand('3528111111111111')).toBe('jcb');
   });
 
+  it('should detect Diners Club cards (300-305/309 and 36/38/39 prefixes)', () => {
+    expect(detectCardBrand('30511111111111')).toBe('diners');
+    expect(detectCardBrand('30911111111111')).toBe('diners');
+    // 2-digit prefixes: "36", "38", "39" (partial input and full 14/16-digit cards)
+    expect(detectCardBrand('36111111111111')).toBe('diners');
+    expect(detectCardBrand('38111111111111')).toBe('diners');
+    expect(detectCardBrand('3911111111111111')).toBe('diners');
+    // Partial prefixes, as typed mid-entry
+    expect(detectCardBrand('36')).toBe('diners');
+    expect(detectCardBrand('38')).toBe('diners');
+    expect(detectCardBrand('39')).toBe('diners');
+  });
+
+  it('should detect Discover cards starting with 6011, 65, or 644-649', () => {
+    expect(detectCardBrand('6011111111111117')).toBe('discover');
+    expect(detectCardBrand('6511111111111117')).toBe('discover');
+    expect(detectCardBrand('6441111111111115')).toBe('discover');
+  });
+
   it('should return unknown for unrecognized patterns', () => {
     // Numbers starting with 1 or 9 don't match any known brand
     expect(detectCardBrand('1234567890123456')).toBe('unknown');

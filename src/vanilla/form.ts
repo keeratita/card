@@ -3,7 +3,6 @@ import {
   FIELD_METADATA,
   getFieldDisplayText,
   resolveActiveFields,
-  SENSITIVE_FIELDS,
 } from '../core/domain/optional-fields';
 import { getCardLogoSvg } from '../core/domain/card-brand-logos';
 import { CARD_FORM_TEXT_EN } from '../lang/en';
@@ -14,53 +13,25 @@ import {
   formatCvc,
 } from '../core/formatters/card-formatter';
 import {
-  luhnCheck,
-  validateExpiry,
-  validateCvc,
-  validateName,
-  validateEmail,
-  validatePhone,
-  validatePostalCode,
-  validateCountry,
-} from '../core/domain/validation';
+  validateField,
+  getFieldErrorMessage,
+  buildCard,
+  getCardNumberMaxLength,
+  restoreCaret,
+  buildSuccessSummary,
+} from '../core/form';
+import type { CardFormValuesLike } from '../core/form';
+import { isThenable } from '../core/form/is-thenable';
 import { escapeHtml } from './internal/security';
 import { CountryAutocomplete } from './components/country-autocomplete';
-
-/**
- * Masks a value for display in the success panel.
- * - email: shows first char + "***@..."
- * - phone: shows "+***-****last2"
- * - address fields: shows "*** masked ***"
- */
-function maskSensitiveValue(field: OptionalCardField, value: string): string {
-  if (!value) return '—';
-
-  switch (field) {
-    case 'email':
-      if (value.length <= 1) return '*';
-      return `${value.charAt(0)}***@***.com`;
-    case 'phone': {
-      const digits = value.replace(/\D/g, '');
-      if (digits.length <= 2) return '***-***';
-      return `+***-****${digits.slice(-2)}`;
-    }
-    case 'addressLine1':
-    case 'addressLine2':
-    case 'city':
-    case 'state':
-    case 'postalCode':
-    case 'country':
-      return '*** masked ***';
-    default:
-      return escapeHtml(value);
-  }
-}
 
 export class CardForm {
   private readonly element: HTMLElement;
   private readonly options: CardFormOptions;
+  private readonly activeFields: OptionalCardField[];
   private formEl!: HTMLFormElement;
   private countryAutocomplete: CountryAutocomplete | null = null;
+  private isSubmitting = false;
   private listeners: Array<{ el: EventTarget | null; event: string; handler: EventListenerOrEventListenerObject | null }> = [];
 
   constructor(container: HTMLElement | string, options: CardFormOptions) {
@@ -86,13 +57,12 @@ export class CardForm {
       this.options.submitButtonText = CARD_FORM_TEXT_EN.submitDefault;
     }
 
-    this.render();
-  }
+    this.activeFields = resolveActiveFields(
+      this.options.preset || 'none',
+      this.options.fields || [],
+    );
 
-  private getActiveFields(): OptionalCardField[] {
-    const preset = this.options.preset || 'none';
-    const fieldsFromOptions = this.options.fields || [];
-    return resolveActiveFields(preset, fieldsFromOptions);
+    this.render();
   }
 
   private render(): void {
@@ -165,6 +135,7 @@ export class CardForm {
                 aria-invalid="false"
                 aria-describedby="card-number-error"
               >
+              <span class="field-error" id="card-number-error" role="alert"></span>
             </div>
 
             <!-- Expiry & CVC row wrapper -->
@@ -183,6 +154,7 @@ export class CardForm {
                   aria-invalid="false"
                   aria-describedby="card-expiry-error"
                 >
+                <span class="field-error" id="card-expiry-error" role="alert"></span>
               </div>
 
               <div class="ios-input-row row-cvc">
@@ -200,6 +172,7 @@ export class CardForm {
                   aria-invalid="false"
                   aria-describedby="card-cvc-error"
                 >
+                <span class="field-error" id="card-cvc-error" role="alert"></span>
               </div>
             </div>
 
@@ -217,6 +190,7 @@ export class CardForm {
                 aria-invalid="false"
                 aria-describedby="card-name-error"
               >
+              <span class="field-error" id="card-name-error" role="alert"></span>
             </div>
           </div>
 
@@ -253,9 +227,8 @@ export class CardForm {
     const cardholderRow = containerWrapper.querySelector(
       '.row-name',
     ) as HTMLElement;
-    const activeFields = this.getActiveFields();
 
-    activeFields.forEach((field) => {
+    this.activeFields.forEach((field) => {
       const row = this.createDynamicRow(field);
       groupedList.insertBefore(row, cardholderRow);
     });
@@ -284,11 +257,14 @@ export class CardForm {
       hiddenInput.className = 'country-value-input';
       hiddenInput.name = 'card-country';
       hiddenInput.required = true;
-      row.appendChild(hiddenInput);
 
+      // Set innerHTML first, then append children — otherwise the innerHTML
+      // assignment wipes out any previously appended nodes.
       row.innerHTML = `
         <label class="ios-label" for="card-${fieldKey}">${safeLabelText}</label>
+        <span class="field-error" id="card-${fieldKey}-error" role="alert"></span>
       `;
+      row.appendChild(hiddenInput);
       row.appendChild(container);
 
       this.countryAutocomplete = new CountryAutocomplete({
@@ -300,6 +276,14 @@ export class CardForm {
           row.classList.remove('invalid');
         }
       });
+
+      // Associate the visible autocomplete input with the label's `for` attribute.
+      const autocompleteInput = container.querySelector(
+        '.autocomplete-input',
+      ) as HTMLInputElement | null;
+      if (autocompleteInput) {
+        autocompleteInput.id = `card-${fieldKey}`;
+      }
 
       return row;
     }
@@ -319,6 +303,7 @@ export class CardForm {
         aria-invalid="false"
         aria-describedby="card-${fieldKey}-error"
       >
+      <span class="field-error" id="card-${fieldKey}-error" role="alert"></span>
     `;
     return row;
   }
@@ -353,12 +338,14 @@ export class CardForm {
 
     this.on(numInput, 'input', (e) => {
       const target = e.target as HTMLInputElement;
+      const selectionStart = target.selectionStart;
       const val = target.value;
       const formatted = formatCardNumber(val);
       target.value = formatted;
+      restoreCaret(target, val, formatted, selectionStart);
 
       const brand = detectCardBrand(val);
-      target.maxLength = brand === 'amex' ? 17 : 19;
+      target.maxLength = getCardNumberMaxLength(val);
 
       const numPreview = this.element.querySelector(
         '.card-num-preview',
@@ -423,7 +410,7 @@ export class CardForm {
       target.closest('.ios-input-row')?.classList.remove('invalid');
     });
 
-    this.getActiveFields().forEach((field) => {
+    this.activeFields.forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
       ) as HTMLInputElement;
@@ -444,7 +431,7 @@ export class CardForm {
     this.on(expInput, 'focus', removeFlip);
     this.on(nameInput, 'focus', removeFlip);
 
-    this.getActiveFields().forEach((field) => {
+    this.activeFields.forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
       ) as HTMLInputElement;
@@ -456,7 +443,7 @@ export class CardForm {
     this.on(cvcInput, 'blur', () => this.validateField('card-cvc'));
     this.on(nameInput, 'blur', () => this.validateField('card-name'));
 
-    this.getActiveFields().forEach((field) => {
+    this.activeFields.forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
       ) as HTMLInputElement;
@@ -471,7 +458,11 @@ export class CardForm {
 
   private validateField(fieldId: string): boolean {
     let el: HTMLInputElement | null;
-    if (
+    if (fieldId === 'country') {
+      el = this.formEl.querySelector(
+        '.country-value-input',
+      ) as HTMLInputElement;
+    } else if (
       fieldId === 'card-number' ||
       fieldId === 'card-expiry' ||
       fieldId === 'card-cvc' ||
@@ -486,49 +477,54 @@ export class CardForm {
 
     if (!el) return true;
     const row = el.closest('.ios-input-row');
-    let isValid: boolean;
     const val = el.value;
 
-    if (fieldId === 'card-number') {
-      const cleanNum = val.replace(/\D/g, '');
-      isValid = luhnCheck(cleanNum);
-    } else if (fieldId === 'card-expiry') {
-      const cleanExp = val.replace(/\D/g, '');
-      if (cleanExp.length !== 4) {
-        isValid = false;
-      } else {
-        const month = cleanExp.substring(0, 2);
-        const year = cleanExp.substring(2, 4);
-        isValid = validateExpiry(month, year);
-      }
-    } else if (fieldId === 'card-cvc') {
-      const cleanCvc = val.replace(/\D/g, '');
-      const numInput = this.formEl.querySelector(
-        '.card-number-input',
-      ) as HTMLInputElement;
-      isValid = validateCvc(cleanCvc, numInput.value);
-    } else if (fieldId === 'card-name') {
-      isValid = validateName(val);
-    } else if (fieldId === 'email') {
-      isValid = validateEmail(val);
-    } else if (fieldId === 'phone') {
-      isValid = validatePhone(val);
-    } else if (fieldId === 'postalCode') {
-      isValid = validatePostalCode(val);
-    } else if (fieldId === 'country') {
-      isValid = validateCountry(val);
-    } else {
-      isValid = val.trim().length > 0;
-    }
+    const fieldName = this.toCoreFieldName(fieldId);
+    const numInput = this.formEl.querySelector(
+      '.card-number-input',
+    ) as HTMLInputElement;
+    const { isValid } = validateField(fieldName, val, {
+      cardNumber: numInput?.value,
+    });
 
     if (row) {
       row.classList.toggle('invalid', !isValid);
     }
     el.setAttribute('aria-invalid', String(!isValid));
+
+    // The markup always emits `card-<base>-error` (e.g. `card-email-error`);
+    // map the internal fieldId (`card-number`, or a bare optional field name
+    // like `email`) to that id via the core field name.
+    const errorEl = this.formEl.querySelector(
+      `#card-${this.toCoreFieldName(fieldId)}-error`,
+    ) as HTMLElement | null;
+    if (errorEl) {
+      errorEl.textContent = isValid ? '' : getFieldErrorMessage(fieldName);
+    }
+
     return isValid;
   }
 
+  private toCoreFieldName(fieldId: string): string {
+    switch (fieldId) {
+      case 'card-number':
+        return 'number';
+      case 'card-expiry':
+        return 'expiry';
+      case 'card-cvc':
+        return 'cvc';
+      case 'card-name':
+        return 'name';
+      default:
+        return fieldId;
+    }
+  }
+
   private async handleSubmit(): Promise<void> {
+    // Ignore re-entrant submits (Enter key / double-click) while a tokenize
+    // request is in flight, preventing duplicate charges.
+    if (this.isSubmitting) return;
+
     let isFormValid = true;
 
     if (!this.validateField('card-number')) isFormValid = false;
@@ -536,7 +532,7 @@ export class CardForm {
     if (!this.validateField('card-cvc')) isFormValid = false;
     if (!this.validateField('card-name')) isFormValid = false;
 
-    this.getActiveFields().forEach((field) => {
+    this.activeFields.forEach((field) => {
       if (!this.validateField(field)) isFormValid = false;
     });
 
@@ -547,6 +543,11 @@ export class CardForm {
       if (errorMsg) {
         errorMsg.innerText = CARD_FORM_TEXT_EN.validationError;
         errorMsg.style.display = 'block';
+      }
+      // Per the documented contract, onError fires for client-side
+      // validation failures as well as gateway/network failures
+      if (this.options.onError) {
+        this.options.onError(new Error(CARD_FORM_TEXT_EN.validationError));
       }
       return;
     }
@@ -561,6 +562,7 @@ export class CardForm {
     const spinner = this.formEl.querySelector('.btn-spinner') as HTMLElement;
     const btnText = this.formEl.querySelector('.btn-text') as HTMLElement;
 
+    this.isSubmitting = true;
     submitBtn.disabled = true;
     spinner.style.display = 'block';
     btnText.innerText = CARD_FORM_TEXT_EN.tokenizing;
@@ -578,38 +580,41 @@ export class CardForm {
       '.card-name-input',
     ) as HTMLInputElement;
 
-    const cleanExp = expInput.value.replace(/\D/g, '');
-    const expMonth = cleanExp.substring(0, 2);
-    const expYear = cleanExp.substring(2, 4);
-
-    let cardData: Card | null = {
-      number: numInput.value.replace(/\D/g, ''),
-      expMonth,
-      expYear,
-      cvc: cvcInput.value.replace(/\D/g, ''),
-      name: nameInput.value.trim(),
+    const values: CardFormValuesLike = {
+      number: numInput.value,
+      expiry: expInput.value,
+      cvc: cvcInput.value,
+      name: nameInput.value,
     };
 
-    this.getActiveFields().forEach((field) => {
+    this.activeFields.forEach((field) => {
+      if (field === 'country') {
+        const hiddenInput = this.formEl.querySelector(
+          '.country-value-input',
+        ) as HTMLInputElement;
+        values.country = hiddenInput?.value || '';
+        return;
+      }
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
       ) as HTMLInputElement;
-      if (input && cardData) {
-        cardData[field] = input.value;
+      if (input) {
+        values[field] = input.value;
       }
     });
 
+    const cardData: Card = buildCard(values, this.activeFields);
+
     try {
       const token = await this.options.adapter.tokenize(cardData);
-
-      // Dereference Card Data immediately for security
-      cardData = null;
 
       btnText.innerText = CARD_FORM_TEXT_EN.processing;
 
       if (this.options.onSubmit) {
         const result = this.options.onSubmit({ token });
-        if (result instanceof Promise) {
+        // Await thenables (incl. cross-realm promises) so the double-loading
+        // lifecycle waits for the host backend
+        if (isThenable(result)) {
           await result;
         }
       }
@@ -623,9 +628,14 @@ export class CardForm {
         ${escapeHtml(CARD_FORM_TEXT_EN.paymentSuccess)}
       `;
 
-      const lastFour = numInput.value.replace(/\D/g, '').slice(-4);
+      const fullNumber = numInput.value.replace(/\D/g, '');
+      const lastFour = fullNumber.slice(-4);
       numInput.value = `•••• •••• •••• ${lastFour || ''}`;
       numInput.setAttribute('readonly', 'true');
+
+      // Dereference the CVC (and keep expiry non-sensitive) after success,
+      // mirroring the React binding's cleanup.
+      cvcInput.value = '';
 
       const allInputs = this.formEl.querySelectorAll('input, button');
       allInputs.forEach((el) => {
@@ -641,36 +651,39 @@ export class CardForm {
       if (statusPanel && tokenDetail) {
         statusPanel.style.display = 'flex';
 
-        const lastFourForDisplay = numInput.value.replace(/\D/g, '').slice(-4);
         let detailsHtml = `
           <strong>${escapeHtml(CARD_FORM_TEXT_EN.gateway)}:</strong> ${escapeHtml(this.options.adapter.name)}<br>
-          <strong>${escapeHtml(CARD_FORM_TEXT_EN.cardBrand)}:</strong> ${escapeHtml((detectCardBrand(lastFourForDisplay) || 'unknown').toUpperCase())}<br>
+          <strong>${escapeHtml(CARD_FORM_TEXT_EN.cardBrand)}:</strong> ${escapeHtml((detectCardBrand(fullNumber) || 'unknown').toUpperCase())}<br>
           <strong>${escapeHtml(CARD_FORM_TEXT_EN.tokenId)}:</strong> <code>${escapeHtml(token.id)}</code>
         `;
 
-        this.getActiveFields().forEach((f) => {
-          const input = this.formEl.querySelector(
-            `.card-${f}-input`,
-          ) as HTMLInputElement;
-          if (input) {
-            const { label } = getFieldDisplayText(
-              f,
-              this.options.preset || 'none',
-            );
-            const shouldMask = SENSITIVE_FIELDS.has(f);
-            const displayValue = shouldMask
-              ? maskSensitiveValue(f, input.value)
-              : escapeHtml(input.value);
-            detailsHtml += `<br><strong>${escapeHtml(label)}:</strong> ${displayValue}`;
-          }
+        const summary = buildSuccessSummary(
+          this.activeFields,
+          (f) => {
+            const input =
+              f === 'country'
+                ? (this.formEl.querySelector(
+                    '.country-value-input',
+                  ) as HTMLInputElement)
+                : (this.formEl.querySelector(
+                    `.card-${f}-input`,
+                  ) as HTMLInputElement);
+            return input?.value || '';
+          },
+          this.options.preset || 'none',
+        );
+
+        summary.forEach((item) => {
+          detailsHtml += `<br><strong>${escapeHtml(item.label)}:</strong> ${item.value}`;
         });
 
         tokenDetail.innerHTML = detailsHtml;
         statusPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
-    } catch (err: unknown) {
-      cardData = null;
 
+      this.isSubmitting = false;
+    } catch (err: unknown) {
+      this.isSubmitting = false;
       spinner.style.display = 'none';
       submitBtn.disabled = false;
       btnText.innerText =

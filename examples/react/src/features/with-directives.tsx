@@ -33,10 +33,10 @@ export function DirectivesDemo() {
 
   return (
     <div style={{ maxWidth: '800px' }}>
-      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#24292e', margin: '0 0 8px 0' }}>
+      <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#ffffff', margin: '0 0 8px 0' }}>
         Directives Demo
       </h2>
-      <p style={{ color: '#586069', margin: '0 0 24px 0', fontSize: '15px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', margin: '0 0 24px 0', fontSize: '15px' }}>
         Using library hooks and form field components for built-in validation, formatting, and brand detection.
       </p>
 
@@ -44,8 +44,8 @@ export function DirectivesDemo() {
       {brand && (
         <div style={{
           display: 'inline-block',
-          backgroundColor: '#f1f8ff',
-          color: '#0366d6',
+          backgroundColor: 'rgba(10,132,255,0.12)',
+          color: '#0a84ff',
           padding: '4px 12px',
           borderRadius: '16px',
           fontSize: '12px',
@@ -61,11 +61,11 @@ export function DirectivesDemo() {
       {paymentError && (
         <div style={{
           padding: '12px 16px',
-          backgroundColor: '#fef2f2',
-          borderRadius: '6px',
+          backgroundColor: 'rgba(255,69,58,0.1)',
+          borderRadius: '8px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a',
           fontSize: '14px'
         }}>
           {paymentError}
@@ -87,7 +87,7 @@ export function DirectivesDemo() {
 
         {/* Form with Built-in Validation */}
         <div style={{ flex: '1', minWidth: '300px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#24292e', margin: '0 0 16px 0' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', margin: '0 0 16px 0' }}>
             Enter Card Details
           </h3>
           <form onSubmit={onFormSubmit}>
@@ -148,16 +148,18 @@ export function DirectivesDemo() {
               disabled={!values.number || !values.expiry || !values.cvc}
               style={{
                 width: '100%',
-                padding: '14px',
-                backgroundColor: '#0366d6',
+                padding: '16px 20px',
+                backgroundColor: '#0a84ff',
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
-                fontSize: '15px',
+                borderRadius: '9999px',
+                fontSize: '16px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1,
-                marginTop: '16px'
+                marginTop: '16px',
+                boxShadow: '0 8px 20px rgba(10,132,255,0.35)',
+                transition: 'all 0.2s ease'
               }}
             >
               Pay Now
@@ -168,16 +170,16 @@ export function DirectivesDemo() {
 
       {/* Info Box */}
       <div style={{
-        backgroundColor: '#fff8c5',
-        border: '1px solid #f1c40f',
+        backgroundColor: 'rgba(255,204,0,0.08)',
+        border: '1px solid rgba(255,204,0,0.25)',
         padding: '16px',
-        borderRadius: '8px',
+        borderRadius: '12px',
         marginTop: '24px'
       }}>
-        <h4 style={{ margin: '0 0 8px 0', color: '#856404', fontSize: '14px' }}>
-          Using Library Hooks &amp; Components
+        <h4 style={{ margin: '0 0 8px 0', color: '#ffd60a', fontSize: '14px' }}>
+          Using Library Hooks & Components
         </h4>
-        <p style={{ margin: 0, color: '#856404', fontSize: '13px', lineHeight: '1.5' }}>
+        <p style={{ margin: 0, color: 'rgba(255,214,10,0.8)', fontSize: '13px', lineHeight: '1.5' }}>
           This demo uses the <code>useCardForm</code> hook for automatic formatting (card number, expiry, CVC),
           validation (Luhn check, expiry, CVC), and brand detection. The <code>FormField</code> component
           handles all validation state and the <code>CreditCardPreview</code> component displays the card visually.

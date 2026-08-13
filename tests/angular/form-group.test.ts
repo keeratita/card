@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createCardFormGroup, CardFormGroupConfig } from '../../src/angular/form-group';
+import { createCardFormGroup, disposeCardFormGroup, CardFormGroupConfig } from '../../src/angular/form-group';
 import { FormControl, FormGroup } from '@angular/forms';
 
 // Mock Angular Forms
@@ -250,6 +250,20 @@ describe('Angular Form Group', () => {
       expect(controls).toContain('country');
       expect(controls).toContain('phone');
       expect(controls).toContain('email');
+    });
+  });
+
+  describe('disposeCardFormGroup', () => {
+    it('should be a function', () => {
+      expect(typeof disposeCardFormGroup).toBe('function');
+    });
+
+    it('should not throw for a group created by createCardFormGroup', () => {
+      const formGroup = createCardFormGroup({ preset: 'us' });
+      expect(() => disposeCardFormGroup(formGroup)).not.toThrow();
+      // Disposing twice must also be safe (idempotent — the second call
+      // exercises the never-tracked/unknown-group path)
+      expect(() => disposeCardFormGroup(formGroup)).not.toThrow();
     });
   });
 });

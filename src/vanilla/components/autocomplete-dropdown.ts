@@ -295,6 +295,20 @@ export class AutocompleteDropdown {
   private open(): void {
     this.isOpen = true;
 
+    // Reset search state so reopening always shows the full list with an
+    // empty search box (the previous filter must not persist).
+    const searchInput = this.dropdownEl.querySelector(
+      '.autocomplete-search-input',
+    ) as HTMLInputElement;
+    if (searchInput) {
+      searchInput.value = '';
+    }
+    this.filteredOptions = [...this.originalOptions];
+    // Re-highlight the current selection on open so reopening shows where it
+    // sits in the list (scrolled into view below).
+    this.highlightedIndex = this.getSelectedIndex();
+    this.renderResults();
+
     // Position the dropdown using fixed positioning to escape all parent overflow constraints
     // Get the actual input element's position (not the wrapper)
     const inputRect = this.inputEl.getBoundingClientRect();
@@ -323,9 +337,18 @@ export class AutocompleteDropdown {
     }
     
     this.inputEl.setAttribute('aria-expanded', 'true');
-    
+
+    // Recalculate the position now that the dropdown is displayed, so the
+    // actual rendered height (which may differ from the estimate) is used to
+    // decide whether to render above or below the input.
+    this.repositionDropdown();
+
+    // Bring the highlighted (selected) option into view. Without this a
+    // mid-list selection (e.g. "Thailand") reopens with no visible highlight
+    // because the highlighted row is scrolled out of the results viewport.
+    this.scrollToHighlighted();
+
     // Focus search input
-    const searchInput = this.dropdownEl.querySelector('.autocomplete-search-input') as HTMLInputElement;
     setTimeout(() => {
       searchInput.focus();
       searchInput.select();
@@ -372,30 +395,43 @@ export class AutocompleteDropdown {
     // Always reset to all options (don't keep filtered results)
     this.filteredOptions = [...this.originalOptions];
     
-    // If there's a selected value, find and highlight it
+    // If there's a selected value, remember its index so reopening the
+    // dropdown can highlight it.
+    this.highlightedIndex = this.getSelectedIndex();
+  }
+
+  /** Returns the index of the currently selected option in the full list. */
+  private getSelectedIndex(): number {
     const currentValue = this.inputEl.value;
-    if (currentValue) {
-      const selectedIndex = this.originalOptions.findIndex((o) => o.label === currentValue);
-      if (selectedIndex >= 0) {
-        this.highlightedIndex = selectedIndex;
-      }
-    }
+    if (!currentValue) return -1;
+    return this.originalOptions.findIndex((o) => o.label === currentValue);
   }
 
   private filterOptions(query: string): void {
     const searchQuery = query.toLowerCase().trim();
-    
+
     if (!searchQuery) {
       this.filteredOptions = [...this.options];
     } else {
-      this.filteredOptions = this.options.filter((option) => {
-        return (
-          option.label.toLowerCase().includes(searchQuery) ||
-          option.value.toLowerCase().includes(searchQuery)
-        );
-      });
+      // Prioritize options that start with the query, then those that merely
+      // contain it. This keeps the list relevant when typing a single letter
+      // (e.g. "T" surfaces Thailand/Taiwan before Afghanistan).
+      const startsWith: AutocompleteOption[] = [];
+      const contains: AutocompleteOption[] = [];
+
+      for (const option of this.options) {
+        const label = option.label.toLowerCase();
+        const value = option.value.toLowerCase();
+        if (label.startsWith(searchQuery) || value.startsWith(searchQuery)) {
+          startsWith.push(option);
+        } else if (label.includes(searchQuery) || value.includes(searchQuery)) {
+          contains.push(option);
+        }
+      }
+
+      this.filteredOptions = [...startsWith, ...contains];
     }
-    
+
     this.highlightedIndex = this.filteredOptions.length > 0 ? 0 : -1;
     this.renderResults();
   }
@@ -434,6 +470,8 @@ export class AutocompleteDropdown {
     resultEl.setAttribute('data-value', option.value);
     
     if (option.customRender) {
+      // customRender output is inserted as trusted HTML — integrators must
+      // escape any user/API-controlled data themselves.
       resultEl.innerHTML = option.customRender(option);
     } else {
       const iconSpan = document.createElement('span');

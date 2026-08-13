@@ -1,5 +1,5 @@
 // Package version - synced by release-it
-export const PACKAGE_VERSION = '2.0.1';
+export const PACKAGE_VERSION = '3.0.0';
 
 // Maximum allowed lengths for various fields
 // Single source of truth for all validation and adapter modules

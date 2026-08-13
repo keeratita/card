@@ -42,24 +42,24 @@ export function CardFormWithOmiseAdapter() {
 
   return (
     <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#24292e', marginBottom: '8px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#ffffff', marginBottom: '8px' }}>
         Omise Adapter
       </h2>
-      <p style={{ color: '#586069', marginBottom: '24px', fontSize: '14px' }}>
+      <p style={{ color: 'rgba(255,255,255,0.55)', marginBottom: '24px', fontSize: '14px' }}>
         Secure payment integration using Omise payment gateway.
       </p>
 
       {/* Info Box */}
       <div style={{
         padding: '16px',
-        backgroundColor: '#f6f8fa',
-        borderRadius: '8px',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: '12px',
         marginBottom: '24px',
-        border: '1px solid #e1e4e8',
+        border: '1px solid rgba(255,255,255,0.08)',
         fontSize: '14px',
-        color: '#586069'
+        color: 'rgba(255,255,255,0.55)'
       }}>
-        <strong>Omise</strong> is a popular payment gateway in Southeast Asia,
+        <strong style={{ color: '#ffffff' }}>Omise</strong> is a popular payment gateway in Southeast Asia,
         supporting credit cards, debit cards, and various local payment methods.
       </div>
 
@@ -67,11 +67,11 @@ export function CardFormWithOmiseAdapter() {
       {token && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#f0fdf4',
-          borderRadius: '8px',
+          backgroundColor: 'rgba(48,209,88,0.1)',
+          borderRadius: '12px',
           marginBottom: '20px',
-          border: '1px solid #bbf7d0',
-          color: '#166534'
+          border: '1px solid rgba(48,209,88,0.25)',
+          color: '#30d158'
         }}>
           <strong>✓ Success!</strong> Token: {token.id}
         </div>
@@ -81,11 +81,11 @@ export function CardFormWithOmiseAdapter() {
       {error && (
         <div style={{
           padding: '16px',
-          backgroundColor: '#fef2f2',
-          borderRadius: '8px',
+          backgroundColor: 'rgba(255,69,58,0.08)',
+          borderRadius: '12px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b'
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a'
         }}>
           <strong>Error:</strong> {error}
         </div>
@@ -94,11 +94,11 @@ export function CardFormWithOmiseAdapter() {
       {paymentError && (
         <div style={{
           padding: '12px 16px',
-          backgroundColor: '#fef2f2',
-          borderRadius: '6px',
+          backgroundColor: 'rgba(255,69,58,0.08)',
+          borderRadius: '12px',
           marginBottom: '20px',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
+          border: '1px solid rgba(255,69,58,0.25)',
+          color: '#ff453a',
           fontSize: '14px'
         }}>
           {paymentError}
@@ -165,16 +165,18 @@ export function CardFormWithOmiseAdapter() {
               disabled={!values.number || !values.expiry || !values.cvc}
               style={{
                 width: '100%',
-                padding: '14px',
-                backgroundColor: '#0366d6',
-                color: 'white',
+                padding: '16px 20px',
+                backgroundColor: '#0a84ff',
+                color: '#ffffff',
                 border: 'none',
-                borderRadius: '6px',
-                fontSize: '15px',
+                borderRadius: '9999px',
+                fontSize: '16px',
                 fontWeight: '600',
                 cursor: !values.number || !values.expiry || !values.cvc ? 'not-allowed' : 'pointer',
                 opacity: !values.number || !values.expiry || !values.cvc ? 0.6 : 1,
-                marginTop: '16px'
+                marginTop: '16px',
+                boxShadow: '0 8px 20px rgba(10,132,255,0.35)',
+                transition: 'all 0.2s ease'
               }}
             >
               Pay with Omise
