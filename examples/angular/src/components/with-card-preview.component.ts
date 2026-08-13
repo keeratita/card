@@ -17,8 +17,7 @@ import { stripeAdapter } from '../shared/adapters';
 @Component({
   selector: 'app-card-form-with-live-preview',
   standalone: true,
-  imports: [ReactiveFormsModule],
-  providers: [CardNumberDirective, CardExpiryDirective],
+  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective],
   styles: [
     `
       .container {
@@ -335,8 +334,7 @@ export class CardFormWithLivePreviewComponent {
 @Component({
   selector: 'app-compact-card-preview',
   standalone: true,
-  imports: [ReactiveFormsModule],
-  providers: [CardNumberDirective, CardExpiryDirective],
+  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective],
   styles: [
     `
       .container {

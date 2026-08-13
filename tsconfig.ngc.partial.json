@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": ".ngcompile",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "removeComments": false,
+    "useDefineForClassFields": false
+  },
+  "angularCompilerOptions": {
+    "compilationMode": "partial",
+    "strictInjectionParameters": true
+  },
+  "include": ["src/angular/**/*", "src/core/**/*", "src/data/**/*", "src/lang/**/*"],
+  "exclude": ["node_modules", "dist", "dist-angular", "dist-angular-ngc", "examples", "tests"]
+}

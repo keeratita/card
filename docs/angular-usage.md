@@ -124,7 +124,8 @@ export class CheckoutComponent {
 
 #### `cardNumber`
 
-- **Type**: `string` (signal-based `input()`)
+- **Type**: signal-based `input()` (`InputSignal<string>`; bind with
+  `[cardNumber]="..."` — programmatic reads return the signal itself)
 - **Description**: Used for cross-validation of CVC against card number to ensure proper length validation
 
 ## Validator Functions & Error Keys

@@ -35,11 +35,11 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && node scripts/generate-dist-package-json.js && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
+    "build": "ngc -p tsconfig.ngc.partial.json && tsup && node scripts/generate-dist-package-json.js && node scripts/ship-angular-partial.js && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:core": "tsup src/index.ts --format cjs,esm --dts --out-dir dist",
     "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
     "build:react": "tsup src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
-    "build:angular": "tsup src/angular/index.ts --format cjs,esm --dts --out-dir dist/angular",
+    "build:angular": "ngc -p tsconfig.ngc.partial.json && tsup src/angular/index.ts --format cjs,esm --dts --external @angular/core,@angular/forms --out-dir dist/angular && node scripts/ship-angular-partial.js",
     "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
     "test": "vitest run",
     "lint": "eslint src",
@@ -92,9 +92,11 @@
   },
   "devDependencies": {
     "@angular/compiler": "^22.1.1",
+    "@angular/compiler-cli": "^22.1.1",
     "@angular/core": "^22.1.1",
     "@angular/forms": "^22.1.1",
     "@eslint/js": "^10.0.1",
+    "@release-it/bumper": "^7.0.6",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.2.55",
@@ -105,10 +107,9 @@
     "release-it": "^20.2.0",
     "sass": "^1.71.1",
     "tsup": "^8.0.2",
-    "typescript": "^5.3.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.1",
-    "vitest": "^4.1.8",
-    "@release-it/bumper": "^7.0.6"
+    "vitest": "^4.1.8"
   },
   "overrides": {
     "esbuild": "0.28.1",

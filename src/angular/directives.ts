@@ -11,6 +11,9 @@ import {
  */
 @Directive({
   selector: '[kgCardNumber]',
+  // Explicitly standalone — see CountrySelectComponent note: esbuild-emitted
+  // decorators require the flag for consumer AOT builds.
+  standalone: true,
   host: {
     '(input)': 'onInput()',
   },
@@ -29,6 +32,7 @@ export class CardNumberDirective {
  */
 @Directive({
   selector: '[kgCardExpiry]',
+  standalone: true,
   host: {
     '(input)': 'onInput()',
   },
@@ -47,6 +51,7 @@ export class CardExpiryDirective {
  */
 @Directive({
   selector: '[kgCardCvc]',
+  standalone: true,
   host: {
     '(input)': 'onInput()',
   },

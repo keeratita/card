@@ -77,28 +77,33 @@ import { StripeAdapter } from '@keeratita/card';
 
 ## Module Setup
 
-For Angular applications using NgModules, import the necessary modules:
+All library components and directives are **standalone** (standalone is the
+default since Angular 19), so import them directly into your component's
+`imports` — no NgModule wiring required:
 
 ```typescript
-import { NgModule } from '@angular/core';
+import { Component } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@keeratita/card/angular';
 
-@NgModule({
-  declarations: [
-    YourComponent,
-    CardNumberDirective,
-    CardExpiryDirective,
-    CardCvcDirective
-  ],
-  imports: [
-    ReactiveFormsModule
-  ]
+@Component({
+  selector: 'app-checkout',
+  imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective, CardCvcDirective],
+  template: `
+    <input type="text" kgCardNumber placeholder="•••• •••• •••• ••••" />
+    <input type="text" kgCardExpiry placeholder="MM/YY" />
+    <input type="password" kgCardCvc placeholder="•••" />
+  `,
 })
-export class YourModule { }
+export class YourComponent {}
 ```
 
-For standalone components (Angular 14+):
+> Note: do **not** list standalone directives in an NgModule `declarations`
+> array (that fails compilation with NG9110).
+
+## Examples
+
+All examples are standalone components (Angular 21+):
 
 ```typescript
 import { Component } from '@angular/core';
@@ -107,7 +112,6 @@ import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@kee
 
 @Component({
   selector: 'app-your-component',
-  standalone: true,
   imports: [ReactiveFormsModule, CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   templateUrl: './your-component.html'
 })

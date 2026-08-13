@@ -20,6 +20,11 @@ import {
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
+  // Explicitly standalone: the library ships runtime decorators (esbuild/tsup),
+  // not ngtsc partial declarations, so the Angular AOT compiler only recognizes
+  // standalone metadata when the flag is present ("standalone by default"
+  // applies to app sources compiled by ngtsc, not to external libs).
+  standalone: true,
   styles: [`
     .country-select-wrapper {
       position: relative;
