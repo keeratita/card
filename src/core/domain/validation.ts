@@ -31,7 +31,9 @@ export function luhnCheck(cardNumber: string): boolean {
     shouldDouble = !shouldDouble;
   }
 
-  return sum % 10 === 0;
+  // A Luhn sum of 0 only occurs when every digit is 0. All-zero PANs pass the
+  // checksum but are never real card numbers, so reject them explicitly.
+  return sum > 0 && sum % 10 === 0;
 }
 
 export function validateExpiry(expMonth: string, expYear: string): boolean {

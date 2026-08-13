@@ -31,6 +31,19 @@ npm run build
 
 4. Open your browser to the URL shown in the terminal (typically `http://localhost:5173`)
 
+## Demo Keys & Environment
+
+The demos fall back to mock test keys and can be overridden with env vars:
+
+- `VITE_STRIPE_PUBLIC_KEY` — your Stripe **publishable** key (`pk_test_…` / `pk_live_…`)
+- `VITE_OMISE_PUBLIC_KEY` — your Omise **public** key (`pkey_test_…` / `pkey_live_…`)
+
+⚠️ **Only public keys may ever go into `.env`.** Secret keys
+(`sk_…` Stripe, `skey_…` Omise) must never be placed in env vars or any frontend
+config — everything bundled for the browser is visible to users. The adapters
+reject secret-looking keys at construction, and tokenization happens
+client-side only, so secret keys are never needed anywhere in this app.
+
 ## Examples
 
 All example components live under `src/` (Vite single-page app — see `src/App.tsx`):

@@ -293,10 +293,16 @@ export function useCardForm(params: UseCardFormParams) {
  * value is the post-success masked display ("•••• •••• •••• 4242"), strip the
  * old masked content so re-entering a new number starts clean instead of
  * appending digits onto the stale last-4.
+ *
+ * The strip only applies while the raw value still contains the mask (the
+ * user typed into/after it). If the raw value has no mask at all, the user
+ * replaced the whole field, so the new digits must be kept in full — even
+ * when they happen to start with the old last-4 (e.g. re-typing a Visa
+ * starting with 4242).
  */
 function formatNumberForInput(prevValue: string, rawValue: string): string {
   const digits = rawValue.replace(/\D/g, '');
-  if (!prevValue.includes('•')) {
+  if (!prevValue.includes('•') || !rawValue.includes('•')) {
     return formatCardNumber(digits);
   }
   const oldLastFour = prevValue.replace(/\D/g, '').slice(-4);

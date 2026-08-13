@@ -488,6 +488,35 @@ describe('React useCardForm Hook', () => {
       expect(result.current.values.number).toBe('5');
     });
 
+    it('should keep a fully replaced card number in full after success', async () => {
+      const adapter = createMockAdapter();
+      const { result } = renderHook(() => useCardForm({ adapter }));
+
+      act(() => {
+        Object.entries(VALID_CARD_VALUES).forEach(([name, value]) => {
+          result.current.setFieldValue(name as keyof CardFormValues, value);
+        });
+      });
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+      expect(result.current.values.number).toBe('•••• •••• •••• 4242');
+
+      // User select-alls the masked input and types a brand-new PAN whose
+      // leading digits happen to match the old masked last-4 (e.g. "4242...").
+      // Because the raw value no longer contains the mask, the new digits
+      // must NOT be truncated by the old last-4 strip.
+      act(() => {
+        result.current.handleChange({
+          target: { name: 'number', value: '4242424242424242' },
+        } as ChangeEvent<HTMLInputElement>);
+      });
+
+      expect(result.current.values.number).toBe('4242 4242 4242 4242');
+      expect(result.current.isSuccess).toBe(false);
+    });
+
     it('should not flag the masked number as invalid when blurred after success', async () => {
       const adapter = createMockAdapter();
       const { result } = renderHook(() => useCardForm({ adapter }));

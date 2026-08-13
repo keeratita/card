@@ -31,6 +31,19 @@ npm run build
 
 4. Open your browser to `http://localhost:4200`
 
+## Demo Keys & Environment
+
+The demos fall back to mock test keys and can be overridden with env vars:
+
+- `VITE_STRIPE_PUBLIC_KEY` — your Stripe **publishable** key (`pk_test_…` / `pk_live_…`)
+- `VITE_OMISE_PUBLIC_KEY` — your Omise **public** key (`pkey_test_…` / `pkey_live_…`)
+
+⚠️ **Only public keys may ever go into `.env`.** Secret keys
+(`sk_…` Stripe, `skey_…` Omise) must never be placed in env vars or any frontend
+config — everything bundled for the browser is visible to users. The adapters
+reject secret-looking keys at construction, and tokenization happens
+client-side only, so secret keys are never needed anywhere in this app.
+
 ## Examples
 
 ### 1. Basic Card Form (`basic-card-form.component.ts`)

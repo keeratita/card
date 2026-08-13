@@ -349,6 +349,7 @@ export class CheckoutComponent {
 3. **Zero Logs**: The library does not contain loggers tracing card details, and its examples never `console.log` raw card values.
 4. **HTTPS Required**: Tokenization throws on insecure origins (`http:`), with `localhost`/`127.0.0.1` exempt for local development.
 5. **Accessible Semantics**: Supports accessibility keyboard focus tags, overlays ARIA markers, autocomplete attributes, and manages focus traps.
+6. **Publishable Keys Only — Never Secret Keys in Env**: The library only ever needs your **public** keys (`pk_…` Stripe, `pkey_…` Omise), read straight from the browser. If you use env vars (e.g. `VITE_STRIPE_PUBLIC_KEY`, `VITE_OMISE_PUBLIC_KEY`), they may hold **public keys only** — never put **secret** keys (`sk_…` Stripe, `skey_…` Omise) into `.env` files or any frontend config: everything shipped to the browser is visible to every visitor. As a safety net, the Stripe/Omise adapters throw at construction when handed a secret-looking key.
 
 ---
 

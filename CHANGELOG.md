@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reject submit buttons and validation error regions in React announce state
   via `aria-busy` / `role="alert"`; visible keyboard focus rings and
   `prefers-reduced-motion` overrides added to the stylesheet.
+- README + integration guides now state the env-key rule explicitly: frontend
+  env vars may hold **public/publishable keys only** (`pk_` / `pkey_`); secret
+  keys (`sk_` / `skey_`) must never enter `.env` files or client bundles.
 
 ### Fixed
 
