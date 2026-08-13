@@ -225,6 +225,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 
 .ios-input-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   padding: 14px 16px;
   position: relative;
@@ -271,7 +272,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 }
 
 .ios-input {
-  flex-grow: 1;
+  flex: 1 1 0%;
   min-width: 0;
   background: none;
   border: none;
@@ -399,13 +400,21 @@ $border-color: rgba(255, 255, 255, 0.08);
 }
 
 .field-error {
-  display: block;
+  display: none;
+  flex: 0 0 100%;
   color: $ios-red;
   font-size: 12px;
   margin-top: 4px;
   margin-left: 16px;
   margin-right: 16px;
-  min-height: 0;
+}
+
+// Field errors are hidden until the row is marked invalid, then they wrap
+// onto their own line below the label + input. Hiding the empty element also
+// keeps dynamic rows (e.g. the country autocomplete) aligned with siblings:
+// a visible-but-empty error span would otherwise push them off to the right.
+.ios-input-row.invalid .field-error {
+  display: block;
 }
 
 @keyframes fadeIn {
@@ -747,7 +756,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 }
 
 .country-autocomplete-container {
-  flex-grow: 1;
+  flex: 1 1 0%;
   position: relative;
 }
 

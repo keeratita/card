@@ -18,15 +18,23 @@ export function getCardNumberMaxLength(cardNumber: string): number {
 /**
  * Restores the caret position after reformatting a card number, so editing
  * in the middle of the number doesn't jump the cursor to the end.
+ *
+ * `rawValue` must be the input value as it was when the input event fired
+ * (before formatting). Positioning in raw coordinates matters because once
+ * a space is inserted before the caret — e.g. typing the 5th digit inserts
+ * one at position 4 — the formatted string no longer maps 1:1 onto the
+ * typed value and the caret would land in front of the space instead of
+ * at the end.
  */
 export function restoreCaret(
   input: HTMLInputElement,
+  rawValue: string,
   formatted: string,
   selectionStart: number | null,
 ): void {
   if (selectionStart === null) return;
 
-  const preCursorDigits = input.value
+  const preCursorDigits = rawValue
     .substring(0, selectionStart)
     .replace(/\D/g, '').length;
 

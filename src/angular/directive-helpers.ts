@@ -10,12 +10,13 @@ import { restoreCaret } from '../core/form';
  */
 export function handleCardNumberInput(inputEl: HTMLInputElement): void {
   const selectionStart = inputEl.selectionStart;
-  const formatted = formatCardNumber(inputEl.value);
+  const rawValue = inputEl.value;
+  const formatted = formatCardNumber(rawValue);
   // Only update if the value changed to prevent infinite input event loops
   if (inputEl.value !== formatted) {
     inputEl.value = formatted;
   }
-  restoreCaret(inputEl, formatted, selectionStart);
+  restoreCaret(inputEl, rawValue, formatted, selectionStart);
 }
 
 /**

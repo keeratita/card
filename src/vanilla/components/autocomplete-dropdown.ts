@@ -304,6 +304,9 @@ export class AutocompleteDropdown {
       searchInput.value = '';
     }
     this.filteredOptions = [...this.originalOptions];
+    // Re-highlight the current selection on open so reopening shows where it
+    // sits in the list (scrolled into view below).
+    this.highlightedIndex = this.getSelectedIndex();
     this.renderResults();
 
     // Position the dropdown using fixed positioning to escape all parent overflow constraints
@@ -339,6 +342,11 @@ export class AutocompleteDropdown {
     // actual rendered height (which may differ from the estimate) is used to
     // decide whether to render above or below the input.
     this.repositionDropdown();
+
+    // Bring the highlighted (selected) option into view. Without this a
+    // mid-list selection (e.g. "Thailand") reopens with no visible highlight
+    // because the highlighted row is scrolled out of the results viewport.
+    this.scrollToHighlighted();
 
     // Focus search input
     setTimeout(() => {
@@ -387,14 +395,16 @@ export class AutocompleteDropdown {
     // Always reset to all options (don't keep filtered results)
     this.filteredOptions = [...this.originalOptions];
     
-    // If there's a selected value, find and highlight it
+    // If there's a selected value, remember its index so reopening the
+    // dropdown can highlight it.
+    this.highlightedIndex = this.getSelectedIndex();
+  }
+
+  /** Returns the index of the currently selected option in the full list. */
+  private getSelectedIndex(): number {
     const currentValue = this.inputEl.value;
-    if (currentValue) {
-      const selectedIndex = this.originalOptions.findIndex((o) => o.label === currentValue);
-      if (selectedIndex >= 0) {
-        this.highlightedIndex = selectedIndex;
-      }
-    }
+    if (!currentValue) return -1;
+    return this.originalOptions.findIndex((o) => o.label === currentValue);
   }
 
   private filterOptions(query: string): void {

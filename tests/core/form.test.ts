@@ -155,8 +155,35 @@ describe('restoreCaret', () => {
     const setSelectionRange = vi
       .spyOn(input, 'setSelectionRange')
       .mockImplementation(() => {});
-    restoreCaret(input, '4111 1111 1111 1111', 5);
+    restoreCaret(
+      input,
+      '4111 1111 1111 1111',
+      '4111 1111 1111 1111',
+      5,
+    );
     expect(setSelectionRange).toHaveBeenCalled();
+  });
+
+  it('keeps the caret at the end when typing past a group boundary', () => {
+    const input = document.createElement('input');
+    input.value = '4242 4'; // formatted value after typing raw "42424"
+    const setSelectionRange = vi
+      .spyOn(input, 'setSelectionRange')
+      .mockImplementation(() => {});
+    restoreCaret(input, '42424', '4242 4', 5);
+    // Caret must land after the newly formatted space: "4242 4|"
+    expect(setSelectionRange).toHaveBeenCalledWith(6, 6);
+  });
+
+  it('keeps the caret aligned to its digit when editing in the middle', () => {
+    const input = document.createElement('input');
+    input.value = '4242 5424 2'; // formatted value after inserting "5"
+    const setSelectionRange = vi
+      .spyOn(input, 'setSelectionRange')
+      .mockImplementation(() => {});
+    restoreCaret(input, '4242 54242', '4242 5424 2', 6);
+    // Caret stays after the 5th digit: "4242 5|424 2"
+    expect(setSelectionRange).toHaveBeenCalledWith(6, 6);
   });
 });
 

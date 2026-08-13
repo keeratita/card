@@ -330,6 +330,19 @@ describe('AutocompleteDropdown Public API', () => {
       expect(document.querySelectorAll('.autocomplete-result').length).toBe(testOptions.length);
     });
 
+    it('should re-open the dropdown with the selected option highlighted', () => {
+      // Select a value (e.g. externally restored state)
+      dropdown.setValue('cherry');
+
+      const input = container.querySelector<HTMLInputElement>('.autocomplete-input')!;
+      input.click();
+
+      // Exactly one option must be highlighted, and it must be the selection
+      const highlighted = document.querySelectorAll('.autocomplete-result.highlighted');
+      expect(highlighted.length).toBe(1);
+      expect(highlighted[0].textContent).toContain('Cherry');
+    });
+
     it('should prioritize starts-with matches when filtering', () => {
       const options = [
         { value: 'th', label: 'Thailand' },

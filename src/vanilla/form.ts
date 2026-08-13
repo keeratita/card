@@ -342,7 +342,7 @@ export class CardForm {
       const val = target.value;
       const formatted = formatCardNumber(val);
       target.value = formatted;
-      restoreCaret(target, formatted, selectionStart);
+      restoreCaret(target, val, formatted, selectionStart);
 
       const brand = detectCardBrand(val);
       target.maxLength = getCardNumberMaxLength(val);
