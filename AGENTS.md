@@ -23,6 +23,7 @@ src/
     security.ts       # sanitizeInput, escapeHtml — applied to all user input before rendering
     domain/           # card.ts, brand.ts, token.ts, validation.ts, optional-fields.ts, card-brand-logos.ts
     form/             # Framework-agnostic form state machine: validateField, buildCard, masking, caret, success summary
+    form/combobox.ts  # Shared combobox core (comboboxReduce, comboboxFilter, computeDropdownPlacement) used by all 3 bindings
     formatters/       # card-formatter.ts: formatCardNumber, formatExpiry, formatCvc, cleanDigits
     adapters/         # base.ts (errors), stripe.ts, omise.ts, validate-card.ts
   vanilla/            # Vanilla JS: CardForm (inline), CardModal (popover checkout), autocomplete dropdowns, styles.scss
@@ -31,7 +32,7 @@ src/
   data/               # countries.ts (+ COUNTRIES data, flag emojis)
   lang/               # Localization strings (en.ts)
 tests/                # Mirrors src/ layout (tests/core, tests/vanilla, tests/react, tests/angular)
-docs/                 # Framework integration guides (react-usage.md, angular-usage.md)
+docs/                 # Framework guides (react-usage.md, angular-usage.md) + design/review notes
 examples/             # Runnable demos: vanilla/, react/, angular/
 scripts/              # generate-dist-package-json.js (build helper)
 ```

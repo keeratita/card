@@ -63,6 +63,15 @@ export const CARD_FORM_TEXT_EN = {
   cardBrand: 'Card Brand',
   tokenId: 'Token ID',
   searchCountries: 'Search countries...',
+  searchOptions: 'Search options',
+  searchCountriesAria: 'Search countries',
+  optionsList: 'Options list',
+  countryList: 'Country list',
+  optionsFound: (count: number) => `${count} options found`,
+  countriesFound: (count: number) =>
+    `${count} ${count === 1 ? 'country' : 'countries'} found`,
+  noCountriesFound: (query: string) =>
+    `No countries found matching "${query}"`,
   invalidCardNumber: 'Invalid card number.',
   invalidExpiry: 'Invalid or expired date.',
   invalidCvc: 'Invalid security code.',

@@ -8,16 +8,18 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 export function creditCardValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('number', String(control.value));
+    const { isValid, errorCode } = validateField('number', String(control.value));
     // Static descriptor: never echo the raw value (PAN) into errors, as
     // consumers commonly serialize control.errors into logging/analytics.
-    return isValid ? null : { creditCard: true };
+    // The core errorCode is added alongside the legacy key so integrators
+    // can branch on one stable identifier across all bindings.
+    return isValid ? null : { creditCard: true, [errorCode]: true };
   };
 }
 
 /**
  * Validates that the card expiry date is in MM/YY format and is in the future.
- * If no value is provided, it generates a valid expiry date.
+ * An empty value is considered valid (no error, no auto-generated default).
  *
  * Note: this keeps its own slash-aware parsing (rejecting malformed formats
  * like "12//25") rather than delegating to the shared `validateField('expiry')`,
@@ -26,8 +28,7 @@ export function creditCardValidator(): ValidatorFn {
 export function expiryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) {
-      // If no value is provided, we could generate a valid expiry date
-      // But for validation purposes, we typically don't auto-generate values
+      // Empty expiry is valid; the required validator handles presence.
       return null;
     }
 
@@ -77,8 +78,8 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
       }
     }
 
-    const { isValid } = validateField('cvc', cvc, { cardNumber });
-    return isValid ? null : { cvcInvalid: true };
+    const { isValid, errorCode } = validateField('cvc', cvc, { cardNumber });
+    return isValid ? null : { cvcInvalid: true, [errorCode]: true };
   };
 }
 
@@ -88,8 +89,8 @@ export function cvcValidator(cardNumberControlPath?: string): ValidatorFn {
 export function cardholderNameValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('name', String(control.value));
-    return isValid ? null : { cardholderNameInvalid: true };
+    const { isValid, errorCode } = validateField('name', String(control.value));
+    return isValid ? null : { cardholderNameInvalid: true, [errorCode]: true };
   };
 }
 
@@ -99,8 +100,8 @@ export function cardholderNameValidator(): ValidatorFn {
 export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('email', String(control.value));
-    return isValid ? null : { emailInvalid: true };
+    const { isValid, errorCode } = validateField('email', String(control.value));
+    return isValid ? null : { emailInvalid: true, [errorCode]: true };
   };
 }
 
@@ -110,8 +111,8 @@ export function emailValidator(): ValidatorFn {
 export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('phone', String(control.value));
-    return isValid ? null : { phoneInvalid: true };
+    const { isValid, errorCode } = validateField('phone', String(control.value));
+    return isValid ? null : { phoneInvalid: true, [errorCode]: true };
   };
 }
 
@@ -121,8 +122,8 @@ export function phoneValidator(): ValidatorFn {
 export function postalCodeValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('postalCode', String(control.value));
-    return isValid ? null : { postalCodeInvalid: true };
+    const { isValid, errorCode } = validateField('postalCode', String(control.value));
+    return isValid ? null : { postalCodeInvalid: true, [errorCode]: true };
   };
 }
 
@@ -132,7 +133,7 @@ export function postalCodeValidator(): ValidatorFn {
 export function countryValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control?.value) return null;
-    const { isValid } = validateField('country', String(control.value));
-    return isValid ? null : { countryInvalid: true };
+    const { isValid, errorCode } = validateField('country', String(control.value));
+    return isValid ? null : { countryInvalid: true, [errorCode]: true };
   };
 }

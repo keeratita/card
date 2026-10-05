@@ -36,6 +36,15 @@ export {
   formatCvc,
 } from './core/formatters/card-formatter';
 
+// Additional formatters (documented in docs/react-usage.md)
+export {
+  formatPhone,
+  reformatExpiryDate,
+  validateCardNumberLength,
+  isCardLengthValid,
+} from './core/formatters/card-formatter';
+export type { CardNumberLengthResult } from './core/formatters/card-formatter';
+
 // Utility
 export { cleanDigits } from './core/formatters/card-formatter';
 
@@ -52,14 +61,29 @@ export {
   moveHighlight,
   findCountryByCode,
   buildSuccessSummary,
+  // Shared combobox core: the framework-agnostic state machine behind the
+  // country-autocomplete bindings. Custom bindings (Vue, Svelte, ...) are
+  // expected to build on these instead of re-implementing the transitions.
+  comboboxReduce,
+  comboboxFilter,
+  computeDropdownPlacement,
+  INITIAL_COMBOBOX_STATE,
 } from './core/form';
 export type {
   CardFieldName,
   ValidateFieldContext,
   FieldValidationResult,
+  FieldErrorCode,
   ParsedExpiry,
   CardFormValuesLike,
   SuccessSummaryItem,
+  ComboboxState,
+  ComboboxAction,
+  ComboboxItem,
+  ComboboxFilterOptions,
+  DropdownAnchor,
+  DropdownPlacement,
+  DropdownPlacementOptions,
 } from './core/form';
 
 // REST Gateway Adapters

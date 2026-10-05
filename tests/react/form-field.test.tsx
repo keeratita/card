@@ -2,6 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FormField } from '../../src/react/form-field';
 import type { CardFormValues } from '../../src/react/useCardForm';
+import {
+  FIELD_METADATA,
+  OPTIONAL_FIELD_KEYS,
+} from '../../src/core/domain/optional-fields';
 
 describe('FormField', () => {
   const createMockProps = (overrides = {}) => ({
@@ -499,6 +503,55 @@ describe('FormField', () => {
       const { container } = render(<FormField name="number" {...props} />);
       const field = container.querySelector('.form-field');
       expect(field?.classList.contains('form-field--error')).toBe(false);
+    });
+  });
+
+  // The internal FIELD_CONFIGS table is checked at compile time against
+  // CardFormValues; this pins the parts that must agree with the core
+  // FIELD_METADATA the vanilla and Angular bindings render from, so the
+  // three bindings cannot drift into different autofill semantics.
+  describe('core metadata consistency', () => {
+    it('renders the same autocomplete hints as FIELD_METADATA', () => {
+      for (const field of OPTIONAL_FIELD_KEYS) {
+        const props = createMockProps();
+        const { container, unmount } = render(<FormField name={field} {...props} />);
+        const input = container.querySelector(
+          `[name="${field}"]`,
+        ) as HTMLInputElement;
+        expect(input, field).not.toBeNull();
+
+        if (field === 'country') {
+          // Deliberate deviation: the stored value is an ISO 2-letter code,
+          // so the autofill token is `country`, not `country-name`.
+          expect(input.getAttribute('autocomplete'), field).toBe('country');
+        } else {
+          expect(input.getAttribute('autocomplete'), field).toBe(
+            FIELD_METADATA[field].autocomplete,
+          );
+        }
+        unmount();
+      }
+    });
+
+    it('renders every optional field label from the config table', () => {
+      for (const field of OPTIONAL_FIELD_KEYS) {
+        const props = createMockProps();
+        const { container, unmount } = render(<FormField name={field} {...props} />);
+        const label = container.querySelector(`label[for="card-${field}"]`);
+        // A field missing from FIELD_CONFIGS would render an empty label.
+        expect(label?.textContent, field).toBeTruthy();
+        unmount();
+      }
+    });
+
+    it('marks addressLine2 as optional like the other bindings', () => {
+      const props = createMockProps({ required: false });
+      const { container } = render(<FormField name="addressLine2" {...props} />);
+      const input = container.querySelector(
+        '[name="addressLine2"]',
+      ) as HTMLInputElement;
+      expect(input.required).toBe(false);
+      expect(input.getAttribute('aria-required')).not.toBe('true');
     });
   });
 });

@@ -3,6 +3,7 @@ import {
   FIELD_METADATA,
   getFieldDisplayText,
   resolveActiveFields,
+  ALWAYS_OPTIONAL_FIELDS,
 } from '../core/domain/optional-fields';
 import { getCardLogoSvg } from '../core/domain/card-brand-logos';
 import { CARD_FORM_TEXT_EN } from '../lang/en';
@@ -274,21 +275,46 @@ export class CardForm {
         onSelect: (countryCode: string, _country) => {
           hiddenInput.value = countryCode;
           row.classList.remove('invalid');
+          // Selecting a country resolves its error state immediately.
+          const visibleInput = container.querySelector<HTMLInputElement>(
+            '.autocomplete-input',
+          );
+          visibleInput?.setAttribute('aria-invalid', 'false');
+          const errorEl = row.querySelector<HTMLElement>(
+            '#card-country-error',
+          );
+          if (errorEl) errorEl.textContent = '';
         }
       });
 
-      // Associate the visible autocomplete input with the label's `for` attribute.
+      // Associate the visible autocomplete input with the label's `for`
+      // attribute, and with the error region every other field gets — the
+      // hidden value input cannot carry aria state because it is invisible.
       const autocompleteInput = container.querySelector(
         '.autocomplete-input',
       ) as HTMLInputElement | null;
       if (autocompleteInput) {
         autocompleteInput.id = `card-${fieldKey}`;
+        autocompleteInput.setAttribute(
+          'aria-describedby',
+          `card-${fieldKey}-error`,
+        );
+        autocompleteInput.setAttribute('aria-invalid', 'false');
+        // The hidden value input carries `required` for native validation;
+        // the visible control is what screen readers need to hear it on.
+        autocompleteInput.setAttribute('aria-required', 'true');
       }
 
       return row;
     }
 
     const safePlaceholderText = escapeHtml(placeholder);
+
+    // Always-optional fields (today only addressLine2) must not carry the
+    // required attribute — mirrors the React and Angular bindings.
+    const isAlwaysOptional = ALWAYS_OPTIONAL_FIELDS.has(fieldKey);
+    const requiredAttr = isAlwaysOptional ? '' : 'required ';
+    const ariaRequiredAttr = isAlwaysOptional ? 'false' : 'true';
 
     row.innerHTML = `
       <label class="ios-label" for="card-${fieldKey}">${safeLabelText}</label>
@@ -298,8 +324,8 @@ export class CardForm {
         class="ios-input card-${fieldKey}-input"
         placeholder="${safePlaceholderText}"
         autocomplete="${meta.autocomplete}"
-        required
-        aria-required="true"
+        ${requiredAttr}
+        aria-required="${ariaRequiredAttr}"
         aria-invalid="false"
         aria-describedby="card-${fieldKey}-error"
       >
@@ -446,7 +472,20 @@ export class CardForm {
     this.activeFields.forEach((field) => {
       const input = this.formEl.querySelector(
         `.card-${field}-input`,
-      ) as HTMLInputElement;
+      ) as HTMLInputElement | null;
+      if (!input) {
+        // The country row renders an autocomplete widget, not a
+        // `.card-<field>-input`; without this the country field would be
+        // the only one that never validates on blur (the hidden value
+        // input never receives focus/blur events).
+        if (field === 'country') {
+          const countryInput = this.formEl.querySelector<HTMLInputElement>(
+            '.country-autocomplete-container .autocomplete-input',
+          );
+          this.on(countryInput, 'blur', () => this.validateField('country'));
+        }
+        return;
+      }
       this.on(input, 'blur', () => this.validateField(field));
     });
 
@@ -491,6 +530,14 @@ export class CardForm {
       row.classList.toggle('invalid', !isValid);
     }
     el.setAttribute('aria-invalid', String(!isValid));
+    // The country row's error must also surface on the visible autocomplete
+    // input (the validated element above is the hidden value input).
+    if (fieldId === 'country') {
+      const countryInput = this.formEl.querySelector<HTMLInputElement>(
+        '.country-autocomplete-container .autocomplete-input',
+      );
+      countryInput?.setAttribute('aria-invalid', String(!isValid));
+    }
 
     // The markup always emits `card-<base>-error` (e.g. `card-email-error`);
     // map the internal fieldId (`card-number`, or a bare optional field name

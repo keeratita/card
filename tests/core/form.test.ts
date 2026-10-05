@@ -7,7 +7,6 @@ import {
   getCardNumberMaxLength,
   restoreCaret,
   filterCountries,
-  moveHighlight,
   findCountryByCode,
   buildSuccessSummary,
 } from '../../src/core/form';
@@ -55,6 +54,44 @@ describe('validateField', () => {
   it('falls back to non-empty for unknown fields', () => {
     expect(validateField('city', 'Bangkok').isValid).toBe(true);
     expect(validateField('city', '').isValid).toBe(false);
+  });
+
+  it('treats addressLine2 as valid when empty', () => {
+    expect(validateField('addressLine2', '').isValid).toBe(true);
+  });
+
+  it('still treats other optional-row fields as required', () => {
+    expect(validateField('addressLine1', '').isValid).toBe(false);
+  });
+
+  // The field table is a plain object; without an own-property guard these
+  // keys resolve to Object.prototype members and crash or validate wrongly.
+  it('never resolves prototype keys as field validators', () => {
+    expect(() => validateField('toString', 'x')).not.toThrow();
+    expect(() => validateField('constructor', '')).not.toThrow();
+    expect(validateField('toString', 'x').isValid).toBe(true);
+    expect(validateField('toString', '').isValid).toBe(false);
+    expect(validateField('constructor', '').isValid).toBe(false);
+  });
+
+  it('reports the field-specific errorCode for every known field', () => {
+    const cases: Array<[string, string, string]> = [
+      ['number', '1234567890123456', 'invalidCardNumber'],
+      ['expiry', '99/99', 'invalidExpiry'],
+      ['cvc', '12', 'invalidCvc'],
+      ['name', '', 'invalidName'],
+      ['email', 'nope', 'invalidEmail'],
+      ['phone', '1', 'invalidPhone'],
+      ['postalCode', '1', 'invalidPostalCode'],
+      ['country', '', 'invalidCountry'],
+    ];
+    for (const [field, invalidValue, errorCode] of cases) {
+      const result = validateField(field, invalidValue);
+      expect(result.isValid, field).toBe(false);
+      expect(result.errorCode, field).toBe(errorCode);
+      // Every code must resolve to copy a consumer can render.
+      expect(getFieldErrorMessage(field), field).toBeTruthy();
+    }
   });
 });
 
@@ -210,12 +247,19 @@ describe('country helpers', () => {
     expect(filterCountries('').length).toBeGreaterThan(200);
   });
 
-  it('moves highlight with wrapping', () => {
-    expect(moveHighlight(0, 'down', 3)).toBe(1);
-    expect(moveHighlight(2, 'down', 3)).toBe(0);
-    expect(moveHighlight(0, 'up', 3)).toBe(2);
-    expect(moveHighlight(1, 'up', 3)).toBe(0);
-    expect(moveHighlight(0, 'down', 0)).toBe(-1);
+  // Exact-code semantics (shared with the React/Angular/vanilla bindings):
+  // a short query must not surface countries whose code merely starts with
+  // it — typing "t" finds Thailand by name, never Chad ("TD").
+  it('matches codes exactly, never by prefix', () => {
+    const results = filterCountries('t');
+    expect(results.some((c) => c.code === 'TD')).toBe(false);
+    expect(results.some((c) => c.code === 'TH')).toBe(true);
+    expect(filterCountries('TD').map((c) => c.code)).toContain('TD');
+  });
+
+  it('returns the same country objects, not copies', () => {
+    const [thailand] = filterCountries('Thailand');
+    expect(findCountryByCode('TH')).toBe(thailand);
   });
 
   it('finds a country by code', () => {

@@ -64,9 +64,8 @@ export function useCardForm(params: UseCardFormParams) {
   // Memoize brand detection to avoid recomputing on every render
   const brand = useMemo(() => detectCardBrand(values.number), [values.number]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target;
+  const setFieldValue = useCallback(
+    (name: keyof CardFormValues, value: string) => {
       let formattedValue = value;
 
       if (name === 'number') {
@@ -97,35 +96,12 @@ export function useCardForm(params: UseCardFormParams) {
     [],
   );
 
-  const setFieldValue = useCallback(
-    (name: keyof CardFormValues, value: string) => {
-      let formattedValue = value;
-
-      if (name === 'number') {
-        formattedValue = formatNumberForInput(
-          valuesRef.current.number,
-          value,
-        );
-      } else if (name === 'expiry') {
-        formattedValue = formatExpiry(value);
-      } else if (name === 'cvc') {
-        formattedValue = formatCvc(value, valuesRef.current.number);
-      }
-
-      setValues((prev) => ({
-        ...prev,
-        [name]: formattedValue,
-      }));
-
-      setErrors((prev) => ({
-        ...prev,
-        [name]: null,
-      }));
-
-      // Reset success state when the user edits a field after a successful payment
-      setIsSuccess(false);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setFieldValue(name as keyof CardFormValues, value);
     },
-    [],
+    [setFieldValue],
   );
 
   const handleCvcFocus = useCallback(() => {

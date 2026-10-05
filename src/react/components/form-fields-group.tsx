@@ -5,9 +5,11 @@ import {
   FIELD_METADATA,
   getFieldDisplayText,
   resolveActiveFields,
+  ALWAYS_OPTIONAL_FIELDS,
 } from '../../core/domain/optional-fields';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
 import { CountryAutocomplete } from '../country-autocomplete';
+import { FieldErrorText } from './field-error';
 import { CardFormValues } from '../useCardForm';
 import { CardNumberInput } from './card-number-input';
 import { ExpiryInput } from './expiry-input';
@@ -103,8 +105,11 @@ export function FormFieldsGroup({
                     placeholder={placeholder}
                     searchPlaceholder={CARD_FORM_TEXT_EN.searchCountries}
                     className=""
+                    invalid={!!errors[field]}
+                    describedBy={`card-${field}-error`}
                   />
                 </div>
+                <FieldErrorText id={`card-${field}-error`} message={errors[field]} />
               </div>
             );
           }
@@ -127,8 +132,11 @@ export function FormFieldsGroup({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 autoComplete={meta.autocomplete}
-                required={field !== 'addressLine2'}
+                required={!ALWAYS_OPTIONAL_FIELDS.has(field)}
+                aria-invalid={!!errors[field]}
+                aria-describedby={errors[field] ? `card-${field}-error` : undefined}
               />
+              <FieldErrorText id={`card-${field}-error`} message={errors[field]} />
             </div>
           );
         })}
@@ -149,7 +157,10 @@ export function FormFieldsGroup({
             onBlur={handleBlur}
             autoComplete="cc-name"
             required
+            aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'card-name-error' : undefined}
           />
+          <FieldErrorText id="card-name-error" message={errors.name} />
         </div>
       </div>
     </div>

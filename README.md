@@ -432,7 +432,7 @@ import { COUNTRIES } from '@keeratita/card';
 // The package.json references "file:../.." to use local dist
 ```
 
-> **Pre-built React components are available**: `CardForm`, `CreditCardPreview`, and the headless `useCardForm` hook. See [docs/react-usage.md](docs/react-usage.md) for the full component API. The `vanilla` entry point provides pre-built UI components (`CardForm`, `CardModal`) that require zero framework setup.
+> **Pre-built React components are available**: `CardForm`, `CreditCardPreview`, and the headless `useCardForm` hook. See [docs/react-usage.md](docs/react-usage.md) for the full component API. The `vanilla` entry point provides pre-built UI components (`CardForm`, `CardModal`) that require zero framework setup. Framework-agnostic helpers (validation, formatting — including the `formatPhone` / `reformatExpiryDate` / `validateCardNumberLength` / `isCardLengthValid` utilities) are exported from the root entry and documented alongside the React guide.
 
 ### Angular Examples
 
@@ -585,7 +585,7 @@ import { COUNTRIES } from '@keeratita/card';
     <kg-country-select
       controlName="country"
       [value]="selectedCountry"
-      (countryChange)="onCountryChange($event)"
+      (countrySelected)="onCountryChange($event)"
     >
     </kg-country-select>
   `,
@@ -593,8 +593,8 @@ import { COUNTRIES } from '@keeratita/card';
 export class CheckoutComponent {
   selectedCountry = 'US';
 
-  onCountryChange(event: { name: string; value: string }) {
-    console.log('Selected country:', event.value);
+  onCountryChange(countryCode: string) {
+    console.log('Selected country:', countryCode);
   }
 }
 ```
@@ -652,13 +652,21 @@ The package includes a highly reusable, iOS-styled `AutocompleteDropdown` compon
 
 ### Features
 
-- **Searchable/Filterable**: Real-time filtering as users type
+- **Searchable/Filterable**: Real-time filtering as users type — label
+  starts-with matches rank first, then label contains, then (by default) value
+  prefix/contains. Pass `includeValuePrefixMatch: false` for short-code values
+  (ISO countries, etc.) so a partial query only matches a value exactly
 - **iOS Glassmorphism Styling**: Matches the premium translucent design of the credit card form
-- **Keyboard Navigation**: Full support for ↑ ↓ Enter Escape keys
+- **Keyboard Navigation**: Full support for ↑ ↓ Enter Escape keys, plus
+  type-ahead — typing a printable key while the list is closed opens it with
+  that character applied to the filter
 - **Icon/Emoji Support**: Display icons or emojis alongside each option
-- **Click Outside to Close**: Intuitive dismissal behavior
+- **Click Outside to Close**: Intuitive dismissal behavior, returning focus to
+  the trigger when the close came from inside the widget
 - **Extensible Base Class**: Custom rendering support via `customRender` callback
-- **Accessibility**: ARIA attributes for screen reader support
+- **Accessibility**: combobox/listbox semantics with `aria-activedescendant`,
+  `aria-setsize`/`aria-posinset` on the rows, and a polite live region that
+  announces the filtered result count
 
 ### Basic Usage
 
@@ -742,15 +750,17 @@ countryDropdown.destroy();
 | `noResultsText`     | `string`                | No       | Text shown when no results match (default: `'No results found'`) |
 | `maxHeight`         | `number`                | No       | Maximum dropdown height in pixels (default: `300`)               |
 | `showIcons`         | `boolean`               | No       | Show/hide icons (default: `true`)                                |
+| `includeValuePrefixMatch` | `boolean`       | No       | Also match option `value`s on prefix/contains (default: `true`). Set `false` when values are short codes so partial queries only match a value exactly |
 
 ### Keyboard Navigation
 
-| Key    | Action                    |
-| ------ | ------------------------- |
-| ↑      | Move to previous option   |
-| ↓      | Move to next option       |
-| Enter  | Select highlighted option |
-| Escape | Close dropdown            |
+| Key                   | Action                                                       |
+| --------------------- | ------------------------------------------------------------ |
+| ↑                     | Move to the previous option (wraps to the last at the top)    |
+| ↓                     | Move to the next option (wraps to the first at the bottom)    |
+| Enter                 | Select the highlighted option                                 |
+| Escape                | Close the dropdown and return focus to the trigger            |
+| Any printable key     | While closed: open the dropdown with that key as the filter   |
 
 ### Public API
 

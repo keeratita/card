@@ -1,7 +1,10 @@
 import { FormGroup, FormControl, Validators, ValidatorFn } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { CardFormPreset, OptionalCardField } from '../core/domain/card';
-import { resolveActiveFields } from '../core/domain/optional-fields';
+import {
+  resolveActiveFields,
+  ALWAYS_OPTIONAL_FIELDS,
+} from '../core/domain/optional-fields';
 import {
   creditCardValidator,
   expiryValidator,
@@ -111,8 +114,10 @@ export function createCardFormGroup(
 
   // Add required validator to active optional fields
   activeOptionalFields.forEach((field) => {
-    // AddressLine2 is usually optional in real payment forms
-    if (field === 'addressLine2') {
+    // Single source of truth: fields in ALWAYS_OPTIONAL_FIELDS (today
+    // addressLine2) never carry Validators.required — mirrors the core
+    // validation table and the vanilla/React `required` rendering.
+    if (ALWAYS_OPTIONAL_FIELDS.has(field)) {
       return;
     }
 
@@ -158,7 +163,7 @@ export function updateCardFormGroup(
 
   // Re-apply required + specific validators for newly active fields
   activeOptionalFields.forEach((field) => {
-    if (field === 'addressLine2') return; // always optional
+    if (ALWAYS_OPTIONAL_FIELDS.has(field)) return; // always optional
     const specificValidator = OPTIONAL_FIELD_VALIDATORS[field];
     const validators = [Validators.required];
     if (specificValidator) validators.push(specificValidator());

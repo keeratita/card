@@ -418,4 +418,307 @@ describe('AutocompleteDropdown Public API', () => {
       expect(dropdownEl.style.display).toBe('block');
     });
   });
+
+  describe('Keyboard Navigation', () => {
+    beforeEach(() => {
+      // Instance created fresh per test; openDropdown happens per test.
+      new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock,
+      });
+    });
+
+    function openDropdown(): void {
+      (container.querySelector('.autocomplete-input') as HTMLInputElement).click();
+      // Dropdown and results are appended to document.body.
+      expect(document.querySelector('.autocomplete-results')).not.toBeNull();
+    }
+
+    function pressOnSearch(key: string): void {
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true }),
+      );
+    }
+
+    it('should wrap ArrowDown from the last option back to the first', () => {
+      openDropdown();
+      // From no selection, each ArrowDown advances one row; after
+      // length+1 presses the highlight wraps back to the first option.
+      for (let i = 0; i < testOptions.length + 1; i++) {
+        pressOnSearch('ArrowDown');
+      }
+      const first = document.querySelector('.autocomplete-result') as HTMLElement;
+      expect(first.classList.contains('highlighted')).toBe(true);
+    });
+
+    it('should land on the first option with ArrowUp when nothing is highlighted', () => {
+      openDropdown();
+      pressOnSearch('ArrowUp');
+      const first = document.querySelector('.autocomplete-result') as HTMLElement;
+      expect(first.classList.contains('highlighted')).toBe(true);
+    });
+
+    it('should wrap ArrowUp from the first option to the last', () => {
+      openDropdown();
+      pressOnSearch('ArrowDown'); // highlight first option
+      pressOnSearch('ArrowUp'); // wrap to last
+      const results = document.querySelectorAll('.autocomplete-result');
+      const last = results[results.length - 1] as HTMLElement;
+      expect(last.classList.contains('highlighted')).toBe(true);
+    });
+
+    it('keeps the highlight within filtered results when arrowing after a query', () => {
+      openDropdown();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.value = 'a'; // matches a subset (Apple + banana/date/elderberry)
+      search.dispatchEvent(new Event('input'));
+
+      const results = document.querySelectorAll('.autocomplete-result');
+      expect(results.length).toBeGreaterThan(1);
+
+      // A regression passing the full option count (instead of the filtered
+      // count) would scroll the highlight out of the rendered rows.
+      for (let i = 0; i < 12; i++) {
+        pressOnSearch('ArrowDown');
+        const highlighted = document.querySelector(
+          '.autocomplete-result.highlighted',
+        ) as HTMLElement | null;
+        expect(highlighted).not.toBeNull();
+        if (highlighted) {
+          expect(Array.from(results).includes(highlighted)).toBe(true);
+        }
+      }
+    });
+
+    it('announces the highlighted row from the search input', () => {
+      openDropdown();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      pressOnSearch('ArrowDown');
+      const highlighted = document.querySelector(
+        '.autocomplete-result.highlighted',
+      ) as HTMLElement;
+      // The IDREF must live on the focused element (the search input), and
+      // must point at the row that actually carries the highlight.
+      expect(search.getAttribute('role')).toBe('combobox');
+      expect(search.getAttribute('aria-activedescendant')).toBe(
+        highlighted.id,
+      );
+    });
+
+    it('never leaves a dangling aria-activedescendant when nothing is highlighted', () => {
+      openDropdown();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      expect(search.getAttribute('aria-activedescendant')).toBe('');
+    });
+  });
+
+  describe('Open/close contract', () => {
+    function build(): AutocompleteDropdown {
+      return new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock,
+      });
+    }
+
+    function trigger(): HTMLInputElement {
+      return container.querySelector('.autocomplete-input') as HTMLInputElement;
+    }
+
+    function dropdownEl(): HTMLElement | null {
+      return document.querySelector('.autocomplete-dropdown');
+    }
+
+    it('reports each row position within the filtered set', () => {
+      build();
+      trigger().click();
+      const rows = [
+        ...document.querySelectorAll<HTMLElement>('.autocomplete-result'),
+      ];
+      expect(rows.length).toBe(testOptions.length);
+      rows.forEach((row, i) => {
+        expect(row.getAttribute('aria-setsize')).toBe(
+          String(testOptions.length),
+        );
+        expect(row.getAttribute('aria-posinset')).toBe(String(i + 1));
+      });
+    });
+
+    it('closes when a click lands outside the widget', () => {
+      build();
+      trigger().click();
+      expect(dropdownEl()?.style.display).toBe('block');
+
+      document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(dropdownEl()?.style.display).toBe('none');
+    });
+
+    it('closes on Escape and returns focus to the trigger', () => {
+      build();
+      trigger().click();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.focus();
+      search.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+
+      expect(dropdownEl()?.style.display).toBe('none');
+      expect(document.activeElement).toBe(trigger());
+    });
+
+    it('reports expansion on the disclosure trigger in both states', () => {
+      build();
+      expect(trigger().getAttribute('role')).toBe('button');
+      expect(trigger().getAttribute('aria-haspopup')).toBe('listbox');
+      expect(trigger().getAttribute('aria-expanded')).toBe('false');
+      expect(trigger().hasAttribute('aria-controls')).toBe(false);
+
+      trigger().click();
+      expect(trigger().getAttribute('aria-expanded')).toBe('true');
+      const list = document.querySelector('[role="listbox"]');
+      expect(trigger().getAttribute('aria-controls')).toBe(
+        list?.getAttribute('id'),
+      );
+
+      document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(trigger().getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('ignores keys while closed — only the trigger opens the list', () => {
+      build();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      // The search box exists in the DOM while hidden; keystrokes there must
+      // not mutate state or reveal the dropdown.
+      search.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+      );
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+      expect(dropdownEl()?.style.display).toBe('none');
+    });
+
+    it('selects the filtered option under the highlight (keyboard path)', () => {
+      build();
+      trigger().click();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.value = 'banana';
+      search.dispatchEvent(new Event('input'));
+      pressOnSearchKey(search, 'ArrowDown');
+      pressOnSearchKey(search, 'Enter');
+
+      // Resolving the highlight against the *unfiltered* list would emit
+      // 'apple' here.
+      expect(onSelectMock).toHaveBeenCalledWith(
+        'banana',
+        expect.objectContaining({ label: 'Banana' }),
+      );
+    });
+
+    it('selects the clicked filtered option (pointer path)', () => {
+      build();
+      trigger().click();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.value = 'cherry';
+      search.dispatchEvent(new Event('input'));
+      const row = document.querySelector('.autocomplete-result') as HTMLElement;
+      row.click();
+
+      expect(onSelectMock).toHaveBeenCalledWith(
+        'cherry',
+        expect.objectContaining({ label: 'Cherry' }),
+      );
+    });
+
+    function pressOnSearchKey(el: HTMLElement, key: string): void {
+      el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    }
+  });
+
+  describe('Filter semantics', () => {
+    // The generic widget keeps its original behavior: values match on
+    // prefix/contains as well as labels.
+    it('matches on option values by default (generic behavior)', () => {
+      const dropdown = new AutocompleteDropdown({
+        container,
+        options: [
+          { value: 'ABC', label: 'Orange' },
+          { value: 'XYZ', label: 'Mango' },
+        ],
+        onSelect: onSelectMock,
+      });
+      (container.querySelector('.autocomplete-input') as HTMLInputElement).click();
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      search.value = 'bc'; // mid-value substring, no label match
+      search.dispatchEvent(new Event('input'));
+
+      const labels = [...document.querySelectorAll('.autocomplete-result')].map(
+        (el) => el.textContent,
+      );
+      expect(labels.some((t) => t?.includes('Orange'))).toBe(true);
+      dropdown.destroy();
+    });
+
+    it('namespaces ids per instance so two widgets never collide', () => {
+      const a = new AutocompleteDropdown({
+        container,
+        options: testOptions,
+        onSelect: onSelectMock,
+      });
+      const secondContainer = document.createElement('div');
+      document.body.appendChild(secondContainer);
+      const b = new AutocompleteDropdown({
+        container: secondContainer,
+        options: testOptions,
+        onSelect: onSelectMock,
+      });
+
+      const first = container.querySelector('.autocomplete-input')!;
+      const other = secondContainer.querySelector('.autocomplete-input')!;
+
+      // Open each widget in turn (an outside click closes the previous one)
+      // and capture the listbox its trigger points at.
+      first.click();
+      const firstList = first.getAttribute('aria-controls');
+      first.click();
+
+      other.click();
+      const otherList = other.getAttribute('aria-controls');
+      other.click();
+
+      // Each trigger must point at its own listbox — shared ids would make
+      // the second widget hijack the first one's announcements.
+      expect(firstList).not.toBeNull();
+      expect(otherList).not.toBeNull();
+      expect(firstList).not.toBe(otherList);
+
+      const firstListEl = document.getElementById(firstList!);
+      const otherListEl = document.getElementById(otherList!);
+      expect(firstListEl?.getAttribute('role')).toBe('listbox');
+      expect(otherListEl?.getAttribute('role')).toBe('listbox');
+      expect(firstListEl).not.toBe(otherListEl);
+
+      a.destroy();
+      b.destroy();
+      secondContainer.remove();
+    });
+  });
 });

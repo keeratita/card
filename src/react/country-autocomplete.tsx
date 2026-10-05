@@ -1,15 +1,20 @@
 import React, {
+  useReducer,
   useState,
   useRef,
   useEffect,
   useCallback,
   useMemo,
+  type CSSProperties,
 } from 'react';
 import {
   filterCountries,
-  moveHighlight,
   findCountryByCode,
+  comboboxReduce,
+  computeDropdownPlacement,
+  INITIAL_COMBOBOX_STATE,
 } from '../core/form';
+import { CARD_FORM_TEXT_EN } from '../lang/en';
 
 export interface CountryAutocompleteProps {
   value: string;
@@ -18,8 +23,49 @@ export interface CountryAutocompleteProps {
   searchPlaceholder?: string;
   className?: string;
   id?: string;
+  /** Marks the trigger as invalid (pair with `describedBy`). */
+  invalid?: boolean;
+  /** Id of the error element to associate with the trigger input. */
+  describedBy?: string;
 }
 
+// Layout / paging constants (single source of truth for this binding;
+// mirrors the naming in the vanilla AutocompleteDropdown).
+const DROPDOWN_MAX_HEIGHT = 300;
+const DROPDOWN_Z_INDEX = 9999;
+const PAGE_SIZE = 20;
+const SCROLL_LOAD_THRESHOLD_PX = 50;
+
+/**
+ * Screen-reader-only helper, inlined because the React entry ships no
+ * stylesheet of its own: the shared `.visually-hidden` class lives in
+ * `@keeratita/card/vanilla/styles.css`, and a consumer that does not import
+ * it would otherwise see the live-region text rendered on the page.
+ */
+const SR_ONLY_STYLE: CSSProperties = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  margin: '-1px',
+  padding: 0,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
+// Unique DOM-id namespace per instance, so two country selects on one page
+// never collide on aria-controls / aria-activedescendant IDREFs.
+let instanceCounter = 0;
+
+/**
+ * Combobox state is driven by the shared, framework-agnostic reducer
+ * (`comboboxReduce`) so open/close/query/highlight semantics match the
+ * vanilla and Angular bindings exactly. This component is a thin view:
+ * it adds the popover sync, click-outside handling, lazy rendering, and
+ * entry-point rendering.
+ */
 export function CountryAutocomplete({
   value,
   onChange,
@@ -27,18 +73,23 @@ export function CountryAutocomplete({
   searchPlaceholder = 'Search countries...',
   className = '',
   id,
+  invalid = false,
+  describedBy,
 }: Readonly<CountryAutocompleteProps>) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [state, dispatch] = useReducer(
+    comboboxReduce,
+    INITIAL_COMBOBOX_STATE,
+  );
+  const { isOpen, query, highlightedIndex } = state;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [dropdownPosition, setDropdownPosition] = useState<{
     top: number;
     left: number;
     width: number;
+    maxHeight: number;
   } | null>(null);
-  const positionRef = useRef(dropdownPosition);
-  positionRef.current = dropdownPosition;
+  const [uid] = useState(() => `country-autocomplete-${++instanceCounter}`);
+  const listId = `${uid}-list`;
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -46,7 +97,10 @@ export function CountryAutocomplete({
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
   // Filter countries based on search term
-  const filteredCountries = useMemo(() => filterCountries(searchTerm), [searchTerm]);
+  const filteredCountries = useMemo(
+    () => filterCountries(query),
+    [query],
+  );
 
   // Get selected country display
   const selectedCountry = findCountryByCode(value);
@@ -54,30 +108,35 @@ export function CountryAutocomplete({
     ? `${selectedCountry.emoji} ${selectedCountry.name}`
     : placeholder;
 
-  // Sync isOpen state with popover show/hide
+  // Sync isOpen state with popover show/hide. Feature-detect the popover
+  // API and only swallow the known DOMExceptions, so genuine programming
+  // errors (state/DOM desync) reach the integrator's error boundary
+  // instead of being silently erased.
   useEffect(() => {
     const popover = popoverRef.current;
     if (!popover) return;
 
-    if (isOpen) {
-      try {
+    try {
+      if (isOpen) {
         if (
           document.activeElement !== popover &&
           !popover.matches(':popover-open')
         ) {
-          popover.showPopover();
+          if (typeof popover.showPopover === 'function') {
+            popover.showPopover();
+          }
         }
-      } catch {
-        // Fallback for environments without full Popover support
-      }
-    } else {
-      try {
-        if (popover.matches(':popover-open')) {
+      } else if (popover.matches(':popover-open')) {
+        if (typeof popover.hidePopover === 'function') {
           popover.hidePopover();
         }
-      } catch {
-        // Fallback
       }
+    } catch (error) {
+      const known =
+        error instanceof DOMException &&
+        (error.name === 'InvalidStateError' ||
+          error.name === 'NotSupportedError');
+      if (!known) throw error;
     }
   }, [isOpen]);
 
@@ -90,7 +149,7 @@ export function CountryAutocomplete({
       const toggleEvent = e as ToggleEvent;
       const open = toggleEvent.newState === 'open';
       if (open !== isOpen) {
-        setIsOpen(open);
+        dispatch(open ? { type: 'open' } : { type: 'close' });
       }
     };
 
@@ -105,7 +164,7 @@ export function CountryAutocomplete({
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        dispatch({ type: 'close' });
       }
     }
     if (isOpen) {
@@ -118,7 +177,7 @@ export function CountryAutocomplete({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        dispatch({ type: 'close' });
       }
     }
     if (isOpen) {
@@ -127,12 +186,10 @@ export function CountryAutocomplete({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Reset search state when dropdown closes
+  // Reset the lazy-load window when the dropdown closes
   useEffect(() => {
     if (!isOpen) {
-      setSearchTerm('');
-      setHighlightedIndex(-1);
-      setVisibleCount(20);
+      setVisibleCount(PAGE_SIZE);
     }
   }, [isOpen]);
 
@@ -141,21 +198,17 @@ export function CountryAutocomplete({
     if (!inputRef.current) return;
 
     const rect = inputRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const dropdownHeight = 300;
-    const spaceBelow = viewportHeight - rect.bottom;
-    const spaceAbove = rect.top;
-
-    let top = rect.bottom;
-    // If not enough space below, show above
-    if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-      top = rect.top - dropdownHeight;
-    }
+    const placement = computeDropdownPlacement(
+      rect,
+      DROPDOWN_MAX_HEIGHT,
+      window.innerHeight,
+    );
 
     setDropdownPosition({
-      top,
+      top: placement.top,
       left: rect.left,
       width: rect.width,
+      maxHeight: placement.maxHeight,
     });
   }, []);
 
@@ -167,7 +220,8 @@ export function CountryAutocomplete({
       top: `${dropdownPosition.top}px`,
       left: `${dropdownPosition.left}px`,
       width: `${dropdownPosition.width}px`,
-      zIndex: 9999,
+      maxHeight: `${dropdownPosition.maxHeight}px`,
+      zIndex: DROPDOWN_Z_INDEX,
       // Prevent layout thrashing and blinking during scroll
       willChange: 'transform',
       contain: 'layout style',
@@ -182,9 +236,10 @@ export function CountryAutocomplete({
 
   // Open dropdown
   const openDropdown = useCallback(() => {
+    if (isOpen) return; // re-clicking an already-open trigger keeps the filter
     updatePosition();
-    setIsOpen(true);
-  }, [updatePosition]);
+    dispatch({ type: 'open' });
+  }, [isOpen, updatePosition]);
 
   // Reposition on scroll/resize - use passive listeners and throttle position updates
   useEffect(() => {
@@ -221,15 +276,22 @@ export function CountryAutocomplete({
       requestAnimationFrame(() => {
         searchInputRef.current?.focus();
       });
-      setSearchTerm('');
-      setHighlightedIndex(-1);
     }
   }, [isOpen]);
 
   // Reset visible count when search term changes
   useEffect(() => {
-    setVisibleCount(20);
-  }, [searchTerm]);
+    setVisibleCount(PAGE_SIZE);
+  }, [query]);
+
+  // Keyboard navigation must never outrun the lazy-rendered window: grow
+  // it (rather than relying solely on a scroll event that never fires for
+  // unrendered rows) so the highlighted row is always in the DOM.
+  useEffect(() => {
+    if (isOpen && highlightedIndex >= visibleCount) {
+      setVisibleCount(highlightedIndex + 1);
+    }
+  }, [isOpen, highlightedIndex, visibleCount]);
 
   // Handle list scroll for lazy loading
   const handleListScroll = useCallback(() => {
@@ -237,12 +299,18 @@ export function CountryAutocomplete({
 
     const list = listRef.current;
     // Trigger when within 50px of bottom
-    if (list.scrollTop + list.clientHeight >= list.scrollHeight - 50) {
-      setVisibleCount((prev) => Math.min(prev + 20, filteredCountries.length));
+    if (
+      list.scrollTop + list.clientHeight >=
+      list.scrollHeight - SCROLL_LOAD_THRESHOLD_PX
+    ) {
+      setVisibleCount((prev) =>
+        Math.min(prev + PAGE_SIZE, filteredCountries.length),
+      );
     }
   }, [filteredCountries.length]);
 
-  // Scroll highlighted item into view
+  // Scroll highlighted item into view (re-runs when the lazy window grows,
+  // so a highlight that just forced new rows to render still gets scrolled)
   useEffect(() => {
     if (highlightedIndex >= 0 && listRef.current) {
       const items = listRef.current.querySelectorAll(
@@ -253,19 +321,32 @@ export function CountryAutocomplete({
         item.scrollIntoView({ block: 'nearest' });
       }
     }
-  }, [highlightedIndex]);
+  }, [highlightedIndex, visibleCount]);
 
   const handleSelect = useCallback(
     (countryCode: string) => {
       onChange(countryCode);
-      setIsOpen(false);
+      dispatch({ type: 'close' });
     },
     [onChange],
   );
 
+  const moveHighlight = useCallback(
+    (direction: 'up' | 'down') => {
+      dispatch({ type: 'move', direction, count: filteredCountries.length });
+    },
+    [filteredCountries.length],
+  );
+
+  const selectHighlighted = useCallback(() => {
+    if (highlightedIndex >= 0 && highlightedIndex < filteredCountries.length) {
+      handleSelect(filteredCountries[highlightedIndex].code);
+    }
+  }, [filteredCountries, highlightedIndex, handleSelect]);
+
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchTerm(e.target.value);
+      dispatch({ type: 'setQuery', query: e.target.value });
     },
     [],
   );
@@ -275,38 +356,29 @@ export function CountryAutocomplete({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        setIsOpen(false);
+        dispatch({ type: 'close' });
         if (inputRef.current) inputRef.current.focus();
         return;
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopPropagation();
-        setHighlightedIndex((prev) =>
-          moveHighlight(prev, 'down', filteredCountries.length),
-        );
+        moveHighlight('down');
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
-        setHighlightedIndex((prev) =>
-          moveHighlight(prev, 'up', filteredCountries.length),
-        );
+        moveHighlight('up');
         return;
       }
       if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        if (
-          highlightedIndex >= 0 &&
-          highlightedIndex < filteredCountries.length
-        ) {
-          handleSelect(filteredCountries[highlightedIndex].code);
-        }
+        selectHighlighted();
       }
     },
-    [filteredCountries, highlightedIndex, handleSelect],
+    [moveHighlight, selectHighlighted],
   );
 
   const handleMainInputKeyDown = useCallback(
@@ -314,7 +386,7 @@ export function CountryAutocomplete({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        setIsOpen(false);
+        dispatch({ type: 'close' });
         return;
       }
 
@@ -322,6 +394,15 @@ export function CountryAutocomplete({
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
           e.preventDefault();
           openDropdown();
+          return;
+        }
+        // Type-ahead: typing a character opens the dropdown with that
+        // character pre-applied to the filter (the trigger is readOnly, so
+        // no text can strand in it). Matches the vanilla binding.
+        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          openDropdown();
+          dispatch({ type: 'setQuery', query: e.key });
         }
         return;
       }
@@ -329,33 +410,33 @@ export function CountryAutocomplete({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex((prev) =>
-            moveHighlight(prev, 'down', filteredCountries.length),
-          );
+          moveHighlight('down');
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHighlightedIndex((prev) =>
-            moveHighlight(prev, 'up', filteredCountries.length),
-          );
+          moveHighlight('up');
           break;
         case 'Enter':
           e.preventDefault();
-          if (
-            highlightedIndex >= 0 &&
-            highlightedIndex < filteredCountries.length
-          ) {
-            handleSelect(filteredCountries[highlightedIndex].code);
-          }
+          selectHighlighted();
           break;
       }
     },
-    [isOpen, filteredCountries, highlightedIndex, handleSelect, openDropdown],
+    [isOpen, moveHighlight, selectHighlighted, openDropdown],
   );
 
   // Lazy loading indicator
   const hasMore = visibleCount < filteredCountries.length;
   const displayedCountries = filteredCountries.slice(0, visibleCount);
+  const highlightedCountry =
+    highlightedIndex >= 0 ? filteredCountries[highlightedIndex] : undefined;
+  const activeOptionId = highlightedCountry
+    ? `${uid}-option-${highlightedCountry.code}`
+    : undefined;
+  const statusText =
+    filteredCountries.length === 0
+      ? CARD_FORM_TEXT_EN.noCountriesFound(query)
+      : CARD_FORM_TEXT_EN.countriesFound(filteredCountries.length);
 
   return (
     <div
@@ -375,10 +456,17 @@ export function CountryAutocomplete({
         onKeyDown={handleMainInputKeyDown}
         placeholder={placeholder}
         aria-haspopup='listbox'
+        // The trigger is a disclosure button that always reports expansion;
+        // while open, the focused search input carries the combobox role and
+        // owns aria-activedescendant (same contract in the Angular binding).
+        // aria-controls is only set while the listbox exists in the DOM, so
+        // the IDREF never dangles while collapsed.
+        role='button'
         aria-expanded={isOpen}
-        aria-controls={`country-popover-${id}`}
+        aria-controls={isOpen ? listId : undefined}
         aria-label={placeholder}
-        role='combobox'
+        aria-invalid={invalid}
+        aria-describedby={invalid && describedBy ? describedBy : undefined}
         tabIndex={0}
       />
       <div
@@ -386,7 +474,7 @@ export function CountryAutocomplete({
           popoverRef.current = el;
           if (el) el.setAttribute('popover', 'auto');
         }}
-        id={`country-popover-${id}`}
+        id={`${uid}-popover`}
         className='country-autocomplete-dropdown-container'
         style={getDropdownStyle()}
       >
@@ -397,25 +485,51 @@ export function CountryAutocomplete({
               type='text'
               className='country-autocomplete-search'
               placeholder={searchPlaceholder}
-              value={searchTerm}
+              value={query}
               onChange={handleSearchChange}
               onKeyDown={handleSearchKeyDown}
               autoComplete='off'
-              aria-label='Search countries'
+              role='combobox'
+              aria-expanded={true}
+              aria-haspopup='listbox'
+              aria-autocomplete='list'
+              aria-controls={listId}
+              aria-activedescendant={activeOptionId}
+              aria-label={searchPlaceholder || CARD_FORM_TEXT_EN.searchCountriesAria}
             />
             <ul
               ref={listRef}
+              id={listId}
               className='country-autocomplete-list'
               role='listbox'
-              aria-label='Country list'
+              aria-label={CARD_FORM_TEXT_EN.countryList}
               onScroll={handleListScroll}
+              style={
+                dropdownPosition
+                  ? {
+                      maxHeight: `${Math.min(DROPDOWN_MAX_HEIGHT, dropdownPosition.maxHeight)}px`,
+                    }
+                  : undefined
+              }
             >
+              {displayedCountries.length === 0 && (
+                <li
+                  className='country-autocomplete-item country-autocomplete-empty'
+                  role='option'
+                  aria-disabled={true}
+                >
+                  {CARD_FORM_TEXT_EN.noCountriesFound(query)}
+                </li>
+              )}
               {displayedCountries.map((country, index) => (
                 <li
                   key={country.code}
+                  id={`${uid}-option-${country.code}`}
                   className={`country-autocomplete-item ${country.code === value ? 'selected' : ''} ${index === highlightedIndex ? 'highlighted' : ''}`}
                   role='option'
                   aria-selected={country.code === value}
+                  aria-setsize={filteredCountries.length}
+                  aria-posinset={index + 1}
                   data-code={country.code}
                   data-index={index}
                   onClick={() => handleSelect(country.code)}
@@ -438,12 +552,26 @@ export function CountryAutocomplete({
                   </span>
                 </li>
               ))}
-              {hasMore && (
-                <li className='country-autocomplete-loading' role='status'>
-                  {`Scroll or type to find more (${filteredCountries.length - visibleCount} more)`}
-                </li>
-              )}
             </ul>
+            {/* Announce filter results; the no-results state would otherwise
+                give screen-reader users no feedback at all. */}
+            <div
+              role='status'
+              aria-live='polite'
+              className='visually-hidden country-autocomplete-status'
+              style={SR_ONLY_STYLE}
+            >
+              {statusText}
+            </div>
+            {hasMore && (
+              <div
+                role='status'
+                aria-live='polite'
+                className='country-autocomplete-loading'
+              >
+                {`Scroll or type to find more (${filteredCountries.length - visibleCount} more)`}
+              </div>
+            )}
           </div>
         )}
       </div>

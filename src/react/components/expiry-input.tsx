@@ -1,5 +1,6 @@
 import React from 'react';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
+import { FieldErrorText } from './field-error';
 
 export interface ExpiryInputProps {
   value: string;
@@ -47,7 +48,10 @@ export function ExpiryInput({
         autoComplete="cc-exp"
         required
         maxLength={7}
+        aria-invalid={hasError}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
+      <FieldErrorText id={`${id}-error`} message={error} />
     </div>
   );
 }

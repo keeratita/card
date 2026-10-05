@@ -48,7 +48,11 @@ export class CountryAutocomplete {
       customRender: renderCountryOption
     }));
 
-    // Create the base autocomplete with custom onSelect
+    // Create the base autocomplete with custom onSelect.
+    // `includeValuePrefixMatch: false` pins the country field to the same
+    // filter semantics as the React/Angular bindings: names match
+    // starts-with/contains, ISO codes match exactly — typing "T" must not
+    // surface Chad ("TD").
     this.autocomplete = new AutocompleteDropdown({
       container: config.container,
       options,
@@ -57,6 +61,7 @@ export class CountryAutocomplete {
       noResultsText: config.noResultsText || 'No countries found',
       maxHeight: config.maxHeight,
       showIcons: true,
+      includeValuePrefixMatch: false,
       onSelect: (value: string, _option: AutocompleteOption) => {
         const country = findCountryByCode(value);
         if (country) {

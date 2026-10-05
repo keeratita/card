@@ -748,4 +748,78 @@ describe('React Components', () => {
       expect(nameInput.required).toBe(true);
     });
   });
+
+  describe('optional field affordances', () => {
+    const hookReturn = (overrides = {}) => ({
+      values: { number: '', expiry: '', cvc: '', name: '' },
+      brand: 'visa',
+      errors: {},
+      isTokenizing: false,
+      isProcessing: false,
+      isSuccess: false,
+      paymentError: null,
+      isFlipped: false,
+      handleChange: vi.fn((e: any) => { void e; }),
+      handleBlur: vi.fn((e: any) => { void e; }),
+      handleCvcFocus: vi.fn(),
+      handleCvcBlur: vi.fn(),
+      handleSubmit: vi.fn((e?: any) => { void e; }),
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      (useCardForm as vi.Mock).mockReturnValue(hookReturn());
+    });
+
+    const renderWithFields = (fields: string[]) =>
+      render(
+        <CardForm
+          adapter={{
+            name: 'Stripe',
+            tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} } as Token),
+          }}
+          onSubmit={() => {}}
+          fields={fields as never}
+        />,
+      );
+
+    it('never marks always-optional addressLine2 as required', () => {
+      renderWithFields(['addressLine1', 'addressLine2']);
+
+      const line1 = document.querySelector(
+        '[name="addressLine1"]',
+      ) as HTMLInputElement;
+      const line2 = document.querySelector(
+        '[name="addressLine2"]',
+      ) as HTMLInputElement;
+      // Mirrors the core ALWAYS_OPTIONAL_FIELDS rule the vanilla and Angular
+      // bindings apply.
+      expect(line1.required).toBe(true);
+      expect(line2.required).toBe(false);
+      expect(line2.getAttribute('aria-required')).not.toBe('true');
+    });
+
+    it('renders the field error text and aria-invalid for a failed field', () => {
+      (useCardForm as vi.Mock).mockReturnValue(
+        hookReturn({ errors: { number: 'Invalid card number' } }),
+      );
+
+      render(
+        <CardForm
+          adapter={{
+            name: 'Stripe',
+            tokenize: async () => ({ id: 'tok_1', gateway: 'stripe', raw: {} } as Token),
+          }}
+          onSubmit={() => {}}
+        />,
+      );
+
+      const input = document.querySelector('[name="number"]') as HTMLInputElement;
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      const describedBy = input.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      const errorEl = document.getElementById(describedBy!);
+      expect(errorEl?.textContent).toContain('Invalid card number');
+    });
+  });
 });

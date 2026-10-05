@@ -1,4 +1,4 @@
-import { Component, input, computed, signal, output, ElementRef, viewChild } from '@angular/core';
+import { Component, input, computed, signal, output, ElementRef, viewChild, inject } from '@angular/core';
 import {
   CardFormPreset,
   OptionalCardField,
@@ -6,6 +6,7 @@ import {
 import {
   FIELD_METADATA,
   getFieldDisplayText,
+  ALWAYS_OPTIONAL_FIELDS,
 } from '../core/domain/optional-fields';
 import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
@@ -13,9 +14,16 @@ import { escapeHtml } from '../core/security';
 import { CARD_FORM_TEXT_EN } from '../lang/en';
 import {
   filterCountries,
-  moveHighlight,
   findCountryByCode,
+  comboboxReduce,
+  computeDropdownPlacement,
+  INITIAL_COMBOBOX_STATE,
 } from '../core/form';
+import type { ComboboxAction, ComboboxState } from '../core/form';
+
+// Unique DOM-id namespace per instance, so multiple country selects on one
+// page never collide on aria-controls / aria-activedescendant IDREFs.
+let nextInstanceId = 0;
 
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
@@ -24,7 +32,10 @@ import {
   // not ngtsc partial declarations, so the Angular AOT compiler only recognizes
   // standalone metadata when the flag is present ("standalone by default"
   // applies to app sources compiled by ngtsc, not to external libs).
-  standalone: true,
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+    '(window:resize)': 'onWindowResize()',
+  },
   styles: [`
     .country-select-wrapper {
       position: relative;
@@ -131,14 +142,24 @@ import {
       transition: background-color 0.15s ease;
     }
 
-    .country-select-item:hover,
-    .country-select-item.highlighted {
+    .country-select-item:hover {
       background-color: #f6f8fa;
     }
 
     .country-select-item.selected {
       background-color: #f1f8ff;
       border-left: 3px solid #0366d6;
+    }
+
+    /* Keyboard highlight must be unmistakable next to hover and selection:
+       solid brand blue with white text (>= 4.5:1 against #0366d6). */
+    .country-select-item.highlighted {
+      background-color: #0366d6;
+    }
+
+    .country-select-item.highlighted .country-select-item-name,
+    .country-select-item.highlighted .country-select-item-code {
+      color: #fff;
     }
 
     .country-select-item-flag {
@@ -174,22 +195,47 @@ import {
       color: #24292e;
       font-size: 14px;
     }
+
+    .ios-label .required-star {
+      color: #cf222e;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
   `],
   template: `
     <div class="ios-input-row row-country" [class.invalid]="invalid()">
-      <label class="ios-label" [for]="controlName()">
+      <label class="ios-label" [id]="labelId" [attr.for]="triggerId">
         {{ label() }}
+        @if (required()) {
+          <span class="required-star" aria-hidden="true">*</span>
+        }
       </label>
-      
+
       <div class="country-select-wrapper" (click)="toggleDropdown()" (keydown)="onKeydown($event)">
-        <!-- Trigger -->
+        <!-- Trigger: disclosure when open — the focused search input is the combobox -->
         <div
+          #countryTrigger
+          [id]="triggerId"
           class="country-select-trigger"
           [class.open]="isOpen()"
           [class.invalid]="invalid()"
-          role="button"
+          [attr.role]="isOpen() ? 'button' : 'combobox'"
           [attr.aria-expanded]="isOpen()"
-          [attr.aria-haspopup]="true"
+          [attr.aria-haspopup]="'listbox'"
+          [attr.aria-invalid]="invalid() ? 'true' : null"
+          [attr.aria-labelledby]="labelId"
+          [attr.aria-required]="required()"
           tabindex="0"
         >
           <div class="country-select-display">
@@ -214,21 +260,39 @@ import {
                 #searchInput
                 type="text"
                 class="country-select-search-input"
+                role="combobox"
                 [placeholder]="searchPlaceholder"
+                [attr.aria-label]="searchPlaceholder"
+                [attr.aria-expanded]="isOpen()"
+                [attr.aria-haspopup]="'listbox'"
+                [attr.aria-autocomplete]="'list'"
+                [attr.aria-controls]="listId"
+                [attr.aria-activedescendant]="activeOptionId()"
                 [value]="searchQuery()"
                 (input)="onSearchChange($event)"
               />
             </div>
 
             <!-- Country List -->
-            <div class="country-select-list">
+            <div
+              class="country-select-list"
+              role="listbox"
+              [id]="listId"
+              [attr.aria-labelledby]="triggerId"
+              [style.max-height]="listMaxHeight() + 'px'"
+              (mouseleave)="clearHoverHighlight()"
+            >
               @if (filteredCountries().length > 0) {
                 @for (country of filteredCountries(); track country.code; let i = $index) {
                   <div
                     class="country-select-item"
+                    [id]="optionId(country.code)"
+                    [attr.data-code]="country.code"
                     [class.selected]="selectedCountry()?.code === country.code"
                     [class.highlighted]="highlightedIndex() === i"
-                    (mouseenter)="highlightedIndex.set(i)"
+                    [attr.aria-setsize]="filteredCountries().length"
+                    [attr.aria-posinset]="i + 1"
+                    (mouseenter)="highlightItem(i)"
                     (click)="selectCountry(country)"
                     role="option"
                     [attr.aria-selected]="selectedCountry()?.code === country.code"
@@ -239,10 +303,19 @@ import {
                   </div>
                 }
               } @else {
-                <div class="country-select-no-results">
-                  No countries found matching "{{ searchQuery() }}"
+                <div
+                  class="country-select-no-results"
+                  role="option"
+                  aria-disabled="true"
+                >
+                  {{ noResultsText() }}
                 </div>
               }
+            </div>
+
+            <!-- Polite announcement of the filtered result count -->
+            <div class="visually-hidden country-select-status" role="status" aria-live="polite">
+              {{ listStatus() }}
             </div>
           </div>
         }
@@ -276,11 +349,35 @@ export class CountrySelectComponent {
 
   readonly searchPlaceholder = CARD_FORM_TEXT_EN.searchCountries;
 
-  // Local state signals
-  isOpen = signal(false);
-  searchQuery = signal('');
-  highlightedIndex = signal(-1);
-  
+  /** Layout facts of the dropdown (kept in sync with the styles block). */
+  private static readonly LIST_MAX_HEIGHT = 240;
+  /** Minimum usable list height before the dropdown is simply unusable. */
+  private static readonly LIST_MIN_HEIGHT = 96;
+  /** Distance from the trigger to the list top: dropdown offset + search row. */
+  private static readonly SEARCH_ROW_OFFSET = 68;
+
+  private readonly uid = `kg-country-${++nextInstanceId}`;
+  /** Stable listbox id, referenced by both comboboxes' aria-controls. */
+  readonly listId = `${this.uid}-list`;
+  /** Stable trigger id, referenced by the label's `for`. */
+  readonly triggerId = `${this.uid}-trigger`;
+  /** Stable label id, referenced by the trigger's `aria-labelledby`. */
+  readonly labelId = `${this.uid}-label`;
+
+  /**
+   * Single source of truth for open/query/highlight: every transition goes
+   * through the shared combobox reducer, so the three bindings cannot drift
+   * and no per-signal copies can disagree with the reducer's last word.
+   */
+  private readonly comboboxState = signal<ComboboxState>(INITIAL_COMBOBOX_STATE);
+  readonly isOpen = computed(() => this.comboboxState().isOpen);
+  readonly searchQuery = computed(() => this.comboboxState().query);
+  readonly highlightedIndex = computed(
+    () => this.comboboxState().highlightedIndex,
+  );
+  /** Max height of the list, clamped to the viewport on open. */
+  listMaxHeight = signal(CountrySelectComponent.LIST_MAX_HEIGHT);
+
   // Selected country computed from value input
   selectedCountry = computed(() => {
     const value = this.value();
@@ -296,38 +393,176 @@ export class CountrySelectComponent {
   // Reference to search input for focus management
   searchInputRef = viewChild<ElementRef>('searchInput');
 
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
+
+  /** Stable id of the option row for a country code. */
+  optionId(code: string): string {
+    return `${this.uid}-option-${code}`;
+  }
+
   /**
-   * Output event for Angular forms integration (signal-based `output()`).
+   * id of the highlighted option, referenced by aria-activedescendant on
+   * the active combobox — the search input while the dropdown is open.
+   */
+  readonly activeOptionId = computed(() => {
+    const index = this.highlightedIndex();
+    if (index < 0) return '';
+    const country = this.filteredCountries()[index];
+    return country ? this.optionId(country.code) : '';
+  });
+
+  /** No-results copy shared with the live-region announcement. */
+  readonly noResultsText = computed(() =>
+    CARD_FORM_TEXT_EN.noCountriesFound(this.searchQuery()),
+  );
+
+  /** Text for the polite live region (result count / no-results feedback). */
+  readonly listStatus = computed(() => {
+    if (!this.isOpen()) return '';
+    const count = this.filteredCountries().length;
+    return count === 0
+      ? this.noResultsText()
+      : CARD_FORM_TEXT_EN.countriesFound(count);
+  });
+
+  /**
+   * Emits the selected ISO country code (mirrors React's `onChange` contract).
+   */
+  readonly countrySelected = output<string>();
+
+  /**
+   * @deprecated Prefer `countrySelected`. Kept for backward compatibility;
+   * note that `name` here is the control name, not the country name.
    */
   readonly countryChange = output<{ name: string; value: string }>();
 
   toggleDropdown(): void {
-    this.isOpen.update(v => !v);
-    this.searchQuery.set('');
-    this.highlightedIndex.set(-1);
+    if (this.isOpen()) {
+      this.dispatch({ type: 'close' });
+      return;
+    }
+    this.openDropdown();
+  }
+
+  /** Opens (no-op when already open, so re-clicking never wipes the filter). */
+  private openDropdown(): void {
+    if (this.isOpen()) return;
+    this.dispatch({ type: 'open' });
+
+    // Clamp the list to the viewport below the trigger so it never
+    // renders off-screen at the bottom of the page. Shared placement
+    // math with `forceBelow` (this dropdown always renders below).
+    this.updateListMaxHeight();
 
     // Focus search input when opening
-    if (this.isOpen()) {
-      setTimeout(() => {
-        this.searchInputRef()?.nativeElement?.focus();
-      }, 0);
+    setTimeout(() => {
+      this.searchInputRef()?.nativeElement?.focus();
+    }, 0);
+  }
+
+  /** Re-clamps the list when the viewport resizes while open (rAF-coalesced). */
+  private resizeQueued = false;
+  onWindowResize(): void {
+    if (!this.isOpen() || this.resizeQueued) return;
+    this.resizeQueued = true;
+    requestAnimationFrame(() => {
+      this.resizeQueued = false;
+      if (this.isOpen()) {
+        this.updateListMaxHeight();
+      }
+    });
+  }
+
+  private updateListMaxHeight(): void {
+    const rect = this.hostElement.nativeElement.getBoundingClientRect();
+    // Ask the shared placement math for the height of the *whole* dropdown
+    // (search row + list), then hand the remainder to the list. Clamping the
+    // list alone would let the search row push it past the viewport bottom.
+    const available = computeDropdownPlacement(
+      rect,
+      CountrySelectComponent.LIST_MAX_HEIGHT +
+        CountrySelectComponent.SEARCH_ROW_OFFSET,
+      window.innerHeight,
+      { forceBelow: true },
+    ).maxHeight;
+    // Keep the list bottom inside the viewport (subtract the trigger→list
+    // gap + search row height), but never collapse to an unusable height:
+    // an invisible list is worse than one the user can scroll at the fold.
+    this.listMaxHeight.set(
+      Math.max(
+        CountrySelectComponent.LIST_MIN_HEIGHT,
+        Math.min(
+          CountrySelectComponent.LIST_MAX_HEIGHT,
+          available - CountrySelectComponent.SEARCH_ROW_OFFSET,
+        ),
+      ),
+    );
+  }
+
+  /** Updates highlight on hover, skipping no-op writes (each still costs a CD pass). */
+  highlightItem(index: number): void {
+    this.comboboxState.update((s) =>
+      s.highlightedIndex === index ? s : { ...s, highlightedIndex: index },
+    );
+  }
+
+  /**
+   * Pointer leaving the list returns the highlight to the current selection
+   * so a stray hover never leaves a hovered row feeding activedescendant.
+   */
+  clearHoverHighlight(): void {
+    if (!this.isOpen()) return;
+    const selected = this.selectedCountry();
+    const index = selected
+      ? this.filteredCountries().findIndex((c) => c.code === selected.code)
+      : -1;
+    this.comboboxState.update((s) => ({ ...s, highlightedIndex: index }));
+  }
+
+  private scrollHighlightedIntoView(): void {
+    // Resolve the target from state via its stable option id, so the scroll
+    // happens even though the `highlighted` class is only applied on the
+    // next change-detection pass (one render behind otherwise).
+    const id = this.activeOptionId();
+    if (!id) return;
+    this.hostElement.nativeElement
+      .querySelector(`#${id}`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }
+
+  private dispatch(action: ComboboxAction): void {
+    this.comboboxState.update((s) => comboboxReduce(s, action));
+  }
+
+  /** Closes the dropdown when a click lands outside the component (host listener). */
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isOpen()) return;
+    if (!this.hostElement.nativeElement.contains(event.target as Node)) {
+      this.dispatch({ type: 'close' });
     }
   }
 
   onSearchChange(event: Event): void {
     const target = event.target as HTMLInputElement;
-    this.searchQuery.set(target.value);
-    this.highlightedIndex.set(-1);
+    this.dispatch({ type: 'setQuery', query: target.value });
   }
 
   selectCountry(country: Country): void {
-    this.countryChange.emit({ 
-      name: this.controlName(), 
-      value: country.code 
+    this.countrySelected.emit(country.code);
+    this.countryChange.emit({
+      name: this.controlName(),
+      value: country.code,
     });
-    this.isOpen.set(false);
-    this.searchQuery.set('');
-    this.highlightedIndex.set(-1);
+    this.dispatch({ type: 'close' });
+    this.focusTrigger();
+  }
+
+  /** Returns focus to the trigger so keyboard users stay in the tab order. */
+  private focusTrigger(): void {
+    const trigger = this.hostElement.nativeElement.querySelector(
+      `#${this.triggerId}`,
+    ) as HTMLElement | null;
+    trigger?.focus();
   }
 
   // Keyboard navigation
@@ -335,7 +570,21 @@ export class CountrySelectComponent {
     if (!this.isOpen()) {
       if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
         event.preventDefault();
-        this.toggleDropdown();
+        this.openDropdown();
+        return;
+      }
+      // Type-ahead: typing a character opens with that character applied
+      // to the filter (matches the vanilla binding; the trigger is a div,
+      // so no text can strand in it).
+      if (
+        event.key.length === 1 &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        this.openDropdown();
+        this.dispatch({ type: 'setQuery', query: event.key });
       }
       return;
     }
@@ -343,16 +592,22 @@ export class CountrySelectComponent {
     switch (event.key) {
       case 'ArrowDown': {
         event.preventDefault();
-        this.highlightedIndex.update((i) =>
-          moveHighlight(i, 'down', this.filteredCountries().length),
-        );
+        this.dispatch({
+          type: 'move',
+          direction: 'down',
+          count: this.filteredCountries().length,
+        });
+        this.scrollHighlightedIntoView();
         break;
       }
       case 'ArrowUp': {
         event.preventDefault();
-        this.highlightedIndex.update((i) =>
-          moveHighlight(i, 'up', this.filteredCountries().length),
-        );
+        this.dispatch({
+          type: 'move',
+          direction: 'up',
+          count: this.filteredCountries().length,
+        });
+        this.scrollHighlightedIntoView();
         break;
       }
       case 'Enter': {
@@ -365,7 +620,9 @@ export class CountrySelectComponent {
       }
       case 'Escape': {
         event.preventDefault();
-        this.isOpen.set(false);
+        this.dispatch({ type: 'close' });
+        // Restore focus to the trigger so keyboard users don't lose their place.
+        this.focusTrigger();
         break;
       }
     }
@@ -404,7 +661,7 @@ export function renderOptionalFieldHtml(
     </div>`;
   }
 
-  const required = field !== 'addressLine2' ? 'required' : '';
+  const required = ALWAYS_OPTIONAL_FIELDS.has(field) ? '' : 'required';
 
   return `<div class="ios-input-row row-${escapeHtml(field)}${invalidClass}">
     <label class="ios-label" for="${escapeHtml(controlName)}">${escapeHtml(label)}</label>

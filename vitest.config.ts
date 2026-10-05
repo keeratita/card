@@ -18,10 +18,10 @@ export default defineConfig({
     },
     globals: true,
     deps: {
-      inline: ['@angular/common', '@angular/core', '@angular/forms', '@angular/compiler']
+      inline: ['@angular/common', '@angular/core', '@angular/forms', '@angular/compiler', '@angular/platform-browser-dynamic']
     },
     optimizeDeps: {
-      include: ['@angular/common', '@angular/core', '@angular/forms', '@angular/compiler']
+      include: ['@angular/common', '@angular/core', '@angular/forms', '@angular/compiler', '@angular/platform-browser-dynamic']
     }
   }
 });
