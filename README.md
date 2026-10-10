@@ -1,27 +1,20 @@
 # @keeratita/card
 
-A lightweight, framework-agnostic TypeScript library that provides a secure, premium translucent credit card input form with iOS-style visual design principles, real-time input formatting/validations, CVC 3D card flips, and direct REST tokenization vaulting to Stripe and Omise.
+A lightweight, framework-agnostic TypeScript library for secure, iOS-style credit card forms: real-time formatting and validation, a 3D card preview with CVC flip, and direct browser-to-vault tokenization for Stripe and Omise.
 
-No SDK scripts or CDNs are required. The package uses direct browser-to-vault REST APIs, ensuring absolute control over performance, accessibility, and visual aesthetics.
+No SDK scripts or CDN tags. The library posts straight to the vault REST APIs, so you keep control of performance, accessibility, and styling.
 
-## Live Demo
-
-- Home: https://keeratita.github.io/card/
-- Vanilla demo: https://keeratita.github.io/card/examples/vanilla/index.html
-
----
+**Live demo:** https://keeratita.github.io/card/ · [Vanilla demo](https://keeratita.github.io/card/examples/vanilla/index.html)
 
 ## Features
 
-- **Liquid Glass Visual Style**: Grouped input list rows with squircle rounded corners, thin separators, glassmorphic card previews, and dynamic visual state triggers.
-- **3D Card Preview**: Responsive digital preview card that dynamically mirrors input fields and flips 180 degrees to show the signature strip when the CVC field gains focus.
-- **Direct REST Vaulting**: Perform secure browser-to-vault POST tokenization calls to Stripe (`api.stripe.com/v1/tokens`) and Omise (`vault.omise.co/tokens`) without loading external SDK CDNs.
-- **Dynamic Field Preset Configurations**: Load required optional fields automatically (ZIP Code for US cards, full billing addresses, or customer contacts) dynamically.
-- **Double-Loading submission lifecycle**: Automatically manages `"Tokenizing..."` and `"Processing..."` states, allowing host backends to verify transactions before form locks or rollbacks.
-- **Strict Data Isolation**: Credit card details are dereferenced immediately from in-memory contexts after vault queries complete to guarantee zero caching leaks.
-- **Framework Agnostic**: Integrates natively with Vanilla JS, React, or Angular Reactive Forms.
-
----
+- **Liquid glass UI** — grouped input rows, squircle corners, glassmorphic card preview.
+- **3D card preview** — mirrors the fields live and flips 180° to the signature strip when CVC is focused.
+- **Direct REST vaulting** — Stripe (`api.stripe.com/v1/tokens`) and Omise (`vault.omise.co/tokens`), no external SDK.
+- **Field presets** — add ZIP code, full billing address, or contact fields in one option.
+- **Double-loading submit lifecycle** — manages `"Tokenizing..."` and `"Processing..."` so your backend can verify before the form unlocks.
+- **Strict data isolation** — PAN and CVC are dereferenced as soon as tokenization returns; nothing is logged or cached.
+- **Framework agnostic** — Vanilla JS, React, or Angular reactive forms over one shared core.
 
 ## Installation
 
@@ -29,164 +22,89 @@ No SDK scripts or CDNs are required. The package uses direct browser-to-vault RE
 npm install @keeratita/card
 ```
 
-Make sure to install React (for hook integrations) if compiling framework wrappers.
+Install `react`/`react-dom` separately if you use the React entry, and `@angular/core`/`@angular/forms` for the Angular entry — all four are optional peer dependencies.
 
----
+## Stylesheet
 
-## 🎨 CSS Stylesheet Options
-
-The package includes two stylesheet versions:
-
-| File             | Size   | Description                                       |
-| ---------------- | ------ | ------------------------------------------------- |
-| `styles.css`     | ~10KB  | Uncompressed development version with source maps |
-| `styles.min.css` | ~8.2KB | Minified production version with source maps      |
-
-For production deployments, use `styles.min.css` for better performance (~18% smaller file size).
-
----
-
-## 🚀 Quick Start & Integration Guides
-
-### 1. Vanilla JavaScript Integration
-
-Add the stylesheet to your HTML page header:
+The package ships a compiled stylesheet, in full and minified form:
 
 ```html
-<!-- Development (uncompressed) -->
-<link
-  rel="stylesheet"
-  href="node_modules/@keeratita/card/dist/vanilla/styles.css"
-/>
-
-<!-- Production (minified) - Recommended for production -->
-<link
-  rel="stylesheet"
-  href="node_modules/@keeratita/card/dist/vanilla/styles.min.css"
-/>
+<link rel="stylesheet" href="node_modules/@keeratita/card/dist/vanilla/styles.min.css" />
 ```
 
-#### A. Inline Form Mode
+Or import it from a bundler (Vite, Next, Angular CLI via `angular.json` `styles`):
 
-Attach the form directly to a container element on your page:
-
-```html
-<div id="inline-payment-form"></div>
+```ts
+import '@keeratita/card/vanilla/styles.css';
 ```
 
-```typescript
+Every class is plain CSS — override any of them in your own stylesheet to match your design system. The components remain functional and accessible without it (screen-reader-only text is hidden with inline styles).
+
+## Quick start
+
+### Vanilla — inline form
+
+```ts
 import { StripeAdapter } from '@keeratita/card';
 import { CardForm } from '@keeratita/card/vanilla';
 
-// Initialize the gateway adapter
-const stripeAdapter = new StripeAdapter({
-  publicKey: 'pk_test_your_stripe_key',
-});
-
-// Instantiate the form controller
 const form = new CardForm('#inline-payment-form', {
-  adapter: stripeAdapter,
-  preset: 'billing', // Loads addressLine1, city, state, postalCode, country
+  adapter: new StripeAdapter({ publicKey: 'pk_test_your_stripe_key' }),
+  preset: 'billing', // addressLine1, city, state, postalCode, country
   cardLabel: 'Visa Platinum',
   submitButtonText: 'Pay Now',
   onSubmit: async ({ token }) => {
-    // Phase 2: Send token.id to your backend checkout API
-    const response = await fetch('/api/charge', {
+    // Verify on your backend; throw to roll the form back to its previous state.
+    const res = await fetch('/api/charge', {
       method: 'POST',
       body: JSON.stringify({ tokenId: token.id }),
     });
-    if (!response.ok) {
-      throw new Error('Transaction declined from backend API.');
-    }
+    if (!res.ok) throw new Error('Transaction declined.');
   },
-  onError: (error) => {
-    console.error('Validation or API vault failure: ', error.message);
-  },
+  onError: (error) => console.error(error.message),
 });
 ```
 
-#### B. Popover Checkout Modal Mode
+### Vanilla — checkout modal
 
-Instantiate a overlay dialog popup that dynamically slides up:
-
-```typescript
+```ts
 import { OmiseAdapter } from '@keeratita/card';
 import { CardModal } from '@keeratita/card/vanilla';
 
-const omiseAdapter = new OmiseAdapter({
-  publicKey: 'pkey_test_your_omise_key',
+const checkout = new CardModal({
+  adapter: new OmiseAdapter({ publicKey: 'pkey_test_your_omise_key' }),
+  preset: 'us', // postalCode + country
+  onSubmit: async ({ token }) => processPayment(token),
 });
 
-const checkoutModal = new CardModal({
-  adapter: omiseAdapter,
-  preset: 'us', // ZIP Code preset
-  onSubmit: async ({ token }) => {
-    // Direct secure submit to your backend payment processing API
-    await processPayment(token);
-  },
-});
-
-// Open checkout popup drawer
-button.addEventListener('click', () => checkoutModal.open());
+button.addEventListener('click', () => checkout.open());
 ```
 
----
+### React — headless hook
 
-### 2. React Integration
-
-#### A. Headless React Hook (`useCardForm`)
-
-Use the headless `useCardForm` hook to build custom card forms with full control over your visual design. The hook manages input state, real-time masking, brand detection, and tokenization:
+`useCardForm` owns field state, masking, brand detection, flip state and tokenization, so you render whatever markup you want:
 
 ```tsx
-import React from 'react';
 import { StripeAdapter } from '@keeratita/card';
 import { useCardForm } from '@keeratita/card/react';
 
-const stripeAdapter = new StripeAdapter({ publicKey: 'pk_test_stripe_key' });
-
-export default function CustomCheckoutForm() {
+export default function CheckoutForm() {
   const {
-    values,
-    brand,
-    errors,
-    isTokenizing,
-    isProcessing,
-    isSuccess,
-    paymentError,
-    isFlipped,
-    handleChange,
-    handleBlur,
-    handleCvcFocus,
-    handleCvcBlur,
-    handleSubmit,
+    values, brand, errors, isTokenizing, isProcessing, paymentError, isFlipped,
+    handleChange, handleBlur, handleCvcFocus, handleCvcBlur, handleSubmit,
   } = useCardForm({
-    adapter: stripeAdapter,
-    onSubmit: async ({ token }) => {
-      // Backend transaction API verify
-      await chargeCard(token.id);
-    },
+    adapter: new StripeAdapter({ publicKey: 'pk_test_stripe_key' }),
+    onSubmit: async ({ token }) => chargeCard(token.id),
   });
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Dynamic 3D Card Preview container */}
       <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
-        <div className='card-num-preview'>
-          {values.number || '•••• •••• •••• ••••'}
-        </div>
+        <div className='card-num-preview'>{values.number || '•••• •••• •••• ••••'}</div>
         <div className='card-brand'>{brand.toUpperCase()}</div>
       </div>
 
-      {/* Form Fields */}
-      <input
-        type='text'
-        name='number'
-        value={values.number}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        placeholder='Card Number'
-      />
+      <input name='number' value={values.number} onChange={handleChange} onBlur={handleBlur} placeholder='Card Number' />
       {errors.number && <span>{errors.number}</span>}
 
       <input
@@ -195,580 +113,182 @@ export default function CustomCheckoutForm() {
         value={values.cvc}
         onChange={handleChange}
         onFocus={handleCvcFocus}
-        onBlur={(e) => {
-          handleBlur(e);
-          handleCvcBlur();
-        }}
+        onBlur={(e) => { handleBlur(e); handleCvcBlur(); }}
         placeholder='CVC'
       />
 
       <button type='submit' disabled={isTokenizing || isProcessing}>
-        {isTokenizing
-          ? 'Tokenizing...'
-          : isProcessing
-            ? 'Processing...'
-            : 'Pay'}
+        {isTokenizing ? 'Tokenizing...' : isProcessing ? 'Processing...' : 'Pay'}
       </button>
-      {paymentError && <div className='error'>{paymentError}</div>}
+      {paymentError && <div role='alert'>{paymentError}</div>}
     </form>
   );
 }
 ```
 
----
+Pre-built React components (`CardForm`, `CreditCardPreview`, `FormField`, `CardNumberInput`, `ExpiryInput`, `CvcInput`, `FormFieldsGroup`, `SubmitButton`, `CountryAutocomplete`) are exported from `@keeratita/card/react` — see [docs/react-usage.md](docs/react-usage.md).
 
-### 3. Angular Integration Helpers
+### Angular — reactive forms
 
-The Angular entry point targets the latest Angular (v21+, signal-based APIs)
-— `input()`/`output()`/`computed()` signal syntax, the `@if`/`@for` control
-flow, `inject()` DI, and standalone components/directives (shipped with an
-explicit `standalone: true` so consumer AOT builds can resolve them).
+Targets Angular v21+ and uses signal-based APIs (`input()`/`output()`/`computed()`, `@if`/`@for`, `inject()`, standalone components).
 
-#### A. Reactive Forms Configuration
-
-Initialize a pre-validated `FormGroup` automatically using the `createCardFormGroup` helper:
-
-```typescript
+```ts
 import { Component } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { createCardFormGroup } from '@keeratita/card/angular';
-
-@Component({
-  selector: 'app-checkout',
-  templateUrl: './checkout.component.html',
-})
-export class CheckoutComponent {
-  checkoutForm: FormGroup;
-
-  constructor() {
-    // Automatically compiles controls for number, expiry, cvc, name,
-    // and postalCode (via 'us' preset) with correct validators attached.
-    this.checkoutForm = createCardFormGroup({ preset: 'us' });
-  }
-}
-```
-
-Or configure fields manually using the individual validator helpers:
-
-```typescript
-import { Component, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import {
-  creditCardValidator,
-  expiryValidator,
-  cvcValidator,
-} from '@keeratita/card/angular';
-
-@Component({
-  selector: 'app-checkout',
-  templateUrl: './checkout.component.html',
-})
-export class CheckoutComponent {
-  private readonly fb = inject(FormBuilder);
-
-  checkoutForm: FormGroup;
-
-  constructor() {
-    this.checkoutForm = this.fb.group({
-      cardNumber: ['', [Validators.required, creditCardValidator()]],
-      expiry: ['', [Validators.required, expiryValidator()]],
-      cvc: ['', [Validators.required, cvcValidator('cardNumber')]], // cross-validates against cardNumber control
-    });
-  }
-}
-```
-
-#### B. Real-Time Masking Directives
-
-The package exports pre-built standalone input masking directives out-of-the-box. Import them directly into your standalone components:
-
-```typescript
-import { Component } from '@angular/core';
-import {
-  CardNumberDirective,
-  CardExpiryDirective,
-  CardCvcDirective,
-} from '@keeratita/card/angular';
-
-@Component({
-  selector: 'app-checkout',
-  imports: [CardNumberDirective, CardExpiryDirective, CardCvcDirective],
-  template: `
-    <!-- Card Number formatting -->
-    <input type="text" kgCardNumber placeholder="•••• •••• •••• ••••" />
-
-    <!-- Expiry date formatting (MM / YY) -->
-    <input type="text" kgCardExpiry placeholder="MM/YY" />
-
-    <!-- CVC formatting dynamically restricted based on card brand -->
-    <input
-      type="password"
-      kgCardCvc
-      [cardNumber]="cardNumber"
-      placeholder="•••"
-    />
-  `,
-})
-export class CheckoutComponent {
-  cardNumber = '';
-}
-```
-
----
-
-## 🛠️ API Reference
-
-### Form Configurations (`CardFormOptions`)
-
-| Attribute          | Type                  | Required | Description                                                       |
-| :----------------- | :-------------------- | :------- | :---------------------------------------------------------------- |
-| `adapter`          | `PaymentGateway`      | Yes      | `StripeAdapter` or `OmiseAdapter`                                 |
-| `preset`           | `CardFormPreset`      | No       | `'none' \| 'us' \| 'billing' \| 'contact'` (default: `'none'`)    |
-| `fields`           | `OptionalCardField[]` | No       | Array of optional elements to render                              |
-| `cardLabel`        | `string`              | No       | Overrides gateway text displayed in preview top-right             |
-| `submitButtonText` | `string`              | No       | Custom submit button label (default: `'Pay Now'`)                 |
-| `onSubmit`         | `Function`            | No       | Callback triggered after token retrieval; supports async Promises (and thenables) |
-| `onError`          | `Function`            | No       | Hook fired on client-side validation errors or gateway/request failures   |
-
-### Optional Fields presets (`CardFormPreset`)
-
-- `'none'`: Default core layout (Card Number, Expiry, CVC, Cardholder Name).
-- `'us'`: core fields + Postal Code (ZIP Code visual mapping) and Country.
-- `'billing'`: core fields + Address Line 1, City, State, Postal Code, Country.
-- `'contact'`: core fields + Email, Phone.
-
-> All fields activated by a preset (or listed in `fields`) are required, except
-> `addressLine2`. This applies consistently across Vanilla, React, and Angular.
-
----
-
-## 🛡️ Security & Anti-Leak Compliance
-
-1. **Vault CORS Requests Only**: Data is sent straight to the secure token vault servers from the client's browser session. Your server context never touches raw PAN details.
-2. **Strict Heap Sanitation**: Sensitive field values (CVC, PAN) are cleared or masked immediately after tokenization so they are never retained or echoed back into error objects.
-3. **Zero Logs**: The library does not contain loggers tracing card details, and its examples never `console.log` raw card values.
-4. **HTTPS Required**: Tokenization throws on insecure origins (`http:`), with `localhost`/`127.0.0.1` exempt for local development.
-5. **Accessible Semantics**: Supports accessibility keyboard focus tags, overlays ARIA markers, autocomplete attributes, and manages focus traps.
-6. **Publishable Keys Only — Never Secret Keys in Env**: The library only ever needs your **public** keys (`pk_…` Stripe, `pkey_…` Omise), read straight from the browser. If you use env vars (e.g. `VITE_STRIPE_PUBLIC_KEY`, `VITE_OMISE_PUBLIC_KEY`), they may hold **public keys only** — never put **secret** keys (`sk_…` Stripe, `skey_…` Omise) into `.env` files or any frontend config: everything shipped to the browser is visible to every visitor. As a safety net, the Stripe/Omise adapters throw at construction when handed a secret-looking key.
-
----
-
-## 📚 Examples
-
-This library includes comprehensive examples for both React and Angular integrations. All examples reference the library from the local `dist` folder for development, or you can install the package via npm.
-
-### Installation Options
-
-#### Option 1: Local Development (Using dist folder)
-
-For local development, you can reference the library directly from the `dist` folder:
-
-```bash
-# Build the library first
-npm run build
-
-# The dist folder will be created at the root
-# Examples can import from: @keeratita/card
-```
-
-In your `package.json` for examples:
-
-```json
-{
-  "dependencies": {
-    "@keeratita/card": "file:../.."
-  }
-}
-```
-
-#### Option 2: npm Installation
-
-For production or when not working within the monorepo:
-
-```bash
-npm install @keeratita/card
-```
-
-Make sure to install React (for hook integrations) if compiling framework wrappers.
-
-### React Examples
-
-Located in `examples/react/`:
-
-| Example                           | Description                                              | Key Features                        |
-| --------------------------------- | -------------------------------------------------------- | ----------------------------------- |
-| `basic-card-form.tsx`             | Simple integration using the `useCardForm` hook          | Basic form with token handling      |
-| `custom-form-with-presets.tsx`    | Demonstration of different form presets using the hook   | Preset switching, adapter selection |
-| `modal-checkout.tsx`              | Popover checkout modal implementation                    | Custom modal, hook-based management |
-| `form-with-custom-validation.tsx` | Custom validation logic combined with library validators | Error handling, validation modes    |
-| `multi-step-checkout.tsx`         | Complete multi-step checkout flow with step indicators   | Cart, shipping, payment steps       |
-
-#### Running React Examples
-
-```bash
-# 1. Build the library first from the root
-npm run build
-
-# 2. Navigate to the React examples directory
-cd examples/react
-
-# 3. Install dependencies (references local dist folder)
-npm install
-
-# 4. Start the development server
-npx vite
-```
-
-#### React Import Examples
-
-```tsx
-// Using useCardForm hook (headless)
-import { useCardForm } from '@keeratita/card/react';
-
-// Using country data
-import { COUNTRIES } from '@keeratita/card';
-
-// In vite.config.js for local development:
-// The package.json references "file:../.." to use local dist
-```
-
-> **Pre-built React components are available**: `CardForm`, `CreditCardPreview`, and the headless `useCardForm` hook. See [docs/react-usage.md](docs/react-usage.md) for the full component API. The `vanilla` entry point provides pre-built UI components (`CardForm`, `CardModal`) that require zero framework setup. Framework-agnostic helpers (validation, formatting — including the `formatPhone` / `reformatExpiryDate` / `validateCardNumberLength` / `isCardLengthValid` utilities) are exported from the root entry and documented alongside the React guide.
-
-### Angular Examples
-
-Located in `examples/angular/`:
-
-| Example                            | Description                                                | Key Features                 |
-| ---------------------------------- | ---------------------------------------------------------- | ---------------------------- |
-| `basic-card-form.component.ts`     | Basic integration using reactive forms                     | CardFormGroup directive      |
-| `form-with-presets.component.ts`   | Form with different preset configurations                  | Dynamic preset switching     |
-| `directives-demo.component.ts`     | Standalone input masking directives demo                   | Individual field directives  |
-| `custom-validators.component.ts`   | Custom validators combined with built-in validation        | Angular validators + library |
-| `multi-step-checkout.component.ts` | Multi-step checkout with billing address and order summary | Complete checkout flow       |
-
-#### Running Angular Examples
-
-```bash
-# 1. Build the library first from the root
-npm run build
-
-# 2. Navigate to the Angular examples directory
-cd examples/angular
-
-# 3. Install dependencies (references local dist folder)
-npm install
-
-# 4. Start the development server
-ng serve
-```
-
-#### Angular Import Examples
-
-```typescript
-// Using validators and directives
-import {
-  createCardFormGroup,
-  CardNumberDirective,
-  CardExpiryDirective,
-  CardCvcDirective,
-  COUNTRIES,
-  formatCardNumber,
-  formatExpiry,
-  creditCardValidator,
-  expiryValidator,
-  cvcValidator,
-} from '@keeratita/card/angular';
-
-// Using country selection component
-import { CountrySelectComponent } from '@keeratita/card/angular';
-
-// In angular.json for styles, reference the compiled library stylesheet:
-// "styles": ["node_modules/@keeratita/card/dist/vanilla/styles.css", "src/styles.scss"]
-// (The checked-in examples import their own copies for the demo site.)
-```
-
-### Project Structure
-
-```
-card/
-├── dist/                    # Built distribution files
-│   ├── react/              # React builds
-│   ├── angular/            # Angular builds
-│   └── vanilla/            # Vanilla JS builds
-├── examples/
-│   ├── react/              # React examples
-│   │   ├── package.json    # References "@keeratita/card": "file:../../dist"
-│   │   ├── vite.config.js
-│   │   └── *.tsx           # Example components
-│   └── angular/            # Angular examples
-│       ├── package.json    # References "@keeratita/card": "file:../.."
-│       ├── angular.json
-│       └── *.component.ts  # Example components
-└── src/                    # Source files
-    ├── react/
-    ├── angular/
-    └── vanilla/
-```
-
-See `examples/README.md` for more details.
-
----
-
-## Author
-
-- **Author**: Keerati Tansawatcharoen
-- **Email**: keerati.tansawatcharoen@gmail.com
-- **GitHub**: [keeratita/card](https://github.com/keeratita/card)
-
----
-
-## License
-
-MIT License. SIL Open Font License Inter typography stack. Custom MIT SVG brand icons.
-
----
-
-## 🌍 Country Dropdown with Flags
-
-The package includes a built-in country dropdown feature that displays country names with their respective flags using Unicode emoji representations.
-
-### Features
-
-- **244 Countries & Territories**: Pre-loaded with comprehensive international country data sorted alphabetically
-- **Flag Emojis**: Native Unicode flag rendering (no external image assets required)
-- **ISO 3166-1 Alpha-2 Codes**: Standard 2-letter country codes for form submission
-- **Dialing Codes**: International dialing codes included for reference
-
-### Usage
-
-#### Vanilla JavaScript
-
-```typescript
-import { CardForm } from '@keeratita/card/vanilla';
-import { COUNTRIES } from '@keeratita/card';
-
-// The country field is automatically rendered as a dropdown when included in the preset or fields
-const form = new CardForm('#payment-form', {
-  adapter: stripeAdapter,
-  preset: 'billing', // Includes country field
-});
-
-// Access country data directly
-const allCountries = COUNTRIES; // Array of Country objects
-const thailand = COUNTRIES.find((c) => c.code === 'TH');
-// { code: 'TH', name: 'Thailand', emoji: '🇹🇭', dialCode: '+66' }
-```
-
-#### React
-
-```tsx
-import { COUNTRIES, type Country } from '@keeratita/card';
-import { useCardForm } from '@keeratita/card/react';
-
-// Access country data directly for custom implementations
-const thailand: Country | undefined = COUNTRIES.find((c) => c.code === 'TH');
-// { code: 'TH', name: 'Thailand', emoji: '🇹🇭', dialCode: '+66' }
-```
-
-#### Angular
-
-```typescript
-import { Component } from '@angular/core';
-import { CountrySelectComponent } from '@keeratita/card/angular';
-import { COUNTRIES } from '@keeratita/card';
+import { createCardFormGroup, CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@keeratita/card/angular';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CountrySelectComponent],
+  imports: [CardNumberDirective, CardExpiryDirective, CardCvcDirective],
   template: `
-    <kg-country-select
-      controlName="country"
-      [value]="selectedCountry"
-      (countrySelected)="onCountryChange($event)"
-    >
-    </kg-country-select>
+    <form [formGroup]="checkoutForm">
+      <input kgCardNumber formControlName="number" placeholder="•••• •••• •••• ••••" />
+      <input kgCardExpiry formControlName="expiry" placeholder="MM/YY" />
+      <input kgCardCvc type="password" formControlName="cvc" [cardNumber]="number" placeholder="•••" />
+    </form>
   `,
 })
 export class CheckoutComponent {
-  selectedCountry = 'US';
-
-  onCountryChange(countryCode: string) {
-    console.log('Selected country:', countryCode);
-  }
+  checkoutForm: FormGroup = createCardFormGroup({ preset: 'us' });
+  get number() { return this.checkoutForm.get('number')?.value ?? ''; }
 }
 ```
 
-### Country Data Structure
+Individual validators (`creditCardValidator`, `expiryValidator`, `cvcValidator('number')`, `countryValidator`, …) are exported for hand-built form groups. Full guide: [docs/angular-usage.md](docs/angular-usage.md).
 
-```typescript
+## API reference
+
+### `CardFormOptions`
+
+| Attribute          | Type                  | Required | Description                                                        |
+| :----------------- | :-------------------- | :------- | :----------------------------------------------------------------- |
+| `adapter`          | `PaymentGateway`      | Yes      | `StripeAdapter` or `OmiseAdapter`                                  |
+| `preset`           | `CardFormPreset`      | No       | `'none' \| 'us' \| 'billing' \| 'contact'` (default `'none'`)      |
+| `fields`           | `OptionalCardField[]` | No       | Explicit list of optional fields to render                         |
+| `cardLabel`        | `string`              | No       | Overrides the gateway text in the preview's top-right              |
+| `submitButtonText` | `string`              | No       | Submit label (default `'Pay Now'`)                                 |
+| `onSubmit`         | `Function`            | No       | Runs after tokenization; async results are awaited (double-loading) |
+| `onError`          | `Function`            | No       | Fires on validation errors or gateway failures                     |
+
+### Presets
+
+| Preset      | Adds                                                          |
+| :---------- | :------------------------------------------------------------ |
+| `'none'`    | Card number, expiry, CVC, cardholder name                     |
+| `'us'`      | + postal code, country                                        |
+| `'billing'` | + address line 1, city, state, postal code, country           |
+| `'contact'` | + email, phone                                                |
+
+Every field a preset (or `fields`) adds is required, except `addressLine2` — in all three bindings.
+
+### Adapters
+
+Both take `{ publicKey }` and implement `PaymentGateway.tokenize(card)`. Pass **public** keys only (`pk_…`, `pkey_…`); constructing an adapter with a secret-looking key (`sk_…`, `skey_…`) throws immediately. Failures surface as `PaymentGatewayError` (with `ApiValidationError` / `NetworkError` subclasses).
+
+To add another gateway, implement `PaymentGateway` and pass your instance as `adapter`.
+
+### Formatting, validation and data helpers
+
+Everything below is exported from the package root and is framework-agnostic.
+
+| Group      | Exports |
+| :--------- | :------ |
+| Format     | `formatCardNumber`, `formatExpiry`, `formatCvc`, `formatPhone`, `cleanDigits`, `reformatExpiryDate` |
+| Validate   | `validateField`, `getFieldErrorMessage`, `validateCardNumber`, `validateCardNumberLength`, `isCardLengthValid`, `luhnCheck`, `validateExpiry`, `validateCvc`, `validateName`, `validateEmail`, `validatePhone`, `validatePostalCode`, `validateCountry` |
+| Brand      | `detectCardBrand`, `getCardNumberMaxLength` |
+| Country    | `COUNTRIES`, `getCountryByCode`, `getAllCountryCodes`, `isValidCountryCode`, `findCountryByCode`, `filterCountries` |
+| Sanitize   | `sanitizeInput`, `escapeHtml`, `maskSensitiveValue` |
+
+## Country dropdown with flags
+
+The country field renders as a searchable dropdown with Unicode flag emojis — no image assets. 244 countries and territories, sorted alphabetically, with ISO 3166-1 alpha-2 codes and dialing codes.
+
+```ts
+import { COUNTRIES, type Country } from '@keeratita/card';
+
+const thailand = COUNTRIES.find((c) => c.code === 'TH');
+// { code: 'TH', name: 'Thailand', emoji: '🇹🇭', dialCode: '+66' }
+```
+
+```ts
 interface Country {
-  code: string; // 2-letter ISO code (e.g., "TH", "US")
-  name: string; // Full country name (e.g., "Thailand")
-  emoji: string; // Flag emoji (e.g., "🇹🇭")
-  dialCode?: string; // International dialing code (e.g., "+66")
+  code: string; // ISO 3166-1 alpha-2, e.g. "TH"
+  name: string; // "Thailand"
+  emoji: string; // "🇹🇭"
+  dialCode?: string; // "+66"
 }
 ```
 
-### Available Functions
+In Angular, drop in `<kg-country-select controlName="country" [value]="selected" (countrySelected)="onCountry($event)" />` (import `CountrySelectComponent`). Codes match the `country` value the other bindings store.
 
-| Function                   | Description                      |
-| -------------------------- | -------------------------------- |
-| `COUNTRIES`                | Array of all available countries |
-| `getCountryByCode(code)`   | Get country object by ISO code   |
-| `getAllCountryCodes()`     | Get array of all country codes   |
-| `isValidCountryCode(code)` | Check if a code is valid         |
+## Reusable autocomplete
 
-### Available Countries
+`AutocompleteDropdown` is the iOS-styled combobox behind the country field, usable for any searchable list.
 
-The package includes **244 countries and territories** with ISO codes, flag emojis, and dialing codes. See the source code in `src/data/countries.ts` for the complete list.
-
----
-
-## 📚 Data Source & Citation
-
-### Country Data Source
-
-The country data (names, ISO codes, and flag emojis) in this package is based on the **REST Countries** project.
-
-- **Project**: [REST Countries](https://restcountries.com/)
-- **License**: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
-
-### Citation
-
-If you use this package in your project, please acknowledge the source:
-
-> Country data and flag emojis are based on the REST Countries project, licensed under CC BY 4.0. https://restcountries.com/
-
-### License Compatibility
-
-This package is released under the MIT License. The included country data is shared under the CC BY 4.0 license, which is compatible with MIT licensing for derivative works as long as proper attribution is provided.
-
----
-
-## 🔄 Reusable Autocomplete Dropdown Component
-
-The package includes a highly reusable, iOS-styled `AutocompleteDropdown` component that can be used for any field requiring a searchable, filterable dropdown list with icon/emoji support.
-
-### Features
-
-- **Searchable/Filterable**: Real-time filtering as users type — label
-  starts-with matches rank first, then label contains, then (by default) value
-  prefix/contains. Pass `includeValuePrefixMatch: false` for short-code values
-  (ISO countries, etc.) so a partial query only matches a value exactly
-- **iOS Glassmorphism Styling**: Matches the premium translucent design of the credit card form
-- **Keyboard Navigation**: Full support for ↑ ↓ Enter Escape keys, plus
-  type-ahead — typing a printable key while the list is closed opens it with
-  that character applied to the filter
-- **Icon/Emoji Support**: Display icons or emojis alongside each option
-- **Click Outside to Close**: Intuitive dismissal behavior, returning focus to
-  the trigger when the close came from inside the widget
-- **Extensible Base Class**: Custom rendering support via `customRender` callback
-- **Accessibility**: combobox/listbox semantics with `aria-activedescendant`,
-  `aria-setsize`/`aria-posinset` on the rows, and a polite live region that
-  announces the filtered result count
-
-### Basic Usage
-
-```typescript
-import {
-  AutocompleteDropdown,
-  AutocompleteOption,
-} from '@keeratita/card/vanilla';
-
-const options: AutocompleteOption[] = [
-  { value: 'apple', label: 'Apple', icon: '🍎' },
-  { value: 'banana', label: 'Banana', icon: '🍌' },
-  { value: 'cherry', label: 'Cherry', icon: '🍒' },
-];
+```ts
+import { AutocompleteDropdown, type AutocompleteOption } from '@keeratita/card/vanilla';
 
 const dropdown = new AutocompleteDropdown({
   container: '#my-dropdown',
-  options,
+  options: [
+    { value: 'apple', label: 'Apple', icon: '🍎' },
+    { value: 'banana', label: 'Banana', icon: '🍌' },
+  ],
   placeholder: 'Select a fruit...',
   searchPlaceholder: 'Search fruits...',
   noResultsText: 'No results found',
-  onSelect: (value, option) => {
-    console.log('Selected:', value, option);
-  },
+  onSelect: (value, option) => console.log(value, option),
 });
-
-// Programmatic control
-dropdown.setValue('apple');
-const selected = dropdown.getSelectedOption();
-dropdown.destroy();
 ```
 
-### Custom Rendering
+| Option                    | Type                    | Default    | Description |
+| :------------------------ | :---------------------- | :--------- | :---------- |
+| `container`               | `HTMLElement \| string` | —          | Container element or selector (required) |
+| `options`                 | `AutocompleteOption[]`  | —          | Dropdown options (required) |
+| `onSelect`                | `Function`              | —          | Selection callback (required) |
+| `placeholder`             | `string`                | `'Select...'` | Trigger placeholder |
+| `searchPlaceholder`       | `string`                | `'Search...'` | Search input placeholder |
+| `noResultsText`           | `string`                | `'No results found'` | Empty-state text |
+| `maxHeight`               | `number`                | `300`      | Maximum list height in px |
+| `showIcons`               | `boolean`               | `true`     | Show option icons/emojis |
+| `includeValuePrefixMatch` | `boolean`               | `true`     | Also match `value`s on prefix/contains. Set `false` for short codes (ISO countries) so a partial query only matches a value exactly — e.g. `"t"` never surfaces Chad `"TD"` |
 
-```typescript
-const options: AutocompleteOption[] = [
-  {
-    value: 'user1',
-    label: 'John Doe',
-    customRender: (option) => `
-      <img src="avatar.jpg" class="avatar" />
-      <span class="name">${option.label}</span>
-      <span class="email">john@example.com</span>
-    `,
-  },
-];
-```
+Options may supply `customRender(option)` returning HTML for rich rows (use `sanitizeInput`/`escapeHtml` on anything user-supplied).
 
-### Country-Specific Autocomplete
+**Keyboard:** ↑/↓ move with wrap-around · Enter selects · Escape closes and returns focus to the trigger · any printable key while closed opens the list with that character as the filter.
 
-For country selection with flag emojis, use the `CountryAutocomplete` component:
+**Accessibility:** trigger is a disclosure `button` (`aria-haspopup`, `aria-expanded`, `aria-controls` only while the list exists); the search input is the single `role=combobox` and owns `aria-activedescendant`; rows carry `aria-setsize`/`aria-posinset`; a polite live region announces the result count. The same contract holds in the React and Angular bindings.
 
-```typescript
-import { CountryAutocomplete } from '@keeratita/card/vanilla';
+**Methods:** `setValue(value)`, `getValue()`, `getSelectedOption()`, `updateOptions(options)`, `refreshOptions()`, `destroy()`. `CountryAutocomplete` is the country-specific variant, adding `getSelectedCountry()`.
 
-const countryDropdown = new CountryAutocomplete({
-  container: '#country-field',
-  placeholder: 'Select a country...',
-  searchPlaceholder: 'Search countries...',
-  onSelect: (countryCode, country) => {
-    console.log('Selected:', countryCode, country.emoji, country.name);
-    // country = { code: 'TH', name: 'Thailand', emoji: '🇹🇭', dialCode: '+66' }
-  },
-});
+## Security
 
-// Programmatic control
-countryDropdown.setValue('US');
-const selectedCountry = countryDropdown.getSelectedCountry();
-countryDropdown.destroy();
-```
+- **Browser-to-vault only.** Raw PAN/CVC go straight to the vault; your server never sees them and only receives the token.
+- **No retention.** Sensitive values are cleared or masked as soon as tokenization completes, and are never echoed into error objects.
+- **No logging.** The library contains no loggers that touch card data.
+- **HTTPS enforced.** Tokenization throws on insecure origins, with `localhost`/`127.0.0.1` exempt.
+- **Publishable keys only.** Everything shipped to the browser is public — keep secret keys (`sk_…`, `skey_…`) out of `.env` and frontend config.
+- **Sanitized input.** All user input passes through `sanitizeInput`/`escapeHtml` before reaching the DOM.
 
-### Configuration Options
+## Guides and examples
 
-| Option              | Type                    | Required | Description                                                      |
-| ------------------- | ----------------------- | -------- | ---------------------------------------------------------------- |
-| `container`         | `HTMLElement \| string` | Yes      | Container element or CSS selector                                |
-| `options`           | `AutocompleteOption[]`  | Yes      | Array of dropdown options                                        |
-| `onSelect`          | `Function`              | Yes      | Callback when an option is selected                              |
-| `placeholder`       | `string`                | No       | Input placeholder text (default: `'Select...'`)                  |
-| `searchPlaceholder` | `string`                | No       | Search input placeholder (default: `'Search...'`)                |
-| `noResultsText`     | `string`                | No       | Text shown when no results match (default: `'No results found'`) |
-| `maxHeight`         | `number`                | No       | Maximum dropdown height in pixels (default: `300`)               |
-| `showIcons`         | `boolean`               | No       | Show/hide icons (default: `true`)                                |
-| `includeValuePrefixMatch` | `boolean`       | No       | Also match option `value`s on prefix/contains (default: `true`). Set `false` when values are short codes so partial queries only match a value exactly |
+- [React usage](docs/react-usage.md) — component API, `useCardForm`, styling.
+- [Angular usage](docs/angular-usage.md) — form groups, validators, directives, `CountrySelectComponent`.
+- [Examples](examples/README.md) — runnable Vanilla, React and Angular demos.
 
-### Keyboard Navigation
+## Data source and citation
 
-| Key                   | Action                                                       |
-| --------------------- | ------------------------------------------------------------ |
-| ↑                     | Move to the previous option (wraps to the last at the top)    |
-| ↓                     | Move to the next option (wraps to the first at the bottom)    |
-| Enter                 | Select the highlighted option                                 |
-| Escape                | Close the dropdown and return focus to the trigger            |
-| Any printable key     | While closed: open the dropdown with that key as the filter   |
+Country names, ISO codes and flag emojis are based on [REST Countries](https://restcountries.com/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). If you use this package, please acknowledge the source:
 
-### Public API
+> Country data and flag emojis are based on the REST Countries project, licensed under CC BY 4.0. https://restcountries.com/
 
-| Method                   | Description                             |
-| ------------------------ | --------------------------------------- |
-| `setValue(value)`        | Programmatically set the selected value |
-| `getValue()`             | Get the current input value             |
-| `getSelectedOption()`    | Get the currently selected option       |
-| `updateOptions(options)` | Replace all options                     |
-| `refreshOptions()`       | Reset to original options               |
-| `destroy()`              | Remove the component and clean up       |
+The included country data is shared under CC BY 4.0, which is compatible with this package's MIT license provided attribution is retained.
+
+## Author
+
+- **Keerati Tansawatcharoen** · keerati.tansawatcharoen@gmail.com · [GitHub](https://github.com/keeratita/card)
+
+## License
+
+MIT. Inter typography stack under the SIL Open Font License; brand icons are custom MIT-licensed SVGs.
