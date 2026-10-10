@@ -33,7 +33,8 @@ src/
   lang/               # Localization strings (en.ts)
 tests/                # Mirrors src/ layout (tests/core, tests/vanilla, tests/react, tests/angular)
 docs/                 # Framework guides (react-usage.md, angular-usage.md) + design/review notes
-examples/             # Runnable demos: vanilla/, react/, angular/
+examples/             # Runnable demos: vanilla/, react/, angular/ — npm workspaces,
+                      # installed from the repo root (no per-example npm install, no per-example lockfile)
 scripts/              # generate-dist-package-json.js (build helper)
 ```
 

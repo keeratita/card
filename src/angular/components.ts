@@ -28,10 +28,10 @@ let nextInstanceId = 0;
 /** Angular component for searchable country dropdown with flag emojis. */
 @Component({
   selector: 'kg-country-select',
-  // Explicitly standalone: the library ships runtime decorators (esbuild/tsup),
-  // not ngtsc partial declarations, so the Angular AOT compiler only recognizes
-  // standalone metadata when the flag is present ("standalone by default"
-  // applies to app sources compiled by ngtsc, not to external libs).
+  // Standalone is stated explicitly rather than inherited from the v19+
+  // default: the published entry is ngtsc partial output (see
+  // scripts/ship-angular-partial.js), and consumers compile that with their own
+  // toolchain, so the metadata should not depend on a compiler default version.
   host: {
     '(document:click)': 'onDocumentClick($event)',
     '(window:resize)': 'onWindowResize()',

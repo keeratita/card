@@ -106,6 +106,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `countrySelected`.
 
 ### Fixed
+- **The Angular example consumed a vendored copy of `CountrySelectComponent`.**
+  It now imports the component from `@keeratita/card/angular` and compiles it
+  AOT with `strictTemplates`, so the demo exercises the published artifact
+  instead of a hand-synced mirror (which had already drifted once). The earlier
+  explanation — that the entry shipped runtime decorators — was wrong:
+  `dist/angular` always carried ngtsc partial declarations, and grepping the
+  bundle for `ɵ` missed them because esbuild emits `\u0275`. The real blocker
+  was two copies of `@angular/core`, resolved through the example's
+  `"@keeratita/card": "file:../.."` link.
+- **The test suite depended on which `esbuild` happened to be hoisted.** The
+  Angular sources use Angular's legacy `@Component`/`@Directive` decorators, but
+  the root `tsconfig.json` never set `experimentalDecorators`, so tools read them
+  as standard decorators. When the hoisted esbuild could not lower them, raw
+  `@(...)` syntax reached Node and four suites failed with
+  `SyntaxError: Invalid or unexpected token`. The flag is now explicit, so the
+  suite no longer depends on dependency hoisting.
+- **The React example shipped a forked copy of the library stylesheet.**
+  `examples/react/public/styles.css` (122 rules, every one restating a library
+  class: 92 byte-identical, the rest stale — older placeholder alphas, a
+  320px list height, a blanket `.field-error { display: block }`) is deleted.
+  The demo now styles itself entirely from
+  `@keeratita/card/vanilla/styles.css` plus its own inline shell styles, and
+  validation errors still show through the library's
+  `.ios-input-row.invalid .field-error` rule.
+- **The examples are npm workspaces**, installed from the repo root; their
+  per-directory lockfiles are removed. Hoisting leaves a single `@angular/*`
+  tree, which is what lets the Angular example import the library's
+  signal-input components. The root `overrides` block is gone: each toolchain
+  resolves the vite it was built against (`@angular/build` → `8.3.0` exactly,
+  the React example → `^8.3.0`). The old global `vite`/`esbuild` pins were the
+  direct cause of `ng serve` dying with *"Transforming destructuring to the
+  configured target environment is not supported yet"* once the examples shared
+  a resolution — root overrides had not reached them while they were separate
+  package roots.
+- **`examples/angular` uses the `@angular/build` builders** (`application`,
+  `dev-server`, `extract-i18n`) instead of the deprecated
+  `@angular-devkit/build-angular` webpack dev-server, with `@angular/build`
+  declared in the example's devDependencies.
 
 - **Angular trigger role inversion**: the trigger reported `role="combobox"`
   while *closed* and `role="button"` while *open* — the inverse of the contract

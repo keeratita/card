@@ -16,6 +16,14 @@
     "declarationMap": true,
     "sourceMap": true,
     "jsx": "react-jsx",
+    // The Angular sources use Angular's legacy `@Component`/`@Directive`
+    // decorators. Without this, tools treat them as standard (TC39) decorators,
+    // which the esbuild bundled by our vite does not lower — the raw `@(...)`
+    // syntax then reaches Node and the Vitest suites die with
+    // "SyntaxError: Invalid or unexpected token". Pinning the flavor here is
+    // what makes the Angular tests independent of which esbuild version gets
+    // hoisted (matches examples/angular/tsconfig.json).
+    "experimentalDecorators": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "useDefineForClassFields": false,

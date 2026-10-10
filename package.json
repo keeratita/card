@@ -33,6 +33,10 @@
     "dist",
     "README.md"
   ],
+  "workspaces": [
+    "examples/angular",
+    "examples/react"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -94,11 +98,11 @@
     }
   },
   "devDependencies": {
-    "@angular/compiler": "^22.1.1",
-    "@angular/compiler-cli": "^22.1.1",
-    "@angular/core": "^22.1.1",
-    "@angular/forms": "^22.1.1",
-    "@angular/platform-browser-dynamic": "^22.1.1",
+    "@angular/compiler": "^22.2.2",
+    "@angular/compiler-cli": "^22.2.2",
+    "@angular/core": "^22.2.2",
+    "@angular/forms": "^22.2.2",
+    "@angular/platform-browser-dynamic": "^22.2.2",
     "@eslint/js": "^10.0.1",
     "@release-it/bumper": "^7.0.6",
     "@testing-library/jest-dom": "^6.9.1",
@@ -114,9 +118,5 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.1",
     "vitest": "^4.1.8"
-  },
-  "overrides": {
-    "esbuild": "0.28.1",
-    "vite": "6.4.3"
   }
 }
