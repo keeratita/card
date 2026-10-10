@@ -223,16 +223,24 @@ let nextInstanceId = 0;
       </label>
 
       <div class="country-select-wrapper" (click)="toggleDropdown()" (keydown)="onKeydown($event)">
-        <!-- Trigger: disclosure when open — the focused search input is the combobox -->
+        <!--
+          Trigger: always a plain disclosure button, in both states. While the
+          list is open the focused search input is the single role=combobox
+          (it owns aria-autocomplete / aria-controls / aria-activedescendant).
+          Same contract as the React and vanilla bindings — a trigger that
+          announced itself as a combobox while closed would make the three
+          entry points behave differently for screen readers.
+        -->
         <div
           #countryTrigger
           [id]="triggerId"
           class="country-select-trigger"
           [class.open]="isOpen()"
           [class.invalid]="invalid()"
-          [attr.role]="isOpen() ? 'button' : 'combobox'"
+          role="button"
           [attr.aria-expanded]="isOpen()"
           [attr.aria-haspopup]="'listbox'"
+          [attr.aria-controls]="isOpen() ? listId : null"
           [attr.aria-invalid]="invalid() ? 'true' : null"
           [attr.aria-labelledby]="labelId"
           [attr.aria-required]="required()"
@@ -537,8 +545,14 @@ export class CountrySelectComponent {
   /** Closes the dropdown when a click lands outside the component (host listener). */
   onDocumentClick(event: MouseEvent): void {
     if (!this.isOpen()) return;
-    if (!this.hostElement.nativeElement.contains(event.target as Node)) {
+    const host = this.hostElement.nativeElement as HTMLElement;
+    if (!host.contains(event.target as Node)) {
+      // Focus inside the list would be dropped to <body> when the list
+      // unmounts, so return it to the trigger — the same rule the vanilla and
+      // React bindings apply on every close path.
+      const focusWasInside = host.contains(document.activeElement);
       this.dispatch({ type: 'close' });
+      if (focusWasInside) this.focusTrigger();
     }
   }
 

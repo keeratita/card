@@ -945,4 +945,77 @@ describe('CountryAutocomplete Component', () => {
       expect(input.value).toBe('🇺🇸 United States');
     });
   });
+
+  // Every close path must hand focus back to the trigger: the search input is
+  // unmounted on close, so without this focus lands on <body> and keyboard
+  // users lose their place. Same contract as the vanilla and Angular bindings.
+  describe('focus management', () => {
+    function openAndGetHandles() {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />,
+      );
+      const trigger = container.querySelector(
+        '.country-autocomplete-input',
+      ) as HTMLInputElement;
+      fireEvent.click(trigger);
+      const search = document.querySelector(
+        '.country-autocomplete-search',
+      ) as HTMLInputElement;
+      return { trigger, search };
+    }
+
+    it('returns focus to the trigger after a keyboard selection', () => {
+      const { trigger, search } = openAndGetHandles();
+      fireEvent.focus(search);
+      fireEvent.keyDown(search, { key: 'ArrowDown' });
+      fireEvent.keyDown(search, { key: 'Enter' });
+
+      expect(mockOnChange).toHaveBeenCalledWith('AF');
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('returns focus to the trigger after a pointer selection', () => {
+      const { trigger, search } = openAndGetHandles();
+      fireEvent.focus(search);
+      const row = document.querySelector(
+        '.country-autocomplete-item',
+      ) as HTMLElement;
+      fireEvent.click(row);
+
+      expect(mockOnChange).toHaveBeenCalled();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('returns focus to the trigger when an outside mousedown closes the list', () => {
+      const { trigger, search } = openAndGetHandles();
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+
+      // Real focus (not fireEvent.focus, which only dispatches an event):
+      // the handler reads document.activeElement.
+      search.focus();
+      expect(document.activeElement).toBe(search);
+      fireEvent.mouseDown(outside);
+
+      expect(document.activeElement).toBe(trigger);
+      outside.remove();
+    });
+
+    it('leaves focus alone when the outside click happened with nothing focused inside', () => {
+      const { search } = openAndGetHandles();
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      const other = document.createElement('button');
+      document.body.appendChild(other);
+      other.focus();
+
+      fireEvent.mouseDown(outside);
+
+      // Focus was never inside the widget: don't steal it.
+      expect(document.activeElement).toBe(other);
+      expect(search.isConnected).toBe(false);
+      other.remove();
+      outside.remove();
+    });
+  });
 });

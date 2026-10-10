@@ -292,6 +292,72 @@ $border-color: rgba(255, 255, 255, 0.08);
   }
 }
 
+// Stacked field used by the React binding's `FormField` (label above the
+// input, error below) — the iOS rows above are horizontal, so this component
+// needs its own rules. Without them `FormField` renders unstyled for React
+// consumers, even though they import this stylesheet.
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+
+  &.form-field--error {
+    .form-field__label {
+      color: $ios-red;
+    }
+
+    .form-field__input {
+      border-bottom-color: $ios-red;
+    }
+  }
+}
+
+.form-field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-secondary;
+  letter-spacing: 0.01em;
+}
+
+.form-field__required {
+  color: $ios-red;
+  margin-left: 2px;
+}
+
+.form-field__input {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid $border-color;
+  color: $text-primary;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 6px 0;
+  outline: none;
+  transition: border-bottom-color 0.2s;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  &:focus-visible {
+    border-bottom-color: $ios-blue;
+  }
+
+  &:autofill,
+  &:-webkit-autofill {
+    box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.05) inset !important;
+    -webkit-text-fill-color: $text-primary !important;
+  }
+}
+
+.form-field__error {
+  color: $ios-red;
+  font-size: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
 // Country dropdown specific styles
 .card-country-input {
   padding: 0;

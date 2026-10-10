@@ -20,6 +20,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `comboboxFilter`, `computeDropdownPlacement`) for open/close, filtering,
   keyboard navigation, and viewport placement, so behavior stays consistent
   and drifts are fixed in one place.
+- **Stylesheets are importable subpaths**: `@keeratita/card/vanilla/styles.css`
+  and `@keeratita/card/vanilla/styles.min.css` are now in the `exports` map, so
+  the documented React statement `import '@keeratita/card/vanilla/styles.css'`
+  actually resolves (it previously threw `ERR_PACKAGE_PATH_NOT_EXPORTED`).
+- **React `FormField` is styled by the library**: the shared stylesheet gained a
+  `.form-field` block (`__label`, `__input`, `__error`, `__required`, the
+  `--error` modifier). Those class names existed only in the React example's
+  private copy of the CSS, so consumers who imported the library stylesheet got
+  a completely unstyled stacked field.
+- **`npm run test:dist`**: a consumer suite that imports the *built* artifacts
+  through the `package.json` `exports` map — all four entries, both
+  stylesheets, and a JIT render of the shipped `CountrySelectComponent` — so a
+  broken bundler config, a missing subpath, or a stale Angular intermediate
+  fails loudly instead of shipping. It skips itself when `dist/` is absent, so
+  plain `npm test` still works on a fresh clone.
 
 ### Changed
 
@@ -89,6 +104,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `countryChange` still emits `{ name, value }` where `name` is the control
   name (not the country name). The bundled examples now bind
   `countrySelected`.
+
+### Fixed
+
+- **Angular trigger role inversion**: the trigger reported `role="combobox"`
+  while *closed* and `role="button"` while *open* — the inverse of the contract
+  the React and vanilla bindings implement, which left screen readers with no
+  stable disclosure control and a second combobox competing with the search
+  input. The trigger is now a `button` in both states and points
+  `aria-controls` at the listbox only while that listbox exists. The existing
+  Angular test had asserted the inverted value, which is why the unit suite
+  stayed green; it now asserts the disclosure role and that exactly one element
+  is a combobox.
+- **Focus dropped to `<body>` when a country list closed** (React selection and
+  outside click; Angular outside click). The search input is unmounted on close,
+  so unless focus is moved explicitly the keyboard user loses their place. Every
+  close path in all three bindings now returns focus to the trigger — matching a
+  native `<select>` — and only when focus was actually inside the widget, so an
+  outside click that hit nothing focused does not steal focus.
+- **Documented React stylesheet import failed**: `@keeratita/card/vanilla/styles.css`
+  was not in the `exports` map, so every React app that followed the guide
+  failed to build. (The Angular guide's `angular.json` path kept working because
+  it references the file directly rather than through the exports map.)
+- `reformatExpiryDate`/`validateCardNumberLength` shipped behavior is now pinned
+  by the artifact suite, not just the source suite, so a build-time regression
+  (e.g. an Angular entry rebuilt from stale intermediates) cannot pass unnoticed.
 
 ## [3.0.0] - 2026-08-13
 

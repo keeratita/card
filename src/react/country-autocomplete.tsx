@@ -164,7 +164,13 @@ export function CountryAutocomplete({
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
+        // Same rule as the other bindings: if focus was inside the list, it
+        // must land back on the trigger instead of <body>.
+        const focusWasInside = containerRef.current.contains(
+          document.activeElement,
+        );
         dispatch({ type: 'close' });
+        if (focusWasInside) inputRef.current?.focus();
       }
     }
     if (isOpen) {
@@ -327,6 +333,11 @@ export function CountryAutocomplete({
     (countryCode: string) => {
       onChange(countryCode);
       dispatch({ type: 'close' });
+      // Selection closes the list while the search input still has focus; the
+      // unmounted input would drop focus to <body>, so hand it back to the
+      // trigger — matching the vanilla and Angular bindings and a native
+      // <select>, and keeping keyboard users in the tab order.
+      inputRef.current?.focus();
     },
     [onChange],
   );

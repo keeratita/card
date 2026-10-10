@@ -78,6 +78,26 @@ describe('Angular Components - CountrySelectComponent', () => {
       expect(list).toBeNull();
     });
 
+    it('should return focus to the trigger when an outside click closes the list', () => {
+      createComponent();
+      openDropdown();
+      const search = fixture.nativeElement.querySelector(
+        '.country-select-search-input',
+      ) as HTMLInputElement;
+      search.focus();
+      expect(document.activeElement).toBe(search);
+
+      document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      fixture.detectChanges();
+
+      const trigger = fixture.nativeElement.querySelector(
+        '.country-select-trigger',
+      ) as HTMLElement;
+      // The list unmounts, so focus has to be moved explicitly or it lands
+      // on <body> and keyboard users lose their place.
+      expect(document.activeElement).toBe(trigger);
+    });
+
     it('should close the dropdown on Escape and restore focus to the trigger', () => {
       createComponent();
       openDropdown();
@@ -291,7 +311,7 @@ describe('Angular Components - CountrySelectComponent', () => {
   });
 
   describe('accessibility wiring', () => {
-    it('should associate the label with the trigger and expose combobox semantics', () => {
+    it('should associate the label with the trigger and expose disclosure semantics', () => {
       createComponent();
       const label = fixture.nativeElement.querySelector(
         '.ios-label',
@@ -300,13 +320,19 @@ describe('Angular Components - CountrySelectComponent', () => {
         '.country-select-trigger',
       ) as HTMLElement;
       // `for`/`id` pairing plus an explicit aria-labelledby: the trigger is a
-      // div[role=combobox], which `label[for]` alone cannot name.
+      // div[role=button], which `label[for]` alone cannot name.
       expect(label.getAttribute('for')).toBe(trigger.id);
       expect(trigger.getAttribute('aria-labelledby')).toBe(label.id);
       expect(trigger.textContent).toContain('Country');
-      expect(trigger.getAttribute('role')).toBe('combobox');
+      // The trigger is a disclosure button in *both* states — the same
+      // contract the React and vanilla bindings implement. (The search input
+      // owns the combobox role while the list is open; asserting 'combobox'
+      // here would lock in the drift the unification removed.)
+      expect(trigger.getAttribute('role')).toBe('button');
       expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      // No dangling IDREF: aria-controls appears with the listbox only.
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
       // Country is a required field by default.
       expect(trigger.getAttribute('aria-required')).toBe('true');
       expect(
@@ -325,6 +351,32 @@ describe('Angular Components - CountrySelectComponent', () => {
       ) as HTMLElement;
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(list.getAttribute('aria-labelledby')).toBe(trigger.id);
+    });
+
+    it('should keep one combobox role and a live aria-controls reference', () => {
+      createComponent();
+      openDropdown();
+      const el = fixture.nativeElement as HTMLElement;
+      const trigger = el.querySelector('.country-select-trigger') as HTMLElement;
+      const list = el.querySelector('.country-select-list') as HTMLElement;
+      const search = el.querySelector(
+        '.country-select-search-input',
+      ) as HTMLInputElement;
+
+      // Exactly one element announces itself as the combobox: the focused
+      // search input, never the trigger.
+      expect(trigger.getAttribute('role')).toBe('button');
+      expect(search.getAttribute('role')).toBe('combobox');
+      expect(el.querySelectorAll('[role="combobox"]')).toHaveLength(1);
+
+      // Both point at the listbox that actually exists in the DOM.
+      expect(trigger.getAttribute('aria-controls')).toBe(list.id);
+      expect(search.getAttribute('aria-controls')).toBe(list.id);
+
+      // And both references go away when the list unmounts.
+      trigger.click();
+      fixture.detectChanges();
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
 
     it('should namespace ids per instance so two widgets never collide', () => {

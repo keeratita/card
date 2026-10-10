@@ -114,8 +114,10 @@ import '@keeratita/card/vanilla/styles.css';
 
 Without it the form still works and stays accessible (screen-reader-only
 text such as the result-count live region is hidden with inline styles), but
-it renders unstyled. Override any class in your own stylesheet afterwards to
-match your design system.
+it renders unstyled. It covers every component the React entry exports —
+including `FormField`, whose `form-field__*` classes exist nowhere else in the
+package. Override any class in your own stylesheet afterwards to match your
+design system.
 
 ---
 

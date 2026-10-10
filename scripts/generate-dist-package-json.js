@@ -40,7 +40,16 @@ const distPackageJson = {
       types: './angular/index.d.ts',
       import: './angular/index.mjs',
       require: './angular/index.js'
-    }
+    },
+    // Stylesheets are public API: the guides tell React consumers to
+    // `import '@keeratita/card/vanilla/styles.css'` and the Angular example
+    // names the built file in angular.json. Keep these in sync with the root
+    // `exports` map — this generated manifest is the one the workspace
+    // symlink (`node_modules/@keeratita/card` -> `dist`) resolves through, so
+    // dropping them breaks the example builds with
+    // ERR_PACKAGE_PATH_NOT_EXPORTED even though the root map lists them.
+    './vanilla/styles.css': './vanilla/styles.css',
+    './vanilla/styles.min.css': './vanilla/styles.min.css'
   },
   files: ['.'],
   keywords: rootPackageJson.keywords,

@@ -25,7 +25,9 @@
       "types": "./dist/angular/index.d.ts",
       "import": "./dist/angular/index.mjs",
       "require": "./dist/angular/index.js"
-    }
+    },
+    "./vanilla/styles.css": "./dist/vanilla/styles.css",
+    "./vanilla/styles.min.css": "./dist/vanilla/styles.min.css"
   },
   "files": [
     "dist",
@@ -42,6 +44,7 @@
     "build:angular": "ngc -p tsconfig.ngc.partial.json && tsup src/angular/index.ts --format cjs,esm --dts --external @angular/core,@angular/forms --out-dir dist/angular && node scripts/ship-angular-partial.js",
     "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
     "test": "vitest run",
+    "test:dist": "vitest run tests/dist-consumer.test.ts",
     "lint": "eslint src",
     "prepare": "husky",
     "demo": "npx http-server . -p 3000 -c-1 --cors & sleep 2 && open http://localhost:3000/examples/vanilla/index.html",
