@@ -107,6 +107,27 @@ Enforced by ESLint (`eslint.config.mjs`) and `tsconfig.json`:
   missing `exports` subpath, or a stale `.ngcompile` intermediate. Run
   `npm run build && npm run test:dist` before releasing.
 
+## Dependencies & `npm audit` posture
+
+The library ships **no runtime dependencies** (peer deps only), so `npm audit --omit=dev` is clean and every
+finding is dev/release tooling. Current state — read this before "cleaning up" `package.json`:
+
+- **`overrides.basic-ftp` (keep it).** `release-it → proxy-agent → pac-proxy-agent → get-uri` pins
+  `basic-ftp ^5.x`, a line with no patched release; 6.2.1+ fixes the quadratic-time directory-listing
+  parser (GHSA-c475-qrg2-pj4r). `get-uri` only uses basic-ftp for `ftp:` fetches, and basic-ftp v6's sole
+  breaking change (separate transfer hosts now off by default) does not apply there.
+- **`release-it` v21 + `@release-it/bumper` v8.** v21 pins patched `undici` (7.29.1); v8 of bumper is the
+  release-it-21-compatible peer. Bumper 8 still honours the `text/typescript` bump of `PACKAGE_VERSION`.
+- **`braces` (GHSA-vfj7-8cjw-p6xm) — accepted, do not chase.** No patched release exists upstream
+  (`first_patched_version: null`), and `npm audit fix --force` "fixes" it by downgrading
+  `@release-it/bumper` to 1.2.0 — worse than the finding. It is reachable only through
+  `@release-it/bumper → fast-glob`, which globs the file patterns in `.release-it.json` (repo-controlled,
+  not attacker-controlled). Never run `npm audit fix --force` in this repo.
+- **`examples/angular` has no `@angular-devkit/build-angular`** on purpose — the example builds and serves
+  with `@angular/build` (`angular.json` uses `@angular/build:application` / `:dev-server` / `:extract-i18n`).
+  That devDependency was the only path to `webpack-dev-server → http-proxy-middleware → micromatch → braces`;
+  re-adding it re-opens four advisories.
+
 ## Security
 
 This library handles **raw payment card data (PAN, CVC)** in the browser. Non-negotiables:
@@ -149,3 +170,6 @@ Before considering a change complete:
 4. `npm run test:dist` — the built artifacts (all four entries, both stylesheets,
    the shipped Angular component) behave like the source they were built from.
 5. If examples/tests touch rendering, sanity-check via `npm run demo` where feasible.
+6. `npm audit --omit=dev` — stays clean (the shipped package has no runtime deps). A dev-only finding may be
+   accepted per [Dependencies & `npm audit` posture](#dependencies--npm-audit-posture); never fix one with
+   `npm audit fix --force`.
