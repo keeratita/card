@@ -19,10 +19,8 @@ import {
   createCardFormGroup,
   updateCardFormGroup,
   CardFormGroupValue,
+  CountrySelectComponent,
 } from '@keeratita/card/angular';
-// Vendored mirror of the library component — see the note in that file for
-// why the example cannot import it from `@keeratita/card/angular` yet.
-import { CountrySelectComponent } from '@keeratita/card/angular';
 import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
 

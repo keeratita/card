@@ -204,7 +204,7 @@ The Angular package exports validator functions that produce specific error keys
 | `creditCardValidator()` | `creditCard` | Card number fails Luhn check (only when 13+ digits typed) |
 | `expiryValidator()` | `expiryInvalid` | Invalid MM/YY format or expired date |
 | `cvcValidator()` | `cvcInvalid` | CVC length doesn't match card brand (3 or 4 digits) |
-| `cardholderNameValidator()` | `cardholderNameInvalid` | Name doesn't contain first + last name |
+| `cardholderNameValidator()` | `cardholderNameInvalid` | Name is empty after sanitizing (no first + last name requirement) |
 | `emailValidator()` | `emailInvalid` | Invalid email format |
 | `phoneValidator()` | `phoneInvalid` | Phone number too short (need 8+ digits) |
 | `postalCodeValidator()` | `postalCodeInvalid` | Postal code too short (need 4+ chars) |
@@ -254,7 +254,8 @@ cvc: ['', [Validators.required, cvcValidator('cardNumber')]];
 
 ### `cardholderNameValidator()`
 
-Validates that the cardholder name contains at least a first name and a last name.
+Validates that the cardholder name is non-empty after sanitizing (the library
+does not require a separate first and last name).
 
 ```typescript
 cardholderName: ['', [Validators.required, cardholderNameValidator()]];
@@ -484,8 +485,6 @@ export class CheckoutComponent {
 - **Keyboard**: ↑/↓ move the highlight (wrapping at both ends), Enter selects,
   Escape closes and returns focus to the trigger, and typing a printable key
   while collapsed opens the list with that key applied as the filter.
-- **Lazy rendering**: 20 rows render at a time; the window grows as you scroll
-  or arrow past the current page.
 - **Viewport aware**: the list is clamped to the space below the trigger and
   keeps a usable minimum height; it recomputes on window resize.
 - **Accessibility**: combobox/listbox semantics with `aria-activedescendant`,

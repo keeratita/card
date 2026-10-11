@@ -402,7 +402,12 @@ export function CountryAutocomplete({
       }
 
       if (!isOpen) {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        if (
+          e.key === 'Enter' ||
+          e.key === ' ' ||
+          e.key === 'ArrowDown' ||
+          e.key === 'ArrowUp'
+        ) {
           e.preventDefault();
           openDropdown();
           return;

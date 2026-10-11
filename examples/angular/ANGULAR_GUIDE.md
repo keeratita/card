@@ -41,7 +41,7 @@ import { createCardFormGroup } from '@keeratita/card/angular';
   selector: 'app-checkout',
   template: `
     <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()">
-      <input formControlName="cardNumber" placeholder="•••• •••• •••• ••••" />
+      <input formControlName="number" placeholder="•••• •••• •••• ••••" />
       <input formControlName="expiry" placeholder="MM/YY" />
       <input formControlName="cvc" placeholder="•••" />
       <input formControlName="name" placeholder="Cardholder Name" />
@@ -185,7 +185,8 @@ cvc: ['', [Validators.required, cvcValidator('cardNumber')]];
 
 ### `cardholderNameValidator()`
 
-Validates that the cardholder name contains at least a first name and a last name.
+Validates that the cardholder name is non-empty after sanitizing (the library
+does not require a separate last name).
 
 ```typescript
 cardholderName: ['', [Validators.required, cardholderNameValidator()]];

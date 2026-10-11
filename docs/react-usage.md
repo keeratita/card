@@ -332,7 +332,7 @@ interface CardFormProps {
 | ----------- | -------------------- | ------------------------------------------------------------------- |
 | `'none'`    | Core fields only     | Card Number, Expiry, CVC, Name                                      |
 | `'us'`      | US cardholder        | + Postal Code (ZIP), Country                                         |
-| `'billing'` | Full billing address | + Address Line 1, Address Line 2, City, State, Postal Code, Country |
+| `'billing'` | Full billing address | + Address Line 1, City, State, Postal Code, Country        |
 | `'contact'` | Contact details      | + Email, Phone                                                      |
 
 ### Card Form Values
@@ -669,10 +669,10 @@ validateCvc('12', '4242424242424242'); // => false (too short)
 ```typescript
 import { detectCardBrand } from '@keeratita/card';
 
-detectCardBrand('4242424242424242'); // => "VISA"
-detectCardBrand('5500000000000004'); // => "MASTERCARD"
-detectCardBrand('340000000000009'); // => "AMEX"
-detectCardBrand('6011000000000004'); // => "DISCOVER"
+detectCardBrand('4242424242424242'); // => "visa"
+detectCardBrand('5500000000000004'); // => "mastercard"
+detectCardBrand('340000000000009'); // => "amex"
+detectCardBrand('6011000000000004'); // => "discover"
 detectCardBrand(''); // => "unknown" (default for invalid/empty input)
 ```
 

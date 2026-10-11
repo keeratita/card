@@ -35,7 +35,7 @@ tests/                # Mirrors src/ layout (tests/core, tests/vanilla, tests/re
 docs/                 # Framework guides (react-usage.md, angular-usage.md) + design/review notes
 examples/             # Runnable demos: vanilla/, react/, angular/ — npm workspaces,
                       # installed from the repo root (no per-example npm install, no per-example lockfile)
-scripts/              # generate-dist-package-json.js (build helper)
+scripts/              # generate-dist-package-json.js + ship-angular-partial.js (build helpers)
 ```
 
 Source layout rule: **code lives in `src/`, tests in `tests/`, mirroring the same folder structure** (e.g. `src/react/useCardForm.ts` → `tests/react/useCardForm.test.ts`).
@@ -44,7 +44,7 @@ Source layout rule: **code lives in `src/`, tests in `tests/`, mirroring the sam
 
 | Command | Purpose |
 | --- | --- |
-| `npm run build` | Full build: tsup (all 4 entry points, CJS+ESM+dts), dist package.json generation, and SASS compilation |
+| `npm run build` | Full build: Angular partial compile (`ngc -p tsconfig.ngc.partial.json`), tsup (all 4 entry points, CJS+ESM+dts), dist package.json generation, shipping the Angular partial output (`node scripts/ship-angular-partial.js`), and SASS compilation |
 | `npm run build:core` / `build:vanilla` / `build:react` / `build:angular` | Build a single entry point |
 | `npm run dev` | Watch mode for tsup + sass |
 | `npm test` | Run all Vitest tests (jsdom environment) |

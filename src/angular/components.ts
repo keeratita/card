@@ -582,7 +582,12 @@ export class CountrySelectComponent {
   // Keyboard navigation
   onKeydown(event: KeyboardEvent): void {
     if (!this.isOpen()) {
-      if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+      if (
+        event.key === 'Enter' ||
+        event.key === ' ' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp'
+      ) {
         event.preventDefault();
         this.openDropdown();
         return;
