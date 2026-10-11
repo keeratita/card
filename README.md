@@ -196,7 +196,7 @@ Everything below is exported from the package root and is framework-agnostic.
 | :--------- | :------ |
 | Format     | `formatCardNumber`, `formatExpiry`, `formatCvc`, `formatPhone`, `cleanDigits`, `reformatExpiryDate` |
 | Validate   | `validateField`, `getFieldErrorMessage`, `validateCardNumber`, `validateCardNumberLength`, `isCardLengthValid`, `luhnCheck`, `validateExpiry`, `validateCvc`, `validateName`, `validateEmail`, `validatePhone`, `validatePostalCode`, `validateCountry` |
-| Brand      | `detectCardBrand`, `getCardNumberMaxLength` |
+| Brand      | `detectCardBrand`, `getCardNumberMaxLength`, `getExpectedCvcLength` |
 | Country    | `COUNTRIES`, `getCountryByCode`, `getAllCountryCodes`, `isValidCountryCode`, `findCountryByCode`, `filterCountries` |
 | Sanitize   | `sanitizeInput`, `escapeHtml`, `maskSensitiveValue` |
 
