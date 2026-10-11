@@ -21,6 +21,7 @@ import {
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../core/form';
+import { DROPDOWN_DEFAULT_MAX_HEIGHT, DROPDOWN_Z_INDEX } from '../core/constants';
 import type { ComboboxAction, ComboboxState } from '../core/form';
 
 // Unique DOM-id namespace per instance, so multiple country selects on one
@@ -105,7 +106,6 @@ let nextInstanceId = 0;
       border: 1px solid #d0d7de;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      z-index: 1000;
       overflow: hidden;
     }
 
@@ -263,7 +263,11 @@ let nextInstanceId = 0;
 
         <!-- Dropdown -->
         @if (isOpen()) {
-          <div class="country-select-dropdown" (click)="$event.stopPropagation()">
+          <div
+            class="country-select-dropdown"
+            [style.zIndex]="dropdownZIndex"
+            (click)="$event.stopPropagation()"
+          >
             <!-- Search -->
             <div class="country-select-search">
               <input
@@ -360,7 +364,7 @@ export class CountrySelectComponent {
   readonly searchPlaceholder = CARD_FORM_TEXT_EN.searchCountries;
 
   /** Layout facts of the dropdown (kept in sync with the styles block). */
-  private static readonly LIST_MAX_HEIGHT = 240;
+  private static readonly LIST_MAX_HEIGHT = DROPDOWN_DEFAULT_MAX_HEIGHT;
   /** Minimum usable list height before the dropdown is simply unusable. */
   private static readonly LIST_MIN_HEIGHT = 96;
   /** Distance from the trigger to the list top: dropdown offset + search row. */
@@ -387,6 +391,9 @@ export class CountrySelectComponent {
   );
   /** Max height of the list, clamped to the viewport on open. */
   listMaxHeight = signal(CountrySelectComponent.LIST_MAX_HEIGHT);
+
+  /** Popover stacking, shared with the other two bindings through core. */
+  readonly dropdownZIndex = DROPDOWN_Z_INDEX;
 
   // Selected country computed from value input
   selectedCountry = computed(() => {
