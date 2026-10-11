@@ -17,6 +17,8 @@ export { maskSensitiveValue } from './mask';
 export {
   comboboxReduce,
   comboboxFilter,
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
   moveHighlight,
@@ -25,6 +27,9 @@ export type {
   ComboboxState,
   ComboboxAction,
   ComboboxItem,
+  ComboboxKeyCommand,
+  ComboboxKeyModifiers,
+  ComboboxKeyTarget,
   ComboboxFilterOptions,
   DropdownAnchor,
   DropdownPlacement,

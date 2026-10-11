@@ -11,6 +11,8 @@ import {
   filterCountries,
   findCountryByCode,
   comboboxReduce,
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../core/form';
@@ -362,83 +364,50 @@ export function CountryAutocomplete({
     [],
   );
 
-  const handleSearchKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        dispatch({ type: 'close' });
-        if (inputRef.current) inputRef.current.focus();
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        e.stopPropagation();
-        moveHighlight('down');
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        e.stopPropagation();
-        moveHighlight('up');
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        selectHighlighted();
-      }
-    },
-    [moveHighlight, selectHighlighted],
-  );
+  // Both keydown paths defer the key map to `comboboxKeyCommand` in core, so
+  // the three bindings cannot disagree about which key does what; this only
+  // executes the returned command against React state and refs.
+  const handleKeydown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>, target: 'trigger' | 'search') => {
+      const command = comboboxKeyCommand(e.key, state, target, {
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+      });
+      if (!isComboboxKeyHandled(command)) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-  const handleMainInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        dispatch({ type: 'close' });
-        return;
-      }
-
-      if (!isOpen) {
-        if (
-          e.key === 'Enter' ||
-          e.key === ' ' ||
-          e.key === 'ArrowDown' ||
-          e.key === 'ArrowUp'
-        ) {
-          e.preventDefault();
+      switch (command.type) {
+        case 'open':
           openDropdown();
-          return;
-        }
-        // Type-ahead: typing a character opens the dropdown with that
-        // character pre-applied to the filter (the trigger is readOnly, so
-        // no text can strand in it). Matches the vanilla binding.
-        if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-          e.preventDefault();
-          openDropdown();
-          dispatch({ type: 'setQuery', query: e.key });
-        }
-        return;
-      }
-
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          moveHighlight('down');
+          if (command.query !== undefined) {
+            dispatch({ type: 'setQuery', query: command.query });
+          }
           break;
-        case 'ArrowUp':
-          e.preventDefault();
-          moveHighlight('up');
+        case 'close':
+          dispatch({ type: 'close' });
+          if (command.restoreFocusToTrigger) inputRef.current?.focus();
           break;
-        case 'Enter':
-          e.preventDefault();
+        case 'move':
+          moveHighlight(command.direction);
+          break;
+        case 'select':
           selectHighlighted();
           break;
       }
     },
-    [isOpen, moveHighlight, selectHighlighted, openDropdown],
+    [state, openDropdown, moveHighlight, selectHighlighted],
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => handleKeydown(e, 'search'),
+    [handleKeydown],
+  );
+
+  const handleMainInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => handleKeydown(e, 'trigger'),
+    [handleKeydown],
   );
 
   // Lazy loading indicator

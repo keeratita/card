@@ -16,6 +16,8 @@ import {
   filterCountries,
   findCountryByCode,
   comboboxReduce,
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../core/form';
@@ -581,69 +583,51 @@ export class CountrySelectComponent {
 
   // Keyboard navigation
   onKeydown(event: KeyboardEvent): void {
-    if (!this.isOpen()) {
-      if (
-        event.key === 'Enter' ||
-        event.key === ' ' ||
-        event.key === 'ArrowDown' ||
-        event.key === 'ArrowUp'
-      ) {
-        event.preventDefault();
-        this.openDropdown();
-        return;
-      }
-      // Type-ahead: typing a character opens with that character applied
-      // to the filter (matches the vanilla binding; the trigger is a div,
-      // so no text can strand in it).
-      if (
-        event.key.length === 1 &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-        this.openDropdown();
-        this.dispatch({ type: 'setQuery', query: event.key });
+    // The wrapper hosts keydown for both the trigger and the search input, so
+    // the target is derived from what actually has focus. The key map itself
+    // lives in core (`comboboxKeyCommand`) and is shared with the other two
+    // bindings; this method only executes the returned command.
+    const target = (event.target as HTMLElement | null)?.classList?.contains(
+      'country-select-search-input',
+    )
+      ? 'search'
+      : 'trigger';
+    const command = comboboxKeyCommand(event.key, this.comboboxState(), target, {
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+      altKey: event.altKey,
+    });
+    if (!isComboboxKeyHandled(command)) return;
+    event.preventDefault();
+
+    if (command.type === 'open') {
+      this.openDropdown();
+      if (command.query !== undefined) {
+        this.dispatch({ type: 'setQuery', query: command.query });
       }
       return;
     }
-
-    switch (event.key) {
-      case 'ArrowDown': {
-        event.preventDefault();
-        this.dispatch({
-          type: 'move',
-          direction: 'down',
-          count: this.filteredCountries().length,
-        });
-        this.scrollHighlightedIntoView();
-        break;
-      }
-      case 'ArrowUp': {
-        event.preventDefault();
-        this.dispatch({
-          type: 'move',
-          direction: 'up',
-          count: this.filteredCountries().length,
-        });
-        this.scrollHighlightedIntoView();
-        break;
-      }
-      case 'Enter': {
-        event.preventDefault();
-        const highlighted = this.filteredCountries()[this.highlightedIndex()];
-        if (highlighted) {
-          this.selectCountry(highlighted);
-        }
-        break;
-      }
-      case 'Escape': {
-        event.preventDefault();
-        this.dispatch({ type: 'close' });
-        // Restore focus to the trigger so keyboard users don't lose their place.
-        this.focusTrigger();
-        break;
-      }
+    if (command.type === 'close') {
+      // Every keydown reaching this handler originates inside the component, so
+      // the trigger always gets focus back. The "don't steal focus" rule belongs
+      // to the outside-click path (`onDocumentClick`), which is the only close
+      // that can originate elsewhere.
+      this.dispatch({ type: 'close' });
+      this.focusTrigger();
+      return;
+    }
+    if (command.type === 'move') {
+      this.dispatch({
+        type: 'move',
+        direction: command.direction,
+        count: this.filteredCountries().length,
+      });
+      this.scrollHighlightedIntoView();
+      return;
+    }
+    if (command.type === 'select') {
+      const highlighted = this.filteredCountries()[this.highlightedIndex()];
+      if (highlighted) this.selectCountry(highlighted);
     }
   }
 }

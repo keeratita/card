@@ -40,7 +40,19 @@ export interface ComboboxState {
 }
 
 export type ComboboxAction =
-  | { type: 'open' }
+  | {
+      /**
+       * Opens with a fresh list by default. `query` pre-applies a filter
+       * (type-ahead from the closed trigger) and `highlight` pre-selects a row
+       * (the current selection, so `aria-activedescendant` starts somewhere
+       * meaningful). Bindings must not spread the reduced state to seed these
+       * themselves — that is how "reopen highlights the selection" ended up a
+       * vanilla-only behavior.
+       */
+      type: 'open';
+      query?: string;
+      highlight?: number;
+    }
   | { type: 'close' }
   | { type: 'toggle' }
   | { type: 'setQuery'; query: string }
@@ -64,7 +76,11 @@ export function comboboxReduce(
 ): ComboboxState {
   switch (action.type) {
     case 'open':
-      return { isOpen: true, query: '', highlightedIndex: -1 };
+      return {
+        isOpen: true,
+        query: action.query ?? '',
+        highlightedIndex: action.highlight ?? -1,
+      };
     case 'close':
       return { isOpen: false, query: '', highlightedIndex: -1 };
     case 'toggle':
@@ -94,6 +110,95 @@ export function comboboxReduce(
         `Unknown combobox action: ${String((_exhaustive as { type?: unknown }).type)}`,
       );
     }
+  }
+}
+
+/**
+ * Which element received the key. `trigger` is the always-present disclosure
+ * control (closed or open); `search` is the filter input that only exists while
+ * the list is open. The distinction is load-bearing: Space must stay a typeable
+ * character in the search box, and closing from the search box has to hand
+ * focus back to the trigger while closing from the trigger must not move focus.
+ */
+export type ComboboxKeyTarget = 'trigger' | 'search';
+
+export interface ComboboxKeyModifiers {
+  metaKey?: boolean;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+}
+
+export type ComboboxKeyCommand =
+  | { type: 'open'; query?: string }
+  | { type: 'close'; restoreFocusToTrigger: boolean }
+  | { type: 'move'; direction: 'up' | 'down' }
+  | { type: 'select' }
+  | { type: 'ignore' };
+
+/** True when a command consumes the key event (caller should `preventDefault`). */
+export function isComboboxKeyHandled(command: ComboboxKeyCommand): boolean {
+  return command.type !== 'ignore';
+}
+
+/**
+ * The single source of truth for combobox keyboard behavior.
+ *
+ * Each binding used to hand-write this switch, and the same decisions drifted
+ * apart — ArrowUp opened the list in vanilla but not in React/Angular, Enter
+ * while closed selected a row in one binding and did nothing in another, and
+ * the type-ahead modifier guard was copy-pasted three times. Anything about
+ * *which key does what* belongs here; bindings only execute the returned
+ * command (and supply `count` when dispatching `move`, which they know and
+ * this module must not).
+ */
+export function comboboxKeyCommand(
+  key: string,
+  state: ComboboxState,
+  target: ComboboxKeyTarget,
+  modifiers: ComboboxKeyModifiers = {},
+): ComboboxKeyCommand {
+  if (key === 'Escape') {
+    // Closing from the search box leaves focus on a removed element, so hand
+    // it back to the trigger; from the trigger, focus is already there.
+    return { type: 'close', restoreFocusToTrigger: target === 'search' };
+  }
+
+  if (!state.isOpen) {
+    // Only the trigger can open the list. The search input does not exist while
+    // closed, and letting it open (or navigate) would let a key reaching a
+    // hidden element drive the widget.
+    if (target === 'search') return { type: 'ignore' };
+    if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === ' ') {
+      return { type: 'open' };
+    }
+    // Type-ahead: a bare printable character opens the list with that
+    // character pre-applied to the filter.
+    if (
+      key.length === 1 &&
+      !modifiers.metaKey &&
+      !modifiers.ctrlKey &&
+      !modifiers.altKey
+    ) {
+      return { type: 'open', query: key };
+    }
+    return { type: 'ignore' };
+  }
+
+  switch (key) {
+    case 'ArrowDown':
+      return { type: 'move', direction: 'down' };
+    case 'ArrowUp':
+      return { type: 'move', direction: 'up' };
+    case 'Enter':
+      if (state.highlightedIndex >= 0) return { type: 'select' };
+      // Nothing is highlighted: activating the trigger dismisses the list it
+      // just opened, while the search box leaves the open list alone (Space
+      // and typing must not be interpreted as a commit).
+      return target === 'trigger'
+        ? { type: 'close', restoreFocusToTrigger: false }
+        : { type: 'ignore' };
+    default:
+      return { type: 'ignore' };
   }
 }
 

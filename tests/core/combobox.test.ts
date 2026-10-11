@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
+  type ComboboxKeyModifiers,
+} from '../../src/core/form/combobox';
+import {
   comboboxReduce,
   comboboxFilter,
   computeDropdownPlacement,
@@ -258,6 +263,108 @@ describe('Core Form - combobox', () => {
       expect(formBarrel.comboboxFilter([item], 'th', options)).toHaveLength(1);
       expect(placement.placement).toBe('below');
       expect(anchor.bottom).toBe(10);
+    });
+  });
+});
+
+const open = (highlightedIndex = -1, query = ''): ComboboxState => ({
+  isOpen: true,
+  query,
+  highlightedIndex,
+});
+const closed: ComboboxState = { isOpen: false, query: '', highlightedIndex: -1 };
+
+describe('comboboxKeyCommand', () => {
+  it('is the single key map: activation keys open a closed list from the trigger', () => {
+    for (const key of ['ArrowDown', 'ArrowUp', 'Enter', ' ']) {
+      expect(comboboxKeyCommand(key, closed, 'trigger')).toEqual({ type: 'open' });
+    }
+  });
+
+  it('does not let the search input open a closed list', () => {
+    for (const key of ['ArrowDown', 'ArrowUp', 'Enter', ' ']) {
+      expect(comboboxKeyCommand(key, closed, 'search')).toEqual({ type: 'ignore' });
+    }
+  });
+
+  it('opens a closed list with a bare printable character as the filter', () => {
+    expect(comboboxKeyCommand('t', closed, 'trigger')).toEqual({
+      type: 'open',
+      query: 't',
+    });
+  });
+
+  it.each([
+    ['with meta', { metaKey: true }],
+    ['with ctrl', { ctrlKey: true }],
+    ['with alt', { altKey: true }],
+  ])('ignores a modified key %s so shortcuts are not swallowed', (_label, mods) => {
+    expect(
+      comboboxKeyCommand('t', closed, 'trigger', mods as ComboboxKeyModifiers),
+    ).toEqual({ type: 'ignore' });
+  });
+
+  it('navigates and selects while open', () => {
+    expect(comboboxKeyCommand('ArrowDown', open(0), 'trigger')).toEqual({
+      type: 'move',
+      direction: 'down',
+    });
+    expect(comboboxKeyCommand('ArrowUp', open(3), 'search')).toEqual({
+      type: 'move',
+      direction: 'up',
+    });
+    expect(comboboxKeyCommand('Enter', open(2), 'search')).toEqual({
+      type: 'select',
+    });
+  });
+
+  it('keeps Space typeable in the search input and inert on the trigger', () => {
+    expect(comboboxKeyCommand(' ', open(0), 'search')).toEqual({ type: 'ignore' });
+    expect(comboboxKeyCommand(' ', open(0), 'trigger')).toEqual({ type: 'ignore' });
+  });
+
+  it('dismisses from the trigger when nothing is highlighted, but does not commit from the search box', () => {
+    expect(comboboxKeyCommand('Enter', open(-1), 'trigger')).toEqual({
+      type: 'close',
+      restoreFocusToTrigger: false,
+    });
+    expect(comboboxKeyCommand('Enter', open(-1), 'search')).toEqual({
+      type: 'ignore',
+    });
+  });
+
+  it('returns focus to the trigger only when closing from the search box', () => {
+    expect(comboboxKeyCommand('Escape', open(1), 'search')).toEqual({
+      type: 'close',
+      restoreFocusToTrigger: true,
+    });
+    expect(comboboxKeyCommand('Escape', open(1), 'trigger')).toEqual({
+      type: 'close',
+      restoreFocusToTrigger: false,
+    });
+  });
+
+  it('reports every command except ignore as handled', () => {
+    expect(isComboboxKeyHandled({ type: 'ignore' })).toBe(false);
+    expect(isComboboxKeyHandled({ type: 'open' })).toBe(true);
+    expect(isComboboxKeyHandled({ type: 'close', restoreFocusToTrigger: false })).toBe(true);
+  });
+});
+
+describe("comboboxReduce 'open' seeding", () => {
+  it('applies query and highlight, so bindings never spread the reduced state', () => {
+    expect(comboboxReduce(closed, { type: 'open', query: 'th', highlight: 5 })).toEqual({
+      isOpen: true,
+      query: 'th',
+      highlightedIndex: 5,
+    });
+  });
+
+  it('defaults to a fresh unhighlighted list', () => {
+    expect(comboboxReduce(open(4, 'stale'), { type: 'open' })).toEqual({
+      isOpen: true,
+      query: '',
+      highlightedIndex: -1,
     });
   });
 });

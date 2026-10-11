@@ -17,6 +17,8 @@
 import {
   comboboxFilter,
   comboboxReduce,
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../../core/form';
@@ -326,79 +328,48 @@ export class AutocompleteDropdown {
     });
   }
 
-  private handleInputKeydown(e: KeyboardEvent): void {
-    if (!this.isOpen) {
-      // Closed: activation keys only open the dropdown. Navigating or
-      // selecting from the closed list would commit a row the user never
-      // saw (and desync from React/Angular, which open on these keys).
-      switch (e.key) {
-        case 'ArrowDown':
-        case 'ArrowUp':
-        case 'Enter':
-        case ' ':
-          e.preventDefault();
-          this.open();
-          return;
-        default:
-          // Type-ahead: open with the typed character pre-applied to the
-          // filter. The trigger is readOnly, so no text can strand in it.
-          if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-            e.preventDefault();
-            this.open(e.key);
-          }
-          return;
-      }
-    }
+  /**
+   * Both keydown paths funnel through `comboboxKeyCommand`, so the key map is
+   * decided once in core for all three bindings; this method only executes the
+   * returned command against the DOM. `target` distinguishes the always-present
+   * trigger from the search input that exists only while the list is open.
+   */
+  private handleKeydown(e: KeyboardEvent, target: 'trigger' | 'search'): void {
+    const command = comboboxKeyCommand(e.key, this.state, target, {
+      metaKey: e.metaKey,
+      ctrlKey: e.ctrlKey,
+      altKey: e.altKey,
+    });
+    if (!isComboboxKeyHandled(command)) return;
+    e.preventDefault();
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        this.highlightNext();
+    switch (command.type) {
+      case 'open':
+        this.open(command.query ?? '');
         break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.highlightPrevious();
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (this.highlightedIndex >= 0) {
-          this.selectOption(this.highlightedIndex);
-        } else {
-          this.close();
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
+      case 'close':
         this.close();
+        if (command.restoreFocusToTrigger) this.inputEl.focus();
+        break;
+      case 'move':
+        if (command.direction === 'down') this.highlightNext();
+        else this.highlightPrevious();
+        break;
+      case 'select':
+        this.selectOption(this.state.highlightedIndex);
         break;
     }
+  }
+
+  private handleInputKeydown(e: KeyboardEvent): void {
+    this.handleKeydown(e, 'trigger');
   }
 
   private handleSearchKeydown(e: KeyboardEvent): void {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        this.highlightNext();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.highlightPrevious();
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (this.highlightedIndex >= 0) {
-          this.selectOption(this.highlightedIndex);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        this.close();
-        this.inputEl.focus();
-        break;
-    }
+    this.handleKeydown(e, 'search');
   }
 
-  /**
+/**
    * Opens the dropdown, resetting the filter (the previous query must not
    * persist) and highlighting the current selection so reopening shows
    * where it sits in the list. `initialQuery` pre-filters (used by trigger
@@ -408,13 +379,14 @@ export class AutocompleteDropdown {
   private open(initialQuery = ''): void {
     if (this.isOpen) return;
 
-    this.state = {
-      ...comboboxReduce(this.state, { type: 'open' }),
+    this.state = comboboxReduce(this.state, {
+      type: 'open',
       query: initialQuery,
-      highlightedIndex: initialQuery
-        ? -1
-        : this.getSelectedIndex(),
-    };
+      // Type-ahead starts unhighlighted so the first typed character
+      // decides the list; a plain open lands on the current selection
+      // so aria-activedescendant points somewhere meaningful.
+      highlight: initialQuery ? -1 : this.getSelectedIndex(),
+    });
 
     // Reset the search box to match the (re)set query.
     this.searchInputEl.value = initialQuery;
