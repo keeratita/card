@@ -15,44 +15,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unreachable).
 - **Angular**: `CountrySelectComponent` now emits `countrySelected` — a
   code-only output mirroring the React `onChange` contract.
-- **Country autocomplete**: all three bindings (vanilla, React, Angular) now
-  back up to the same framework-agnostic combobox core (`comboboxReduce`,
-  `comboboxFilter`, `computeDropdownPlacement`) for open/close, filtering,
-  keyboard navigation, and viewport placement, so behavior stays consistent
-  and drifts are fixed in one place.
+- **Country autocomplete behaves the same in every binding**: vanilla, React
+  and Angular now share one implementation of open/close, filtering, keyboard
+  navigation and viewport placement, so the country field no longer differs
+  depending on which framework you use.
 - **Stylesheets are importable subpaths**: `@keeratita/card/vanilla/styles.css`
   and `@keeratita/card/vanilla/styles.min.css` are now in the `exports` map, so
   the documented React statement `import '@keeratita/card/vanilla/styles.css'`
   actually resolves (it previously threw `ERR_PACKAGE_PATH_NOT_EXPORTED`).
 - **React `FormField` is styled by the library**: the shared stylesheet gained a
   `.form-field` block (`__label`, `__input`, `__error`, `__required`, the
-  `--error` modifier). Those class names existed only in the React example's
-  private copy of the CSS, so consumers who imported the library stylesheet got
-  a completely unstyled stacked field.
-- **`npm run test:dist`**: a consumer suite that imports the *built* artifacts
-  through the `package.json` `exports` map — all four entries, both
-  stylesheets, and a JIT render of the shipped `CountrySelectComponent` — so a
-  broken bundler config, a missing subpath, or a stale Angular intermediate
-  fails loudly instead of shipping. It skips itself when `dist/` is absent, so
-  plain `npm test` still works on a fresh clone.
-
+  `--error` modifier), so an app that imports the library stylesheet gets a
+  styled stacked field instead of an unstyled one.
 - **New core export**: `getExpectedCvcLength(brand)` returns how many digits a
-  brand's CVC prints (Amex 4, everything else 3). The rule was being
-  re-derived at four call sites — one React field capped every brand at 4 —
-  so it now lives beside `detectCardBrand`.
+  brand's CVC prints — Amex 4, every other brand 3.
 
 ### Changed
 
 - `addressLine2` is now consistently optional across all bindings: an empty
   value no longer fails `validateField` (was already optional in Angular), and
   the vanilla form no longer marks it `required`.
-- `FormField` (React) renders its input hints from a compile-checked table
-  (`Record<keyof CardFormValues, FieldInputConfig>`), so a field added to
-  `CardFormValues` without a configuration is a build error instead of a
-  runtime crash on `config.type`. `country` keeps the `country` autocomplete
-  token (the stored value is an ISO 2-letter code, not a country name) and
-  `phone` uses `tel`; a test asserts the autocomplete hints still agree with
-  the core `FIELD_METADATA` the other two bindings render from.
+- `FormField` (React) renders correct autocomplete hints — `country` for the
+  country field (the stored value is an ISO 2-letter code, not a country name)
+  and `tel` for the phone field.
 - Angular `CountrySelectComponent`: click-outside closes the dropdown,
   Escape restores focus to the trigger, the live region is wired as a proper
   `combobox`/`listbox` with `aria-activedescendant`, and the list is clamped
@@ -102,61 +87,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stylesheet. Both framework guides now document importing
   `@keeratita/card/vanilla/styles.css` (React import, Angular `angular.json`
   `styles` entry).
-
-- **The country autocomplete key map has a single definition.**
-  `comboboxKeyCommand()` in core decides what each key does (open, close,
-  move, select, or nothing) and the three bindings only execute the returned
-  command. Each binding had hand-written the same switch, which is how
-  `ArrowUp` opened the list in vanilla while doing nothing in React or
-  Angular: **`ArrowUp` on a closed control now opens the list in all three
-  bindings.** Standardized in the same pass: the search input cannot drive a
-  closed list, closing from the search box hands focus back to the trigger,
-  and closing from the trigger leaves focus where it is.
-- **Popover geometry is shared.** `z-index` and the default list height come
-  from `DROPDOWN_Z_INDEX` / `DROPDOWN_DEFAULT_MAX_HEIGHT` in core rather than
-  a literal in each binding. The Angular list grows from 240px to 300px to
-  match the vanilla and React widgets, and its stacking level moved from its
-  inline stylesheet to a binding on the shared constant.
-- **Field length bounds come from `src/core/constants.ts`.** Card numbers are
-  gated by `MIN_CARD_NUMBER_LENGTH`/`MAX_CARD_NUMBER_LENGTH` (the values were
-  hardcoded `13`/`19` in three places), the expiry input's `maxLength` is
-  `MAX_EXPIRY_DISPLAY_LENGTH` (`MM / YY`), and CVC inputs size themselves with
-  `getExpectedCvcLength(brand)`.
+- **Keyboard behavior is now identical across the three bindings**: **`ArrowUp`
+  on a closed country select opens the list in React and Angular** (it already
+  did in vanilla), Escape or Enter from the search box returns focus to the
+  trigger, closing from the trigger leaves focus alone, and keys reaching the
+  hidden search input can no longer drive a closed list.
+- The Angular dropdown list is now 300px tall and stacks like the vanilla and
+  React widgets (it was 240px and in a different stacking range), so the three
+  country fields look and layer the same.
 
 ### Deprecated
 
 - Angular `CountrySelectComponent.countryChange` — use `countrySelected`;
   `countryChange` still emits `{ name, value }` where `name` is the control
-  name (not the country name). The bundled examples now bind
-  `countrySelected`.
+  name (not the country name).
 
 ### Fixed
 
-- **The Angular example now uses the shipped `CountrySelectComponent`**: it
-  imports the component from `@keeratita/card/angular` and compiles it AOT
-  with `strictTemplates`, so the demo exercises the published artifact instead
-  of a hand-synced copy.
-- **The test suite no longer depends on which `esbuild` happens to be
-  hoisted**: the legacy Angular decorators are now compiled with an explicit
-  flag instead of relying on dependency hoisting.
-- **The React demo now uses the published stylesheet**: it styles itself
-  entirely from `@keeratita/card/vanilla/styles.css` (plus its own inline
-  shell styles); the forked copy of the library stylesheet is deleted.
-- **The examples are npm workspaces**, installed once from the repo root;
-  their per-directory lockfiles are removed.
-- **`examples/angular` now runs on the `@angular/build` builders**
-  (`application`, `dev-server`, `extract-i18n`) instead of the deprecated
-  webpack dev-server.
-
+- **React: the CVC field no longer accepts 4 digits for non-Amex cards** — the
+  limit now follows the brand, matching what the formatter already enforced.
+- **The shipped `CountrySelectComponent` works in an AOT application with
+  `strictTemplates`**, so Angular apps can import it from
+  `@keeratita/card/angular` instead of keeping a local copy.
 - **Angular trigger role inversion**: the trigger reported `role="combobox"`
   while *closed* and `role="button"` while *open* — the inverse of the contract
   the React and vanilla bindings implement, which left screen readers with no
   stable disclosure control and a second combobox competing with the search
   input. The trigger is now a `button` in both states and points
-  `aria-controls` at the listbox only while that listbox exists. The existing
-  Angular test had asserted the inverted value, which is why the unit suite
-  stayed green; it now asserts the disclosure role and that exactly one element
-  is a combobox.
+  `aria-controls` at the listbox only while that listbox exists, so a screen
+  reader sees one stable disclosure control and one combobox.
 - **Focus dropped to `<body>` when a country list closed** (React selection and
   outside click; Angular outside click). The search input is unmounted on close,
   so unless focus is moved explicitly the keyboard user loses their place. Every
@@ -167,17 +126,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was not in the `exports` map, so every React app that followed the guide
   failed to build. (The Angular guide's `angular.json` path kept working because
   it references the file directly rather than through the exports map.)
-- `reformatExpiryDate`/`validateCardNumberLength` shipped behavior is now pinned
-  by the artifact suite, not just the source suite, so a build-time regression
-  (e.g. an Angular entry rebuilt from stale intermediates) cannot pass unnoticed.
 
 ### Removed
 
 - Dead rules in the published stylesheet: `.form-section-header` was declared
   twice with the earlier block fully shadowed by the later one, and
-  `.row-country .ios-input-row` was declared twice with identical
-  declarations. A compiled-CSS diff before and after confirms nothing else
-  changed.
+  `.row-country .ios-input-row` was declared twice with identical declarations.
+  Both were unreachable, so no rendered output changes.
 
 ## [3.0.0] - 2026-08-13
 
