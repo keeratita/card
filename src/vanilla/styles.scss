@@ -203,16 +203,6 @@ $border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* --- FORM SECTION (iOS STYLE GROUPED LIST) --- */
-.form-section-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: $text-secondary;
-  margin-left: 16px;
-  margin-top: 16px;
-  margin-bottom: 8px;
-}
 
 .ios-grouped-list {
   background-color: $card-bg;
@@ -292,6 +282,72 @@ $border-color: rgba(255, 255, 255, 0.08);
   }
 }
 
+// Stacked field used by the React binding's `FormField` (label above the
+// input, error below) — the iOS rows above are horizontal, so this component
+// needs its own rules. Without them `FormField` renders unstyled for React
+// consumers, even though they import this stylesheet.
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+
+  &.form-field--error {
+    .form-field__label {
+      color: $ios-red;
+    }
+
+    .form-field__input {
+      border-bottom-color: $ios-red;
+    }
+  }
+}
+
+.form-field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-secondary;
+  letter-spacing: 0.01em;
+}
+
+.form-field__required {
+  color: $ios-red;
+  margin-left: 2px;
+}
+
+.form-field__input {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid $border-color;
+  color: $text-primary;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 6px 0;
+  outline: none;
+  transition: border-bottom-color 0.2s;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  &:focus-visible {
+    border-bottom-color: $ios-blue;
+  }
+
+  &:autofill,
+  &:-webkit-autofill {
+    box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.05) inset !important;
+    -webkit-text-fill-color: $text-primary !important;
+  }
+}
+
+.form-field__error {
+  color: $ios-red;
+  font-size: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
 // Country dropdown specific styles
 .card-country-input {
   padding: 0;
@@ -343,14 +399,6 @@ $border-color: rgba(255, 255, 255, 0.08);
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-}
-
-// Row with country dropdown
-.row-country {
-  .ios-input-row {
-    display: flex;
-    align-items: center;
   }
 }
 
@@ -618,8 +666,16 @@ $border-color: rgba(255, 255, 255, 0.08);
   cursor: pointer;
   text-align: left;
 
+  // Disclosure affordance (chevron), so the combobox is visually distinct
+  // from the free-text rows around it.
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255, 255, 255, 0.5)' d='M2.5 4.5L6 8l3.5-3.5' stroke='rgba(255, 255, 255, 0.5)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 24px;
+
   &::placeholder {
-    color: rgba(255, 255, 255, 0.2);
+    color: $text-secondary;
   }
 }
 
@@ -726,7 +782,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 .autocomplete-no-results {
   padding: 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: $text-secondary; // >= 4.5:1 on the panel background (AA for body text)
   font-size: 14px;
 }
 
@@ -778,8 +834,15 @@ $border-color: rgba(255, 255, 255, 0.08);
   cursor: pointer;
   text-align: left;
 
+  // Disclosure affordance (chevron), matching the vanilla combobox.
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255, 255, 255, 0.5)' d='M2.5 4.5L6 8l3.5-3.5' stroke='rgba(255, 255, 255, 0.5)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 24px;
+
   &::placeholder {
-    color: rgba(255, 255, 255, 0.2);
+    color: $text-secondary;
   }
 }
 
@@ -886,7 +949,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 .country-autocomplete-empty {
   padding: 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: $text-secondary; // >= 4.5:1 on the panel background (AA for body text)
   font-size: 14px;
   list-style: none;
 }
@@ -894,11 +957,25 @@ $border-color: rgba(255, 255, 255, 0.08);
 .country-autocomplete-loading {
   padding: 10px 16px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.35);
+  color: $text-secondary; // >= 4.5:1 on the panel background (AA for body text)
   font-size: 13px;
-  font-style: italic;
   list-style: none;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+// Screen-reader-only announcements (result counts, no-results feedback)
+// that must stay out of the visual layout.
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (max-width: 480px) {

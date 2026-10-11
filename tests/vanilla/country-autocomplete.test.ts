@@ -19,9 +19,13 @@ describe('CountryAutocomplete Component', () => {
     // Clean up
     document.body.removeChild(container);
     container.innerHTML = '';
-    // Clean up any dropdown elements in body
-    const dropdowns = document.querySelectorAll('.autocomplete-dropdown-wrapper');
-    dropdowns.forEach(d => d.remove());
+    // Clean up any dropdown elements in body — the results panel is appended
+    // to `document.body` (to escape overflow), so removing the container
+    // alone would leak it into later tests.
+    document
+      .querySelectorAll('.autocomplete-dropdown-wrapper')
+      .forEach((d) => d.remove());
+    document.querySelectorAll('.autocomplete-dropdown').forEach((d) => d.remove());
   });
 
   describe('Initialization', () => {
@@ -144,6 +148,81 @@ describe('CountryAutocomplete Component', () => {
       });
       
       expect(autocomplete).toBeDefined();
+    });
+  });
+
+  describe('Filter semantics', () => {
+    function open(): HTMLInputElement {
+      (container.querySelector('.autocomplete-input') as HTMLInputElement).click();
+      return document.querySelector('.autocomplete-search-input') as HTMLInputElement;
+    }
+
+    it('matches codes exactly, never by prefix (parity with React/Angular)', () => {
+      const autocomplete = new CountryAutocomplete({
+        container,
+        onSelect: onSelectMock,
+      });
+      const search = open();
+      search.value = 't';
+      search.dispatchEvent(new Event('input'));
+
+      const names = [...document.querySelectorAll('.autocomplete-result')].map(
+        (el) => el.textContent ?? '',
+      );
+      // Thailand matches by name; Chad must not surface just because its
+      // code is "TD".
+      expect(names.some((t) => t.includes('Thailand'))).toBe(true);
+      expect(names.some((t) => t.includes('Chad'))).toBe(false);
+      autocomplete.destroy();
+    });
+
+    it('ranks the exact ISO code match first', () => {
+      const autocomplete = new CountryAutocomplete({
+        container,
+        onSelect: onSelectMock,
+      });
+      const search = open();
+      search.value = 'TH';
+      search.dispatchEvent(new Event('input'));
+
+      // Other countries whose *names* contain "th" (Ethiopia, Netherlands…)
+      // may follow, but the exact code match must lead the list.
+      const names = [...document.querySelectorAll('.autocomplete-result')].map(
+        (el) => el.textContent ?? '',
+      );
+      expect(names[0]).toContain('Thailand');
+      expect(names.some((t) => t.includes('Chad'))).toBe(false);
+      autocomplete.destroy();
+    });
+
+    it('opens on a typed character with the filter pre-applied (type-ahead)', () => {
+      const autocomplete = new CountryAutocomplete({
+        container,
+        onSelect: onSelectMock,
+      });
+      const trigger = container.querySelector(
+        '.autocomplete-input',
+      ) as HTMLInputElement;
+      trigger.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 't', bubbles: true }),
+      );
+
+      const dropdown = document.querySelector('.autocomplete-dropdown');
+      expect(dropdown).not.toBeNull();
+      expect(dropdown?.getAttribute('style')).toContain('display: block');
+      const search = document.querySelector(
+        '.autocomplete-search-input',
+      ) as HTMLInputElement;
+      expect(search.value).toBe('t');
+      // The trigger is readOnly: the character can never strand in it.
+      expect(trigger.value).toBe('');
+
+      const names = [...document.querySelectorAll('.autocomplete-result')].map(
+        (el) => el.textContent ?? '',
+      );
+      expect(names.some((t) => t.includes('Thailand'))).toBe(true);
+      expect(names.some((t) => t.includes('Chad'))).toBe(false);
+      autocomplete.destroy();
     });
   });
 

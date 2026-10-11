@@ -18,8 +18,8 @@ import {
   updateCardFormGroup,
   formatCardNumber,
   formatExpiry,
+  CountrySelectComponent,
 } from '@keeratita/card/angular';
-import { CountrySelectComponent } from './country-select.component';
 import {
   StripeAdapter,
   OmiseAdapter,
@@ -356,11 +356,10 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
         <!-- US Preset Fields -->
         @if (selectedPreset() === 'us') {
             <kg-country-select
-              controlName="country"
               [value]="form.get('country')?.value || ''"
               [preset]="selectedPreset()"
               [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
-              (countryChange)="onCountryChange($event)"
+              (countrySelected)="onCountrySelected($event)"
             />
           <div class="form-group">
             <label>Postal Code</label>
@@ -414,11 +413,10 @@ import { stripeAdapter, omiseAdapter } from '../shared/adapters';
               />
             </div>
             <kg-country-select
-              controlName="country"
               [value]="form.get('country')?.value || ''"
               [preset]="selectedPreset()"
               [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
-              (countryChange)="onCountryChange($event)"
+              (countrySelected)="onCountrySelected($event)"
             />
           </div>
         }
@@ -558,9 +556,9 @@ export class FormWithPresetsComponent {
     this.error.set(null);
   }
 
-  onCountryChange(event: { name: string; value: string }): void {
-    this.form.get(event.name)?.setValue(event.value);
-    this.form.get(event.name)?.markAsTouched();
+  onCountrySelected(countryCode: string): void {
+    this.form.get('country')?.setValue(countryCode);
+    this.form.get('country')?.markAsTouched();
   }
 
   // Card number input handler - formats with spacing based on card type

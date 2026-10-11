@@ -31,3 +31,18 @@ To run the example correctly, you must serve it over an HTTP server:
 3. **Browse the Demo**:
    Open your browser and navigate to:
    [http://localhost:8000/examples/vanilla/index.html](http://localhost:8000/examples/vanilla/index.html)
+
+## React and Angular Examples
+
+The `./react/` and `./angular/` examples are **npm workspaces** of the root
+package. Install once from the repo root (`npm install` — no per-example
+`npm install`), build the library (`npm run build`), then start either from
+the repo root:
+
+```bash
+npm run demo:react    # Vite dev server on http://localhost:3001
+npm run demo:angular  # Angular dev server on http://localhost:4201
+npm run demo:all      # both at once
+```
+
+See `react/README.md` and `angular/README.md` for details.

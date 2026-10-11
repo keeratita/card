@@ -25,29 +25,36 @@
       "types": "./dist/angular/index.d.ts",
       "import": "./dist/angular/index.mjs",
       "require": "./dist/angular/index.js"
-    }
+    },
+    "./vanilla/styles.css": "./dist/vanilla/styles.css",
+    "./vanilla/styles.min.css": "./dist/vanilla/styles.min.css"
   },
   "files": [
     "dist",
     "README.md"
   ],
+  "workspaces": [
+    "examples/angular",
+    "examples/react"
+  ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "ngc -p tsconfig.ngc.partial.json && tsup && node scripts/generate-dist-package-json.js && node scripts/ship-angular-partial.js && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
-    "build:core": "tsup src/index.ts --format cjs,esm --dts --out-dir dist",
-    "build:vanilla": "tsup src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass src/vanilla/styles.scss dist/vanilla/styles.css && sass --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
-    "build:react": "tsup src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
-    "build:angular": "ngc -p tsconfig.ngc.partial.json && tsup src/angular/index.ts --format cjs,esm --dts --external @angular/core,@angular/forms --out-dir dist/angular && node scripts/ship-angular-partial.js",
+    "build": "ngc -p tsconfig.ngc.partial.json && tsup && node scripts/generate-dist-package-json.js && node scripts/ship-angular-partial.js && sass --no-source-map src/vanilla/styles.scss dist/vanilla/styles.css && sass --no-source-map --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
+    "build:core": "tsup --no-clean src/index.ts --format cjs,esm --dts --out-dir dist",
+    "build:vanilla": "tsup --no-clean src/vanilla/index.ts --format cjs,esm --dts --out-dir dist/vanilla && sass --no-source-map src/vanilla/styles.scss dist/vanilla/styles.css && sass --no-source-map --style=compressed src/vanilla/styles.scss dist/vanilla/styles.min.css",
+    "build:react": "tsup --no-clean src/react/index.ts --format cjs,esm --dts --external react,react-dom --out-dir dist/react",
+    "build:angular": "ngc -p tsconfig.ngc.partial.json && tsup --no-clean src/angular/index.ts --format cjs,esm --dts --external @angular/core,@angular/forms --out-dir dist/angular && node scripts/ship-angular-partial.js",
     "dev": "tsup --watch & sass --watch src/vanilla/styles.scss:dist/vanilla/styles.css",
     "test": "vitest run",
+    "test:dist": "vitest run tests/dist-consumer.test.ts",
     "lint": "eslint src",
     "prepare": "husky",
     "demo": "npx http-server . -p 3000 -c-1 --cors & sleep 2 && open http://localhost:3000/examples/vanilla/index.html",
-    "demo:react": "npm run build && cd examples/react && npm install && npm run dev",
-    "demo:angular": "npm run build && cd examples/angular && npm install && npm run start",
-    "demo:all": "npm run build && (cd examples/react && npm install && npm run dev &) && (cd examples/angular && npm install && npm run start &)",
+    "demo:react": "npm run build && npm run dev -w @keeratita/card-react-examples",
+    "demo:angular": "npm run build && npm run start -w @keeratita/card-angular-examples",
+    "demo:all": "npm run build && (npm run dev -w @keeratita/card-react-examples &) && (npm run start -w @keeratita/card-angular-examples &)",
     "release": "release-it --ci",
     "deploy": "npm run build && npm publish --access public"
   },
@@ -91,10 +98,11 @@
     }
   },
   "devDependencies": {
-    "@angular/compiler": "^22.1.1",
-    "@angular/compiler-cli": "^22.1.1",
-    "@angular/core": "^22.1.1",
-    "@angular/forms": "^22.1.1",
+    "@angular/compiler": "^22.2.2",
+    "@angular/compiler-cli": "^22.2.2",
+    "@angular/core": "^22.2.2",
+    "@angular/forms": "^22.2.2",
+    "@angular/platform-browser-dynamic": "^22.2.2",
     "@eslint/js": "^10.0.1",
     "@release-it/bumper": "^7.0.6",
     "@testing-library/jest-dom": "^6.9.1",
@@ -110,9 +118,5 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.1",
     "vitest": "^4.1.8"
-  },
-  "overrides": {
-    "esbuild": "0.28.1",
-    "vite": "6.4.3"
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
 import { getCardNumberMaxLength } from '../../core/form';
+import { FieldErrorText } from './field-error';
 
 export interface CardNumberInputProps {
   value: string;
@@ -48,7 +49,10 @@ export function CardNumberInput({
         autoComplete="cc-number"
         required
         maxLength={getCardNumberMaxLength(value)}
+        aria-invalid={hasError}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
+      <FieldErrorText id={`${id}-error`} message={error} />
     </div>
   );
 }

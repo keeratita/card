@@ -4,7 +4,15 @@ This directory contains React integration examples for the `@keeratita/card` pac
 
 ## Prerequisites
 
-Before running these examples, ensure you have built the library:
+This example is an **npm workspace** of the root package — install dependencies
+once from the repo root (there is no per-example lockfile, and you should not
+run `npm install` inside this directory):
+
+```bash
+npm install
+```
+
+Before running the example, build the library so `dist/` is up to date:
 
 ```bash
 npm run build
@@ -14,22 +22,16 @@ npm run build
 
 ### Using Vite (Recommended)
 
-1. Navigate to the example directory:
-   ```bash
-   cd examples/react
-   ```
+From the repo root, start the development server for this workspace:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm run dev -w @keeratita/card-react-examples
+```
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+(Or use the convenience script that builds the library first: `npm run demo:react`.)
 
-4. Open your browser to the URL shown in the terminal (typically `http://localhost:5173`)
+Open your browser to `http://localhost:3001` (the port configured in
+`vite.config.js`).
 
 ## Demo Keys & Environment
 

@@ -1,5 +1,12 @@
-import { detectCardBrand } from '../domain/brand';
-import { MAX_CARD_NUMBER_LENGTH } from '../constants';
+import {
+  detectCardBrand,
+  getExpectedCvcLength,
+} from '../domain/brand';
+import type { CardBrand } from '../domain/brand';
+import {
+  MAX_CARD_NUMBER_LENGTH,
+  MIN_CARD_NUMBER_LENGTH,
+} from '../constants';
 
 export function cleanDigits(value: string): string {
   return value.replace(/\D/g, '');
@@ -60,7 +67,7 @@ export function formatExpiry(value: string): string {
 export function formatCvc(value: string, cardNumber: string): string {
   const clean = cleanDigits(value);
   const brand = detectCardBrand(cardNumber);
-  const limit = brand === 'amex' ? 4 : 3;
+  const limit = getExpectedCvcLength(brand);
   return clean.substring(0, limit);
 }
 
@@ -71,29 +78,8 @@ const BRAND_LENGTH_RANGES: Record<string, [min: number, max: number]> = {
   jcb: [16, 17],
   mastercard: [16, 17],
   visa: [13, 16],
-  unknown: [13, 19],
+  unknown: [MIN_CARD_NUMBER_LENGTH, MAX_CARD_NUMBER_LENGTH],
 };
-
-export function formatCountryCode(value: string): string {
-  return value
-    .replace(/[^a-zA-Z]/g, '')
-    .substring(0, 2)
-    .toUpperCase();
-}
-
-export function generateExpiryDate(): string {
-  const now = new Date();
-  const expiryYear = now.getFullYear() + 1;
-  let expiryMonth = now.getMonth() + 1;
-  if (expiryMonth === 12) {
-    expiryMonth = 1;
-  }
-
-  const monthStr = expiryMonth.toString().padStart(2, '0');
-  const yearStr = (expiryYear % 100).toString().padStart(2, '0');
-
-  return `${monthStr}/${yearStr}`;
-}
 
 export function formatPhone(value: string): string {
   const hasPlus = value.startsWith('+');
@@ -101,25 +87,47 @@ export function formatPhone(value: string): string {
   return (hasPlus ? '+' : '') + clean;
 }
 
+/**
+ * Normalizes a stored/user-typed expiry (any `MM[-/ ]YY[YY]` shape) into
+ * the library's display format. A 4-digit year is reduced to its last two
+ * digits first, so backend-stored `MM/YYYY` values ("12/2025") normalize to
+ * `"12 / 25"` — not to the century digits (`"12 / 20"`). The month is
+ * zero-padded in the same pass, so `"1 / 2030"` normalizes to `"01 / 30"`
+ * instead of being misread as the ambiguous 3-digit "130".
+ */
 export function reformatExpiryDate(value: string): string {
-  const cleaned = value.replace(/[/\-\s]/g, '');
-  return formatExpiry(cleaned);
+  const withFullYear = /^(\d{1,2})\D*(\d{4})$/.exec(value.trim());
+  const normalized = withFullYear
+    ? `${withFullYear[1].padStart(2, '0')}${withFullYear[2].slice(2)}`
+    : value.replace(/[/\-\s]/g, '');
+  return formatExpiry(normalized);
 }
 
-export function validateCardNumberLength(cardNumber: string): {
+export interface CardNumberLengthResult {
   isValid: boolean;
+  /** Brand the length range was taken from (detect once, reuse in UI). */
+  brand: CardBrand;
   minLength: number;
   maxLength: number;
   actualLength: number;
-} {
+}
+
+export function validateCardNumberLength(
+  cardNumber: string,
+): CardNumberLengthResult {
   const clean = cleanDigits(cardNumber);
   const brand = detectCardBrand(clean);
 
-  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [13, 19];
+  // Brands absent from the table fall back to the all-brands bounds.
+  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [
+    MIN_CARD_NUMBER_LENGTH,
+    MAX_CARD_NUMBER_LENGTH,
+  ];
   const actualLength = clean.length;
 
   return {
     isValid: actualLength >= minLength && actualLength <= maxLength,
+    brand,
     minLength,
     maxLength,
     actualLength,
@@ -129,6 +137,9 @@ export function validateCardNumberLength(cardNumber: string): {
 export function isCardLengthValid(cardNumber: string): boolean {
   const clean = cleanDigits(cardNumber);
   const brand = detectCardBrand(clean);
-  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [13, 19];
+  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [
+    MIN_CARD_NUMBER_LENGTH,
+    MAX_CARD_NUMBER_LENGTH,
+  ];
   return clean.length >= minLength && clean.length <= maxLength;
 }

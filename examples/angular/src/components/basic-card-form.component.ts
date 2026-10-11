@@ -19,8 +19,8 @@ import {
   createCardFormGroup,
   updateCardFormGroup,
   CardFormGroupValue,
+  CountrySelectComponent,
 } from '@keeratita/card/angular';
-import { CountrySelectComponent } from './country-select.component';
 import { stripeAdapter, omiseAdapter } from '../shared/adapters';
 import { StripeAdapter, OmiseAdapter } from '@keeratita/card';
 
@@ -368,11 +368,10 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
         <!-- Country (US preset) -->
         @if (selectedPreset() === 'us') {
             <kg-country-select
-              controlName="country"
               [value]="form.get('country')?.value || ''"
               [preset]="selectedPreset()"
               [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
-              (countryChange)="onCountryChange($event)"
+              (countrySelected)="onCountrySelected($event)"
             />
         }
 
@@ -461,11 +460,10 @@ type CardFormPreset = 'none' | 'us' | 'billing' | 'contact';
               />
             </div>
             <kg-country-select
-              controlName="country"
               [value]="form.get('country')?.value || ''"
               [preset]="selectedPreset()"
               [invalid]="!!form.get('country')?.invalid && !!form.get('country')?.touched"
-              (countryChange)="onCountryChange($event)"
+              (countrySelected)="onCountrySelected($event)"
             />
           </div>
         }
@@ -649,10 +647,11 @@ ${this.getPresetFields()}`;
     this.error.set(null);
   }
 
-  // Handle country selection from kg-country-select
-  onCountryChange(event: { name: string; value: string }): void {
-    this.form.get(event.name)?.setValue(event.value);
-    this.form.get(event.name)?.markAsTouched();
+  // `countrySelected` emits the ISO code directly (the recommended output;
+  // the deprecated `countryChange` emits { name, value }).
+  onCountrySelected(countryCode: string): void {
+    this.form.get('country')?.setValue(countryCode);
+    this.form.get('country')?.markAsTouched();
   }
 
   // Card number input handler - formats with spacing based on card type

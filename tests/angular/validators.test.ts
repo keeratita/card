@@ -41,7 +41,7 @@ describe('Angular Validators', () => {
 
       const result = validator(control);
       // Static descriptor: the raw value (PAN) must never be echoed into errors
-      expect(result).toEqual({ creditCard: true });
+      expect(result).toEqual({ creditCard: true, invalidCardNumber: true });
     });
 
     it('should accept valid credit card with spaces', () => {
@@ -212,7 +212,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ cvcInvalid: true });
+      expect(result).toEqual({ cvcInvalid: true, invalidCvc: true });
     });
 
     it('should return null for empty values', () => {
@@ -288,7 +288,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ emailInvalid: true });
+      expect(result).toEqual({ emailInvalid: true, invalidEmail: true });
     });
 
     it('should return null for empty values', () => {
@@ -326,7 +326,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ phoneInvalid: true });
+      expect(result).toEqual({ phoneInvalid: true, invalidPhone: true });
     });
 
     it('should return null for empty values', () => {
@@ -364,7 +364,7 @@ describe('Angular Validators', () => {
       };
 
       const result = validator(control);
-      expect(result).toEqual({ postalCodeInvalid: true });
+      expect(result).toEqual({ postalCodeInvalid: true, invalidPostalCode: true });
     });
 
     it('should return null for empty values', () => {

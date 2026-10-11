@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { detectCardBrand } from '../../src/core/domain/brand';
+import {
+  detectCardBrand,
+  getExpectedCvcLength,
+} from '../../src/core/domain/brand';
 
 describe('Card Brand Detection', () => {
   it('should detect Visa cards starting with 4', () => {
@@ -75,5 +78,25 @@ describe('Card Brand Detection', () => {
   it('should handle numbers with special characters', () => {
     expect(detectCardBrand('4111-1111-1111-1111')).toBe('visa');
     expect(detectCardBrand('4111_1111_1111_1111')).toBe('visa');
+  });
+});
+
+
+describe('getExpectedCvcLength', () => {
+  it('allows four digits only for Amex', () => {
+    expect(getExpectedCvcLength('amex')).toBe(4);
+  });
+
+  it('allows three digits for every other brand, including unknown', () => {
+    for (const brand of [
+      'visa',
+      'mastercard',
+      'discover',
+      'jcb',
+      'diners',
+      'unknown',
+    ] as const) {
+      expect(getExpectedCvcLength(brand)).toBe(3);
+    }
   });
 });

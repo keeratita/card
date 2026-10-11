@@ -1,22 +1,41 @@
 import React from 'react';
+import { MAX_CVC_LENGTH } from '../core/constants';
 import { CardFormValues } from './useCardForm';
 
-const FIELD_CONFIGS: Record<
-  keyof CardFormValues,
-  { type: string; mode?: string; autoComplete: string; label: string; placeholder: string }
-> = {
-  number: { type: 'text', mode: 'numeric', autoComplete: 'cc-number', label: 'Card Number', placeholder: '4242 4242 4242 4242' },
-  expiry: { type: 'text', mode: 'numeric', autoComplete: 'cc-exp', label: 'Expiry Date', placeholder: 'MM / YY' },
-  cvc: { type: 'password', mode: 'numeric', autoComplete: 'cc-csc', label: 'CVC', placeholder: '123' },
+/** Keypad hint shared by the internal config and the public props. */
+type FieldInputMode = 'numeric' | 'text' | 'tel' | 'email' | 'search';
+
+type FieldInputConfig = {
+  type: string;
+  inputMode?: FieldInputMode;
+  autoComplete: string;
+  label: string;
+  placeholder: string;
+};
+
+/**
+ * Checked literal table: `Record<keyof CardFormValues, ...>` makes the
+ * compiler verify every form field has an entry (a field added to
+ * `CardFormValues` without a config is a build error, not a runtime crash
+ * on `config.type`). Copy intentionally differs from the descriptive hints
+ * in core `FIELD_METADATA` (sample-value placeholders, longer labels);
+ * core labels/autocomplete are verified against it in
+ * tests/react/form-field.test.tsx.
+ */
+const FIELD_CONFIGS: Record<keyof CardFormValues, FieldInputConfig> = {
+  number: { type: 'text', inputMode: 'numeric', autoComplete: 'cc-number', label: 'Card Number', placeholder: '4242 4242 4242 4242' },
+  expiry: { type: 'text', inputMode: 'numeric', autoComplete: 'cc-exp', label: 'Expiry Date', placeholder: 'MM / YY' },
+  cvc: { type: 'password', inputMode: 'numeric', autoComplete: 'cc-csc', label: 'CVC', placeholder: '123' },
   name: { type: 'text', autoComplete: 'cc-name', label: 'Cardholder Name', placeholder: 'Full Name' },
   addressLine1: { type: 'text', autoComplete: 'address-line1', label: 'Address Line 1', placeholder: '123 Main St' },
   addressLine2: { type: 'text', autoComplete: 'address-line2', label: 'Address Line 2', placeholder: 'Apt, Suite, etc. (optional)' },
   city: { type: 'text', autoComplete: 'address-level2', label: 'City', placeholder: 'City' },
   state: { type: 'text', autoComplete: 'address-level1', label: 'State / Province', placeholder: 'State' },
-  postalCode: { type: 'text', mode: 'numeric', autoComplete: 'postal-code', label: 'Postal Code', placeholder: '12345' },
+  postalCode: { type: 'text', inputMode: 'numeric', autoComplete: 'postal-code', label: 'Postal Code', placeholder: '12345' },
+  // `country` (not `country-name`): the stored value is an ISO 2-letter code.
   country: { type: 'text', autoComplete: 'country', label: 'Country', placeholder: 'Select country' },
-  phone: { type: 'tel', mode: 'tel', autoComplete: 'tel-national', label: 'Phone', placeholder: '+1234567890' },
-  email: { type: 'email', mode: 'email', autoComplete: 'email', label: 'Email', placeholder: 'email@example.com' },
+  phone: { type: 'tel', inputMode: 'tel', autoComplete: 'tel', label: 'Phone', placeholder: '+1234567890' },
+  email: { type: 'email', inputMode: 'email', autoComplete: 'email', label: 'Email', placeholder: 'email@example.com' },
 };
 
 export interface FormFieldProps {
@@ -31,7 +50,7 @@ export interface FormFieldProps {
   placeholder?: string;
   label?: string;
   maxLength?: number;
-  inputMode?: 'numeric' | 'text' | 'tel' | 'email' | 'search';
+  inputMode?: FieldInputMode;
   autoComplete?: string;
   required?: boolean;
   className?: string;
@@ -68,11 +87,11 @@ export function FormField({
   const inputType = type || config.type;
   const fieldPlaceholder = placeholder || config.placeholder;
   const fieldLabel = label || config.label;
-  const fieldInputMode = customInputMode || (config.mode as 'numeric' | 'text' | 'tel' | 'email' | undefined);
+  const fieldInputMode = customInputMode || config.inputMode;
   const fieldAutoComplete = autoComplete || config.autoComplete;
 
   // Determine max length based on field type
-  const fieldMaxLength = maxLength ?? (name === 'cvc' ? 4 : undefined);
+  const fieldMaxLength = maxLength ?? (name === 'cvc' ? MAX_CVC_LENGTH : undefined);
 
   // Handle CVC-specific focus/blur for card flip
   const handleFocus = (_e: React.FocusEvent<HTMLInputElement>) => {

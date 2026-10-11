@@ -5,14 +5,16 @@ This document provides comprehensive guidance on integrating the `@keeratita/car
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Card Form Hook](#card-form-hook)
-3. [CardForm Component](#cardform-component)
-4. [Reactive Form Components](#reactive-form-components)
-5. [Country Autocomplete Component](#country-autocomplete-component)
-6. [Payment Adapters](#payment-adapters)
-7. [Utility Functions](#utility-functions)
-8. [Country Data](#country-data)
-9. [Complete Examples](#complete-examples)
+2. [Styling](#styling)
+3. [Card Form Hook](#card-form-hook)
+4. [CardForm Component](#cardform-component)
+5. [Reactive Form Components](#reactive-form-components)
+6. [Country Autocomplete Component](#country-autocomplete-component)
+7. [Payment Adapters](#payment-adapters)
+8. [Utility Functions](#utility-functions)
+9. [Country Data](#country-data)
+10. [Complete Examples](#complete-examples)
+11. [Best Practices](#best-practices)
 
 ## Quick Start
 
@@ -97,6 +99,27 @@ export function CardForm() {
   );
 }
 ```
+
+## Styling
+
+The React components render the same class names as the vanilla build
+(`form-field`, `country-autocomplete-*`, …) but ship no CSS of their own, so
+import the library stylesheet once, at your app entry:
+
+```tsx
+import '@keeratita/card/vanilla/styles.css';
+// or the minified build for production:
+// import '@keeratita/card/vanilla/styles.min.css';
+```
+
+Without it the form still works and stays accessible (screen-reader-only
+text such as the result-count live region is hidden with inline styles), but
+it renders unstyled. It covers every component the React entry exports —
+including `FormField`, whose `form-field__*` classes exist nowhere else in the
+package. Override any class in your own stylesheet afterwards to match your
+design system.
+
+---
 
 ## Card Form Hook
 
@@ -245,6 +268,7 @@ interface UseCardFormReturn {
   ) => void;
   handleCvcFocus: () => void;
   handleCvcBlur: () => void;
+  setFieldValue: (name: keyof CardFormValues, value: string) => void; // Programmatic single-field update (applies the same formatting as typing)
   handleSubmit: (e?: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 ```
@@ -308,7 +332,7 @@ interface CardFormProps {
 | ----------- | -------------------- | ------------------------------------------------------------------- |
 | `'none'`    | Core fields only     | Card Number, Expiry, CVC, Name                                      |
 | `'us'`      | US cardholder        | + Postal Code (ZIP), Country                                         |
-| `'billing'` | Full billing address | + Address Line 1, Address Line 2, City, State, Postal Code, Country |
+| `'billing'` | Full billing address | + Address Line 1, City, State, Postal Code, Country        |
 | `'contact'` | Contact details      | + Email, Phone                                                      |
 
 ### Card Form Values
@@ -465,7 +489,7 @@ import { CountryAutocomplete } from '@keeratita/card/react';
 <CountryAutocomplete
   value={values.country}
   onChange={(countryCode) => {
-    setValues((prev) => ({ ...prev, country: countryCode }));
+    setFieldValue('country', countryCode);
   }}
   placeholder='Select a country...'
   searchPlaceholder='Search countries...'
@@ -484,17 +508,29 @@ interface CountryAutocompleteProps {
   searchPlaceholder?: string; // Placeholder for search input
   className?: string; // CSS class for the wrapper
   id?: string; // HTML id for the input element
+  invalid?: boolean; // Renders the invalid state and sets aria-invalid
+  describedBy?: string; // Id(s) of the error text, wired to aria-describedby
 }
 ```
 
 ### Features
 
-- **Search filtering**: Type to filter countries by name or code
+- **Search filtering**: filters by country name (starts-with matches first,
+  then contains) or by **exact** ISO code — typing `t` surfaces Thailand by
+  name but never Chad (`TD`)
 - **Flag emojis**: Each country displays its Unicode flag emoji
-- **Keyboard navigation**: Use Arrow keys, Enter, and Escape
-- **Lazy loading**: Loads 20 countries at a time with scroll-to-load-more
-- **Auto-positioning**: Dropdown positions itself to avoid viewport overflow
-- **Click outside**: Closes dropdown when clicking outside
+- **Keyboard navigation**: `ArrowDown`/`ArrowUp`, Enter or Space open the list
+  from a collapsed trigger; arrows move and wrap at the ends, Enter selects,
+  Escape closes and returns focus to the trigger, and a bare letter opens the
+  list with that letter already applied as the filter
+- **Lazy loading**: renders 20 countries at a time, growing the window as you
+  scroll or arrow past the current page
+- **Auto-positioning**: the dropdown flips above/below the trigger to stay in
+  the viewport and repositions on window resize
+- **Click outside**: closes the dropdown and returns focus to the trigger
+- **Accessible**: combobox/listbox pattern with `aria-activedescendant`, a
+  polite live region announcing the filtered result count, and a no-results
+  message
 
 ## Payment Adapters
 
@@ -635,10 +671,10 @@ validateCvc('12', '4242424242424242'); // => false (too short)
 ```typescript
 import { detectCardBrand } from '@keeratita/card';
 
-detectCardBrand('4242424242424242'); // => "VISA"
-detectCardBrand('5500000000000004'); // => "MASTERCARD"
-detectCardBrand('340000000000009'); // => "AMEX"
-detectCardBrand('6011000000000004'); // => "DISCOVER"
+detectCardBrand('4242424242424242'); // => "visa"
+detectCardBrand('5500000000000004'); // => "mastercard"
+detectCardBrand('340000000000009'); // => "amex"
+detectCardBrand('6011000000000004'); // => "discover"
 detectCardBrand(''); // => "unknown" (default for invalid/empty input)
 ```
 
@@ -664,6 +700,7 @@ import {
   cleanDigits,
   formatCvc,
   formatPhone,
+  getExpectedCvcLength,
   reformatExpiryDate,
   validateCardNumberLength,
   isCardLengthValid,
@@ -676,18 +713,31 @@ cleanDigits('4242 4242 4242 4242'); // => "4242424242424242"
 formatCvc('12345', '4242424242424242'); // => "123"
 formatCvc('1234', '340000000000009'); // => "1234" (AMEX allows 4)
 
+// How many digits a brand's CVC prints — use it to size the input
+getExpectedCvcLength('amex'); // => 4
+getExpectedCvcLength('visa'); // => 3
+getExpectedCvcLength('unknown'); // => 3
+
 // Format phone number
 formatPhone('+2345678901'); // => "+2345678901"
 
-// Reformat expiry date (handles "1225", "12-25", "12/2025", etc.)
+// Reformat a stored or user-typed expiry into the library's display format.
+// Separators of any kind are normalized, a 4-digit year is reduced to its
+// last two digits, and a short month is zero-padded.
 reformatExpiryDate('1225'); // => "12 / 25"
+reformatExpiryDate('12-25'); // => "12 / 25"
+reformatExpiryDate('12/2025'); // => "12 / 25"
+reformatExpiryDate('1 / 2030'); // => "01 / 30"
 
 // Check if card number length is valid for its brand
 isCardLengthValid('4242424242424242'); // => true (Visa expects 16 digits)
 isCardLengthValid('340000000000009'); // => true (AMEX expects 15 digits)
-isCardLengthValid('1234567890123456'); // => false (invalid length)
-validateCardNumberLength('4242424242424242'); // => { isValid: true, expectedLength: 16, actualLength: 16 }
-validateCardNumberLength('340000000000009'); // => { isValid: true, expectedLength: 15, actualLength: 15 }
+isCardLengthValid('4242'); // => false (too short for any brand)
+// The detailed result also reports the detected brand, so UI code can show
+// "15 of 15 digits" without detecting the brand a second time.
+validateCardNumberLength('4242424242424242'); // => { isValid: true, brand: 'visa', minLength: 13, maxLength: 16, actualLength: 16 }
+validateCardNumberLength('340000000000009'); // => { isValid: true, brand: 'amex', minLength: 15, maxLength: 15, actualLength: 15 }
+validateCardNumberLength('999999999999'); // => { isValid: false, brand: 'unknown', minLength: 13, maxLength: 19, actualLength: 12 }
 ```
 
 ### Additional Validators
@@ -699,12 +749,13 @@ import {
   validatePhone,
   validatePostalCode,
   validateCountry,
-  validateGeneric,
 } from '@keeratita/card';
 
-// Validate cardholder name
+// Validate cardholder name (non-empty after sanitizing; the library does not
+// require a separate last name)
 validateName('John Doe'); // => true
-validateName('John'); // => false (needs first + last)
+validateName('John'); // => true
+validateName('   '); // => false
 
 // Validate email
 validateEmail('user@example.com'); // => true
@@ -722,9 +773,6 @@ validatePostalCode('12'); // => false (too short)
 validateCountry('US'); // => true (2-3 letter ISO code)
 validateCountry('USA'); // => true
 
-// Generic validation (non-empty trimmed string)
-validateGeneric('hello'); // => true
-validateGeneric('  '); // => false
 ```
 
 ### Error Classes (Adapters)
@@ -1076,7 +1124,7 @@ export function CountryDropdown() {
 
 1. **Always validate card numbers**: Use `luhnCheck()` to verify card numbers before tokenization
 2. **Format inputs in real-time**: Use `formatCardNumber()` and `formatExpiry()` for better UX
-3. **Detect card brand**: Use `detectCardBrand()` to show appropriate CVC length and card logos
+3. **Detect card brand**: Use `detectCardBrand()` for card logos and `getExpectedCvcLength(brand)` for the CVC field's `maxLength`
 4. **Handle errors gracefully**: Display validation errors inline with form fields
 5. **Use adapters for tokenization**: Never send raw card data to your own servers
 6. **Store tokens securely**: Store only the returned token IDs, never the card details

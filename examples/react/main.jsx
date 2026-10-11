@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+// The library stylesheet, imported exactly as the docs instruct, so the demo
+// proves `@keeratita/card/vanilla/styles.css` resolves and styles the
+// components. This example deliberately keeps no copy of it: the demo shell
+// lives in index.html's own <style> block, and every component rule comes from
+// the published stylesheet.
+import '@keeratita/card/vanilla/styles.css';
 import { BasicCardForm } from './src/basic/basic-card-form';
 import { CustomFormWithPresets } from './src/forms/custom-form-with-presets';
 import { FormWithCustomValidation } from './src/forms/form-with-custom-validation';

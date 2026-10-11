@@ -91,6 +91,15 @@ export const SENSITIVE_FIELDS: ReadonlySet<OptionalCardField> = new Set([
   'country',
 ]);
 
+/**
+ * Fields that are always optional: they never fail validation when empty,
+ * even when present in the active field set. `addressLine2` is the only
+ * member today; it is opt-in everywhere else.
+ */
+export const ALWAYS_OPTIONAL_FIELDS: ReadonlySet<OptionalCardField> = new Set([
+  'addressLine2',
+]);
+
 export function isOptionalCardField(value: string): value is OptionalCardField {
   return OPTIONAL_FIELD_SET.has(value as OptionalCardField);
 }

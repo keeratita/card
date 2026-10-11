@@ -308,6 +308,18 @@ describe('Vanilla CardForm', () => {
       expect(nameInput.required).toBe(true);
     });
 
+    it('should not require addressLine2', () => {
+      new CardForm('#card-form-container', {
+        adapter: mockAdapter,
+        fields: ['addressLine2'],
+      });
+
+      const input = document.querySelector('.card-addressLine2-input') as HTMLInputElement;
+      expect(input).not.toBeNull();
+      expect(input.required).toBe(false);
+      expect(input.getAttribute('aria-required')).toBe('false');
+    });
+
     it('should have maxlength 4 on CVC input', () => {
       new CardForm('#card-form-container', { adapter: mockAdapter });
       

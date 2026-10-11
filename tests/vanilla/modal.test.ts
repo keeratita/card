@@ -1,9 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CardModal, _closeAllModals } from '../../src/vanilla/modal';
+import { CardForm } from '../../src/vanilla/form';
 import type { PaymentGateway } from '../../src/core/domain/card';
 
 describe('Vanilla CardModal', () => {
   let mockAdapter: PaymentGateway;
+
+  /** Fill the form rendered inside the modal overlay and submit it. */
+  function fillAndSubmitModalForm(): void {
+    const formEl = document.querySelector(
+      '.modal-overlay .payment-form-el',
+    ) as HTMLFormElement;
+    const values: Array<[string, string]> = [
+      ['.card-number-input', '4242 4242 4242 4242'],
+      ['.card-expiry-input', '12 / 30'],
+      ['.card-cvc-input', '123'],
+      ['.card-name-input', 'John Doe'],
+    ];
+    for (const [selector, value] of values) {
+      (formEl.querySelector(selector) as HTMLInputElement).value = value;
+    }
+    formEl.dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+  }
+
+  /** Let queued microtasks (tokenize chain) settle. */
+  function flush(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
 
   beforeEach(() => {
     mockAdapter = {
@@ -15,6 +40,11 @@ describe('Vanilla CardModal', () => {
     document.body.innerHTML = '';
     document.body.style.overflow = '';
     document.removeEventListener('keydown', () => {});
+    // jsdom implements no Web Animations API; CardForm's gateway-failure
+    // path animates the grouped list, so stub the missing method.
+    Element.prototype.animate = vi.fn(
+      () => ({}),
+    ) as unknown as typeof Element.prototype.animate;
   });
 
   afterEach(() => {
@@ -28,28 +58,52 @@ describe('Vanilla CardModal', () => {
   describe('Constructor', () => {
     it('should create CardModal with options', () => {
       expect(() => {
-        new CardModal({ adapter: mockAdapter });
+        void new CardModal({ adapter: mockAdapter });
       }).not.toThrow();
+      // Construction must produce a mounted overlay, not just an instance
+      expect(document.querySelector('.modal-overlay')).not.toBeNull();
     });
 
-    it('should create CardModal with onSubmit callback', () => {
+    it('should call onSubmit with the tokenized result on successful submit', async () => {
       const onSubmit = vi.fn();
-      const modal = new CardModal({ 
+      const modal = new CardModal({
         adapter: mockAdapter,
-        onSubmit 
+        onSubmit
       });
-      
-      expect(modal).toBeDefined();
+      modal.open();
+
+      fillAndSubmitModalForm();
+      await flush();
+
+      // The documented contract: the consumer callback receives { token }
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(onSubmit).toHaveBeenCalledWith({
+        token: { id: 'tok_1', gateway: 'stripe', raw: {} },
+      });
+
+      modal.destroy();
     });
 
-    it('should create CardModal with onError callback', () => {
+    it('should pass onError through to the underlying form on gateway failure', async () => {
       const onError = vi.fn();
-      const modal = new CardModal({ 
-        adapter: mockAdapter,
-        onError 
+      const gatewayError = new Error('vault unreachable');
+      const modal = new CardModal({
+        adapter: {
+          name: 'Stripe',
+          tokenize: async () => {
+            throw gatewayError;
+          },
+        },
+        onError,
       });
-      
-      expect(modal).toBeDefined();
+      modal.open();
+
+      fillAndSubmitModalForm();
+      await flush();
+
+      expect(onError).toHaveBeenCalledWith(gatewayError);
+
+      modal.destroy();
     });
 
     it('should create CardModal with preset', () => {
@@ -58,7 +112,12 @@ describe('Vanilla CardModal', () => {
         preset: 'billing'
       });
       
-      expect(modal).toBeDefined();
+      const overlay = document.querySelector('.modal-overlay');
+      expect(overlay).not.toBeNull();
+      // The preset must reach the underlying form: billing renders
+      // the full address rows.
+      expect(overlay?.querySelector('.card-addressLine1-input')).not.toBeNull();
+      expect(overlay?.querySelector('.card-postalCode-input')).not.toBeNull();
     });
   });
 
@@ -66,16 +125,20 @@ describe('Vanilla CardModal', () => {
     it('should create modal overlay element', () => {
       void new CardModal({ adapter: mockAdapter });
       
-      // The overlay should be appended to body
+      // The overlay should be appended to body — querySelector returns null
+      // (not undefined) when missing, so toBeDefined() could never fail.
       const overlay = document.querySelector('.modal-overlay');
-      expect(overlay).toBeDefined();
+      expect(overlay).not.toBeNull();
+      expect(overlay?.parentElement).toBe(document.body);
     });
 
     it('should create modal content element', () => {
       new CardModal({ adapter: mockAdapter });
       
+      const overlay = document.querySelector('.modal-overlay');
       const content = document.querySelector('.modal-content');
-      expect(content).toBeDefined();
+      expect(content).not.toBeNull();
+      expect(content?.parentElement).toBe(overlay);
     });
 
     it('should set role attribute on modal content', () => {
@@ -103,7 +166,7 @@ describe('Vanilla CardModal', () => {
       new CardModal({ adapter: mockAdapter });
       
       const closeBtn = document.querySelector('.modal-close-btn');
-      expect(closeBtn).toBeDefined();
+      expect(closeBtn).not.toBeNull();
     });
 
     it('should set aria-label on close button', () => {
@@ -306,8 +369,12 @@ describe('Vanilla CardModal', () => {
     
     it('should return CardForm instance', () => {
       const form = modal.getFormInstance();
-      
-      expect(form).toBeDefined();
+
+      expect(form).toBeInstanceOf(CardForm);
+      // It is the form rendered inside the modal, not a detached copy:
+      // the overlay holds exactly one payment form wired to this instance.
+      const overlay = document.querySelector('.modal-overlay') as HTMLElement;
+      expect(overlay.querySelectorAll('.payment-form-el')).toHaveLength(1);
     });
   });
 
@@ -432,7 +499,12 @@ describe('Vanilla CardModal', () => {
   });
 
   describe('onSubmit interception', () => {
-    it('should call original onSubmit and then close modal', async () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should call the consumer onSubmit with { token } after tokenization', async () => {
+      vi.useFakeTimers();
       const onSubmit = vi.fn();
       const modal = new CardModal({
         adapter: mockAdapter,
@@ -440,16 +512,50 @@ describe('Vanilla CardModal', () => {
       });
 
       modal.open();
+      fillAndSubmitModalForm();
+      // Flush the tokenize promise chain
+      await vi.advanceTimersByTimeAsync(0);
 
-      // Simulate successful submission
-      void modal.getFormInstance();
-      // The modal intercepts onSubmit to close after 1.5s
-      // We can't easily test the timing, but we can verify the setup
+      // The modal intercepts onSubmit but must still forward the payload
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(onSubmit).toHaveBeenCalledWith({
+        token: { id: 'tok_1', gateway: 'stripe', raw: {} },
+      });
 
-      expect(modal).toBeDefined();
+      modal.destroy();
+    });
 
-      // Clean up to avoid polluting registry for subsequent tests
-      modal.close();
+    it('should keep the modal open until the host callback settles, then close it', async () => {
+      vi.useFakeTimers();
+      let resolveHost!: () => void;
+      const onSubmit = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveHost = resolve;
+          }),
+      );
+      const modal = new CardModal({
+        adapter: mockAdapter,
+        onSubmit
+      });
+
+      modal.open();
+      const overlay = document.querySelector('.modal-overlay') as HTMLDivElement;
+
+      fillAndSubmitModalForm();
+      // Past the 1.5s close delay — but the host callback is still pending,
+      // so the interception must await it instead of closing.
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(overlay.classList.contains('active')).toBe(true);
+      expect(document.body.style.overflow).toBe('hidden');
+
+      resolveHost();
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(overlay.classList.contains('active')).toBe(false);
+      expect(document.body.style.overflow).toBe('');
+
+      modal.destroy();
     });
   });
 });

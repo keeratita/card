@@ -7,6 +7,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **New core exports**: `formatPhone`, `reformatExpiryDate`,
+  `validateCardNumberLength`, and `isCardLengthValid` are now exported from
+  the package root entry (previously documented in `docs/react-usage.md` but
+  unreachable).
+- **Angular**: `CountrySelectComponent` now emits `countrySelected` — a
+  code-only output mirroring the React `onChange` contract.
+- **Country autocomplete behaves the same in every binding**: vanilla, React
+  and Angular now share one implementation of open/close, filtering, keyboard
+  navigation and viewport placement, so the country field no longer differs
+  depending on which framework you use.
+- **Stylesheets are importable subpaths**: `@keeratita/card/vanilla/styles.css`
+  and `@keeratita/card/vanilla/styles.min.css` are now in the `exports` map, so
+  the documented React statement `import '@keeratita/card/vanilla/styles.css'`
+  actually resolves (it previously threw `ERR_PACKAGE_PATH_NOT_EXPORTED`).
+- **React `FormField` is styled by the library**: the shared stylesheet gained a
+  `.form-field` block (`__label`, `__input`, `__error`, `__required`, the
+  `--error` modifier), so an app that imports the library stylesheet gets a
+  styled stacked field instead of an unstyled one.
+- **New core export**: `getExpectedCvcLength(brand)` returns how many digits a
+  brand's CVC prints — Amex 4, every other brand 3.
+
+### Changed
+
+- `addressLine2` is now consistently optional across all bindings: an empty
+  value no longer fails `validateField` (was already optional in Angular), and
+  the vanilla form no longer marks it `required`.
+- `FormField` (React) renders correct autocomplete hints — `country` for the
+  country field (the stored value is an ISO 2-letter code, not a country name)
+  and `tel` for the phone field.
+- Angular `CountrySelectComponent`: click-outside closes the dropdown,
+  Escape restores focus to the trigger, the live region is wired as a proper
+  `combobox`/`listbox` with `aria-activedescendant`, and the list is clamped
+  to the viewport.
+- The shared combobox filter matches country **codes exactly** in the country
+  field of **all three bindings** (a partial query like `"t"` no longer
+  surfaces Chad `"TD"` in the vanilla form either). The generic
+  `AutocompleteDropdown` keeps its original value-prefix matching by default;
+  `CountryAutocomplete` opts out with the new `includeValuePrefixMatch: false`
+  config option, which is also available to custom consumers of the widget.
+- Vanilla `AutocompleteDropdown`/`CountryAutocomplete` keyboard navigation
+  now **wraps** at the list ends instead of clamping.
+- `moveHighlight` (root export): the first Arrow key press with no current
+  selection now highlights the first item (previously ArrowUp jumped to the
+  last item).
+- React `CountryAutocomplete`: option rows expose
+  `aria-setsize`/`aria-posinset`, the "scroll or type to find more" hint
+  moved into an `aria-live` region, the list clamps to the viewport,
+  arrowing past the rendered page grows the lazy window instead of
+  highlighting unrendered rows, and an empty filter result now renders a
+  "no countries found" row instead of a silently empty listbox.
+- **One combobox ARIA contract across vanilla, React and Angular**: the
+  trigger is a disclosure `button` that always reports `aria-expanded`, while
+  the search input is the single `role=combobox` while open and owns
+  `aria-activedescendant`; option rows carry `aria-setsize`/`aria-posinset`
+  in every binding.
+- **Placement**: dropdowns no longer render past the bottom of the viewport —
+  the shared placement math clamps the height to the space that actually
+  exists below the anchor, the Angular list keeps a usable minimum height
+  instead of collapsing, and all three bindings reposition on resize.
+- `reformatExpiryDate` now normalizes `MM/YYYY` (and a short month) correctly:
+  `"12/2025"` → `"12 / 25"` and `"1 / 2030"` → `"01 / 30"` (previously the
+  4-digit-year form could produce the century digits or a clamped month).
+- `validateCardNumberLength` results now include the detected `brand`, so UI
+  code can label a length message without detecting the brand a second time.
+- **Accessibility of the vanilla form**: the visible country control is the
+  labeled, `aria-required`/`aria-describedby`/`aria-invalid` carrier (the
+  hidden value input is invisible to ATs), the trigger is `readOnly` so
+  type-ahead can never strand a character in it, and closed-state keystrokes
+  are ignored so the hidden search box cannot mutate widget state.
+- Styling: form field labels and error text meet contrast guidelines on the
+  dark surface, chevrons and the dropdown arrow rotate consistently, and the
+  screen-reader-only helper (`visually-hidden`) is shared by all bindings.
+- React `CountryAutocomplete` hides its live-region text with inline styles
+  instead of relying only on the shared `.visually-hidden` class, so the
+  result count cannot appear on screen for apps that do not import the
+  stylesheet. Both framework guides now document importing
+  `@keeratita/card/vanilla/styles.css` (React import, Angular `angular.json`
+  `styles` entry).
+- **Keyboard behavior is now identical across the three bindings**: **`ArrowUp`
+  on a closed country select opens the list in React and Angular** (it already
+  did in vanilla), Escape or Enter from the search box returns focus to the
+  trigger, closing from the trigger leaves focus alone, and keys reaching the
+  hidden search input can no longer drive a closed list.
+- The Angular dropdown list is now 300px tall and stacks like the vanilla and
+  React widgets (it was 240px and in a different stacking range), so the three
+  country fields look and layer the same.
+
+### Deprecated
+
+- Angular `CountrySelectComponent.countryChange` — use `countrySelected`;
+  `countryChange` still emits `{ name, value }` where `name` is the control
+  name (not the country name).
+
+### Fixed
+
+- **React: the CVC field no longer accepts 4 digits for non-Amex cards** — the
+  limit now follows the brand, matching what the formatter already enforced.
+- **The shipped `CountrySelectComponent` works in an AOT application with
+  `strictTemplates`**, so Angular apps can import it from
+  `@keeratita/card/angular` instead of keeping a local copy.
+- **Angular trigger role inversion**: the trigger reported `role="combobox"`
+  while *closed* and `role="button"` while *open* — the inverse of the contract
+  the React and vanilla bindings implement, which left screen readers with no
+  stable disclosure control and a second combobox competing with the search
+  input. The trigger is now a `button` in both states and points
+  `aria-controls` at the listbox only while that listbox exists, so a screen
+  reader sees one stable disclosure control and one combobox.
+- **Focus dropped to `<body>` when a country list closed** (React selection and
+  outside click; Angular outside click). The search input is unmounted on close,
+  so unless focus is moved explicitly the keyboard user loses their place. Every
+  close path in all three bindings now returns focus to the trigger — matching a
+  native `<select>` — and only when focus was actually inside the widget, so an
+  outside click that hit nothing focused does not steal focus.
+- **Documented React stylesheet import failed**: `@keeratita/card/vanilla/styles.css`
+  was not in the `exports` map, so every React app that followed the guide
+  failed to build. (The Angular guide's `angular.json` path kept working because
+  it references the file directly rather than through the exports map.)
+
+### Removed
+
+- Dead rules in the published stylesheet: `.form-section-header` was declared
+  twice with the earlier block fully shadowed by the later one, and
+  `.row-country .ios-input-row` was declared twice with identical declarations.
+  Both were unreachable, so no rendered output changes.
+
 ## [3.0.0] - 2026-08-13
 
 ### Added

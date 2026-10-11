@@ -23,6 +23,7 @@ src/
     security.ts       # sanitizeInput, escapeHtml — applied to all user input before rendering
     domain/           # card.ts, brand.ts, token.ts, validation.ts, optional-fields.ts, card-brand-logos.ts
     form/             # Framework-agnostic form state machine: validateField, buildCard, masking, caret, success summary
+    form/combobox.ts  # Shared combobox core (comboboxReduce, comboboxFilter, computeDropdownPlacement) used by all 3 bindings
     formatters/       # card-formatter.ts: formatCardNumber, formatExpiry, formatCvc, cleanDigits
     adapters/         # base.ts (errors), stripe.ts, omise.ts, validate-card.ts
   vanilla/            # Vanilla JS: CardForm (inline), CardModal (popover checkout), autocomplete dropdowns, styles.scss
@@ -31,9 +32,10 @@ src/
   data/               # countries.ts (+ COUNTRIES data, flag emojis)
   lang/               # Localization strings (en.ts)
 tests/                # Mirrors src/ layout (tests/core, tests/vanilla, tests/react, tests/angular)
-docs/                 # Framework integration guides (react-usage.md, angular-usage.md)
-examples/             # Runnable demos: vanilla/, react/, angular/
-scripts/              # generate-dist-package-json.js (build helper)
+docs/                 # Framework guides (react-usage.md, angular-usage.md) + design/review notes
+examples/             # Runnable demos: vanilla/, react/, angular/ — npm workspaces,
+                      # installed from the repo root (no per-example npm install, no per-example lockfile)
+scripts/              # generate-dist-package-json.js + ship-angular-partial.js (build helpers)
 ```
 
 Source layout rule: **code lives in `src/`, tests in `tests/`, mirroring the same folder structure** (e.g. `src/react/useCardForm.ts` → `tests/react/useCardForm.test.ts`).
@@ -42,22 +44,36 @@ Source layout rule: **code lives in `src/`, tests in `tests/`, mirroring the sam
 
 | Command | Purpose |
 | --- | --- |
-| `npm run build` | Full build: tsup (all 4 entry points, CJS+ESM+dts), dist package.json generation, and SASS compilation |
+| `npm run build` | Full build: Angular partial compile (`ngc -p tsconfig.ngc.partial.json`), tsup (all 4 entry points, CJS+ESM+dts), dist package.json generation, shipping the Angular partial output (`node scripts/ship-angular-partial.js`), and SASS compilation |
 | `npm run build:core` / `build:vanilla` / `build:react` / `build:angular` | Build a single entry point |
 | `npm run dev` | Watch mode for tsup + sass |
 | `npm test` | Run all Vitest tests (jsdom environment) |
+| `npm run test:dist` | Consumer suite against the **built** `dist` artifacts (run after `npm run build`; skips itself when `dist/` is missing) |
 | `npm run lint` | ESLint (flat config, typescript-eslint) over `src` |
 | `npm run release` | Tag + GitHub release via release-it (bumps version) |
 | `npm run deploy` | Build then `npm publish --access public` |
 | `npm run demo` / `demo:react` / `demo:angular` / `demo:all` | Run the demos for local validation |
 
-The Husky pre-commit hook runs `npm run lint` plus the test suite **excluding** the Angular directive/component/form-group tests:
+The Husky pre-commit hook runs `npm run lint && npm test` — the full suite, including the Angular
+suites. (Three Angular files were excluded from this hook while a decorator-lowering
+bug in the test toolchain made them fail; `experimentalDecorators` in
+`tsconfig.json` fixed that, so the exclusions are gone.)
 
-```
-npm run lint && npm test -- --exclude=tests/angular/directives.test.ts --exclude=tests/angular/components.test.ts --exclude=tests/angular/form-group.test.ts
-```
+### Traps when validating in a browser
 
-Run the full suite locally before pushing.
+The examples consume `dist`, so a green demo run only says something about your
+change if the served artifacts are actually current:
+
+- **Build before you serve.** Running `npm run build` while `ng serve` is
+  watching makes it rebuild the instant tsup deletes `dist/*.d.ts`, so it
+  reports `TS7016 Could not find a declaration file` and
+  `NG1010 'imports' must be an array of components` — then *caches* that
+  failure, and later rebuilds replay identical errors in 0.000s. Restart the
+  dev server; a build started mid-watch says nothing about your code.
+- **Bypass the HTTP cache.** Vite serves pre-bundled dependencies with
+  `Cache-Control: max-age=31536000, immutable`, so a demo can keep executing
+  pre-change modules even after a rebuild and an `.angular/cache` wipe. Reload
+  with the cache disabled before trusting browser verification.
 
 ## Architecture Principles
 
@@ -85,6 +101,11 @@ Enforced by ESLint (`eslint.config.mjs`) and `tsconfig.json`:
 - Tests live in `tests/` mirroring `src/` layout. DOM-rendering tests use `@testing-library/react`.
 - Follow existing conventions: `describe`/`it` with behavioral naming, per-framework suites (e.g. `Angular Components - renderOptionalFieldHtml`).
 - Coverage is collected with v8 for `src/**/*.ts` — run `npm test` before finalizing changes and make sure you haven't broken existing suites.
+- **`tests/dist-consumer.test.ts` validates the published artifacts**, not `src`: it resolves every entry (plus both stylesheets) through the `package.json`
+  `exports` map and JIT-renders the shipped `CountrySelectComponent`. Every
+  other suite imports `src`, so only this one catches a broken tsup config, a
+  missing `exports` subpath, or a stale `.ngcompile` intermediate. Run
+  `npm run build && npm run test:dist` before releasing.
 
 ## Security
 
@@ -103,6 +124,10 @@ This library handles **raw payment card data (PAN, CVC)** in the browser. Non-ne
 - `./vanilla` → `src/vanilla/index.ts`
 - `./react` → `src/react/index.ts`
 - `./angular` → `src/angular/index.ts`
+- `./vanilla/styles.css` / `./vanilla/styles.min.css` → the compiled stylesheet
+  (`src/vanilla/styles.scss`). Both guides tell consumers to import these, so a
+  missing subpath breaks every app that follows the docs; keep the root
+  `exports` map and `scripts/generate-dist-package-json.js` (dist copy) in sync.
 
 New exports must be re-exported from the matching entry file, and types must be exported alongside runtime values.
 
@@ -121,4 +146,6 @@ Before considering a change complete:
 1. `npm run lint` — no new errors.
 2. `npm test` — full suite passes (including Angular tests that pre-commit skips).
 3. `npm run build` — dist artifacts build cleanly and entry-point exports resolve.
-4. If examples/tests touch rendering, sanity-check via `npm run demo` where feasible.
+4. `npm run test:dist` — the built artifacts (all four entries, both stylesheets,
+   the shipped Angular component) behave like the source they were built from.
+5. If examples/tests touch rendering, sanity-check via `npm run demo` where feasible.

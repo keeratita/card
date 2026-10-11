@@ -8,7 +8,30 @@
  * - Icon/emoji support per option
  * - Click outside to close
  * - Extensible for custom rendering
+ *
+ * All decision logic (open/close state, filtering, highlight navigation,
+ * viewport placement) comes from the shared, framework-agnostic combobox
+ * core in `src/core/form/combobox.ts`. This class is a thin DOM binder.
  */
+
+import {
+  comboboxFilter,
+  comboboxReduce,
+  comboboxKeyCommand,
+  isComboboxKeyHandled,
+  computeDropdownPlacement,
+  INITIAL_COMBOBOX_STATE,
+} from '../../core/form';
+import {
+  DROPDOWN_DEFAULT_MAX_HEIGHT,
+  DROPDOWN_Z_INDEX,
+} from '../../core/constants';
+import type {
+  ComboboxAction,
+  ComboboxState,
+  DropdownPlacement,
+} from '../../core/form';
+import { CARD_FORM_TEXT_EN } from '../../lang/en';
 
 export interface AutocompleteOption {
   value: string;
@@ -26,12 +49,23 @@ export interface AutocompleteDropdownConfig {
   noResultsText?: string;
   maxHeight?: number;
   showIcons?: boolean;
+  /**
+   * When true (default), option `value`s also match on prefix/contains —
+   * the widget's original generic behavior. Set false for short-code values
+   * (e.g. ISO country codes) so a partial query does not surface unrelated
+   * options whose code happens to start with the query; the country binding
+   * does exactly this, matching the React/Angular bindings.
+   */
+  includeValuePrefixMatch?: boolean;
 }
 
 // Use a reasonable max z-index instead of the fragile Integer.MAX_VALUE
-const AUTOCOMPLETE_Z_INDEX = 9999;
 // Estimated search input height inside the dropdown
 const SEARCH_INPUT_HEIGHT = 50;
+
+// Unique DOM-id namespace per instance, so multiple dropdowns on one page
+// never collide on aria-controls / aria-activedescendant IDREFs.
+let instanceCounter = 0;
 
 export class AutocompleteDropdown {
   private container: HTMLElement;
@@ -42,37 +76,50 @@ export class AutocompleteDropdown {
   private noResultsText: string;
   private maxHeight: number;
   private showIcons: boolean;
+  private includeValuePrefixMatch: boolean;
 
+  private readonly uid = `autocomplete-${++instanceCounter}`;
   private inputEl!: HTMLInputElement;
+  private searchInputEl!: HTMLInputElement;
   private dropdownEl!: HTMLElement;
   private resultsEl!: HTMLElement;
-  private isOpen: boolean = false;
+  private statusEl!: HTMLElement;
+  private state: ComboboxState = INITIAL_COMBOBOX_STATE;
   private filteredOptions: AutocompleteOption[] = [];
-  private originalOptions: AutocompleteOption[] = [];
 
   // Track global listeners for cleanup
   private documentClickHandler: (e: MouseEvent) => void;
   private windowResizeHandler: () => void;
+  private windowScrollHandler: () => void;
   private resultsClickHandler: (e: MouseEvent) => void;
   private resultsMouseMoveHandler: (e: MouseEvent) => void;
-  private highlightedIndex: number = -1;
+  private repositionQueued = false;
+
+  private get isOpen(): boolean {
+    return this.state.isOpen;
+  }
+
+  private get highlightedIndex(): number {
+    return this.state.highlightedIndex;
+  }
 
   constructor(config: AutocompleteDropdownConfig) {
     this.container = this.resolveContainer(config.container);
     this.options = [...config.options];
-    this.originalOptions = [...config.options];
     this.onSelect = config.onSelect;
     this.placeholder = config.placeholder || 'Select...';
     this.searchPlaceholder = config.searchPlaceholder || 'Search...';
     this.noResultsText = config.noResultsText || 'No results found';
-    this.maxHeight = config.maxHeight || 300;
+    this.maxHeight = config.maxHeight || DROPDOWN_DEFAULT_MAX_HEIGHT;
     this.showIcons = config.showIcons !== false;
+    this.includeValuePrefixMatch = config.includeValuePrefixMatch !== false;
 
     this.filteredOptions = [...this.options];
 
     // Bind handlers once for consistent reference in removeEventListener
     this.documentClickHandler = this._onDocumentClick.bind(this);
     this.windowResizeHandler = this._onWindowResize.bind(this);
+    this.windowScrollHandler = this._onWindowScroll.bind(this);
     this.resultsClickHandler = this._onResultsClick.bind(this);
     this.resultsMouseMoveHandler = this._onResultsMouseMove.bind(this);
 
@@ -80,17 +127,39 @@ export class AutocompleteDropdown {
     this.bindEvents();
   }
 
+  private dispatch(action: ComboboxAction): void {
+    this.state = comboboxReduce(this.state, action);
+  }
+
   private _onDocumentClick(e: MouseEvent): void {
+    if (!this.isOpen) return;
     const target = e.target as Node;
     // Only close if clicking outside both container and dropdown
-    if (!this.container.contains(target) &&
-        !this.dropdownEl.contains(target)) {
+    if (
+      !this.container.contains(target) &&
+      !this.dropdownEl.contains(target)
+    ) {
       this.close();
     }
   }
 
   private _onWindowResize(): void {
-    this.repositionDropdown();
+    this.scheduleReposition();
+  }
+
+  private _onWindowScroll(): void {
+    // The dropdown is position:fixed; a page/list scroll detaches it from
+    // the trigger, so reposition (rAF-coalesced, like the React binding).
+    this.scheduleReposition();
+  }
+
+  private scheduleReposition(): void {
+    if (!this.isOpen || this.repositionQueued) return;
+    this.repositionQueued = true;
+    requestAnimationFrame(() => {
+      this.repositionQueued = false;
+      this.repositionDropdown();
+    });
   }
 
   private _onResultsClick(e: MouseEvent): void {
@@ -108,7 +177,7 @@ export class AutocompleteDropdown {
     if (optionEl) {
       const index = parseInt(optionEl.getAttribute('data-index') || '-1', 10);
       if (index >= 0 && index < this.filteredOptions.length) {
-        this.highlightedIndex = index;
+        this.dispatch({ type: 'setHighlight', index });
         this.updateHighlight();
       }
     }
@@ -126,65 +195,87 @@ export class AutocompleteDropdown {
   }
 
   private render(): void {
-    // Create wrapper
+    // Create wrapper — a plain container. The combobox semantics live on
+    // the trigger input; a second role=combobox here would give ATs two
+    // conflicting nodes to choose from.
     const wrapper = document.createElement('div');
     wrapper.className = 'autocomplete-dropdown-wrapper';
-    wrapper.setAttribute('role', 'combobox');
-    wrapper.setAttribute('aria-expanded', 'false');
 
-    // Input field
+    // Trigger input: a disclosure button (readOnly, so typed characters can
+    // never strand raw text in the field — they are forwarded into the
+    // dropdown's search box instead, see keydown). The combobox semantics
+    // live on the search input while open, in all three bindings.
     this.inputEl = document.createElement('input');
     this.inputEl.type = 'text';
     this.inputEl.className = 'autocomplete-input';
     this.inputEl.placeholder = this.placeholder;
     this.inputEl.autocomplete = 'off';
     this.inputEl.spellcheck = false;
-    this.inputEl.setAttribute('aria-autocomplete', 'list');
-    this.inputEl.setAttribute('aria-controls', 'autocomplete-results-list');
-    this.inputEl.setAttribute('aria-activedescendant', '');
+    this.inputEl.readOnly = true;
+    this.inputEl.setAttribute('role', 'button');
+    this.inputEl.setAttribute('aria-haspopup', 'listbox');
+    this.inputEl.setAttribute('aria-expanded', 'false');
 
     // Dropdown container - positioned fixed to avoid overflow: hidden clipping
     this.dropdownEl = document.createElement('div');
     this.dropdownEl.className = 'autocomplete-dropdown';
     this.dropdownEl.style.display = 'none';
-    this.dropdownEl.setAttribute('role', 'listbox');
-    this.dropdownEl.setAttribute('aria-label', 'Select an option');
 
-    // Search input (inside dropdown)
+    // Search input (inside dropdown): while open, the focused element is
+    // the combobox, mirroring the React/Angular bindings.
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.className = 'autocomplete-search-input';
     searchInput.placeholder = this.searchPlaceholder;
     searchInput.autocomplete = 'off';
     searchInput.spellcheck = false;
-    searchInput.setAttribute('aria-label', 'Search options');
+    searchInput.setAttribute('role', 'combobox');
+    searchInput.setAttribute('aria-expanded', 'true');
+    searchInput.setAttribute('aria-haspopup', 'listbox');
+    searchInput.setAttribute('aria-autocomplete', 'list');
+    searchInput.setAttribute('aria-controls', `${this.uid}-list`);
+    searchInput.setAttribute('aria-activedescendant', '');
+    searchInput.setAttribute('aria-label', CARD_FORM_TEXT_EN.searchOptions);
+    this.searchInputEl = searchInput;
 
-    // Results container
+    // Results container: the listbox referenced by both comboboxes'
+    // aria-controls. Kept a sibling of the search input (not an ancestor)
+    // so options are direct listbox children.
     this.resultsEl = document.createElement('div');
     this.resultsEl.className = 'autocomplete-results';
     this.resultsEl.style.maxHeight = `${this.maxHeight}px`;
-    this.resultsEl.setAttribute('role', 'list');
-    this.resultsEl.setAttribute('id', 'autocomplete-results-list');
-    
+    this.resultsEl.setAttribute('role', 'listbox');
+    this.resultsEl.setAttribute('id', `${this.uid}-list`);
+    this.resultsEl.setAttribute('aria-label', CARD_FORM_TEXT_EN.optionsList);
+
+    // Polite live region announcing result counts (screen readers get no
+    // feedback from a filtered list otherwise).
+    this.statusEl = document.createElement('div');
+    this.statusEl.className = 'autocomplete-status visually-hidden';
+    this.statusEl.setAttribute('role', 'status');
+    this.statusEl.setAttribute('aria-live', 'polite');
+
     // Assemble dropdown
     this.dropdownEl.appendChild(searchInput);
     this.dropdownEl.appendChild(this.resultsEl);
-    
+    this.dropdownEl.appendChild(this.statusEl);
+
     // Assemble wrapper
     wrapper.appendChild(this.inputEl);
-    
+
     // Append to container
     this.container.appendChild(wrapper);
-    
+
     // Append dropdown to body to escape all parent overflow constraints
     document.body.appendChild(this.dropdownEl);
-    
+
     // Initial render of results
     this.renderResults();
   }
 
   private bindEvents(): void {
-    // Input click - always open dropdown
+    // Input click - open the dropdown (no-op while open, so clicking the
+    // visible field to refocus never wipes an active filter).
     this.inputEl.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -197,12 +288,12 @@ export class AutocompleteDropdown {
     });
 
     // Search input - filter results
-    const searchInput = this.dropdownEl.querySelector('.autocomplete-search-input') as HTMLInputElement;
+    const searchInput = this.dropdownEl.querySelector(
+      '.autocomplete-search-input',
+    ) as HTMLInputElement;
     searchInput.addEventListener('input', (e) => {
       const target = e.target as HTMLInputElement;
       this.filterOptions(target.value);
-      // Reposition dropdown after filtering (height may have changed)
-      this.repositionDropdown();
     });
 
     // Search input keydown - handle navigation
@@ -213,130 +304,117 @@ export class AutocompleteDropdown {
     // Click outside to close - use capture phase to check before other handlers
     document.addEventListener('click', this.documentClickHandler, true);
 
-    // Reposition dropdown on window resize
-    window.addEventListener('resize', this.windowResizeHandler);
+    // Keep the fixed-position dropdown attached to its trigger while the
+    // window resizes or the page scrolls.
+    window.addEventListener('resize', this.windowResizeHandler, {
+      passive: true,
+    });
+    window.addEventListener('scroll', this.windowScrollHandler, {
+      passive: true,
+      capture: true,
+    });
 
     // Handle result clicks
     this.resultsEl.addEventListener('click', this.resultsClickHandler);
 
-    // Handle result hover for keyboard-like navigation
+    // Handle result hover for keyboard-like navigation; leaving the list
+    // returns the highlight to the current selection so a stray pointer
+    // pass never leaves the announced row hovering mid-list.
     this.resultsEl.addEventListener('mousemove', this.resultsMouseMoveHandler);
+    this.resultsEl.addEventListener('mouseleave', () => {
+      if (!this.isOpen) return;
+      this.dispatch({
+        type: 'setHighlight',
+        index: this.getSelectedIndex(this.filteredOptions),
+      });
+      this.updateHighlight();
+    });
+  }
+
+  /**
+   * Both keydown paths funnel through `comboboxKeyCommand`, so the key map is
+   * decided once in core for all three bindings; this method only executes the
+   * returned command against the DOM. `target` distinguishes the always-present
+   * trigger from the search input that exists only while the list is open.
+   */
+  private handleKeydown(e: KeyboardEvent, target: 'trigger' | 'search'): void {
+    const command = comboboxKeyCommand(e.key, this.state, target, {
+      metaKey: e.metaKey,
+      ctrlKey: e.ctrlKey,
+      altKey: e.altKey,
+    });
+    if (!isComboboxKeyHandled(command)) return;
+    e.preventDefault();
+
+    switch (command.type) {
+      case 'open':
+        this.open(command.query ?? '');
+        break;
+      case 'close':
+        this.close();
+        if (command.restoreFocusToTrigger) this.inputEl.focus();
+        break;
+      case 'move':
+        if (command.direction === 'down') this.highlightNext();
+        else this.highlightPrevious();
+        break;
+      case 'select':
+        this.selectOption(this.state.highlightedIndex);
+        break;
+    }
   }
 
   private handleInputKeydown(e: KeyboardEvent): void {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        if (!this.isOpen) {
-          this.open();
-        } else {
-          this.highlightNext();
-        }
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.highlightPrevious();
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (this.highlightedIndex >= 0) {
-          this.selectOption(this.highlightedIndex);
-        } else {
-          this.close();
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        this.close();
-        break;
-      default:
-        // Open dropdown on any character input
-        if (e.key.length === 1) {
-          if (!this.isOpen) {
-            this.open();
-          }
-        }
-        break;
-    }
+    this.handleKeydown(e, 'trigger');
   }
 
   private handleSearchKeydown(e: KeyboardEvent): void {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        this.highlightNext();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.highlightPrevious();
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (this.highlightedIndex >= 0) {
-          this.selectOption(this.highlightedIndex);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        this.close();
-        this.inputEl.focus();
-        break;
-    }
+    this.handleKeydown(e, 'search');
   }
 
-  private toggle(): void {
-    if (this.isOpen) {
-      this.close();
-    } else {
-      this.open();
-    }
-  }
+/**
+   * Opens the dropdown, resetting the filter (the previous query must not
+   * persist) and highlighting the current selection so reopening shows
+   * where it sits in the list. `initialQuery` pre-filters (used by trigger
+   * type-ahead). State is written in a single pass: the reducer's `open`
+   * reset, then the selection-derived highlight.
+   */
+  private open(initialQuery = ''): void {
+    if (this.isOpen) return;
 
-  private open(): void {
-    this.isOpen = true;
+    this.state = comboboxReduce(this.state, {
+      type: 'open',
+      query: initialQuery,
+      // Type-ahead starts unhighlighted so the first typed character
+      // decides the list; a plain open lands on the current selection
+      // so aria-activedescendant points somewhere meaningful.
+      highlight: initialQuery ? -1 : this.getSelectedIndex(),
+    });
 
-    // Reset search state so reopening always shows the full list with an
-    // empty search box (the previous filter must not persist).
-    const searchInput = this.dropdownEl.querySelector(
-      '.autocomplete-search-input',
-    ) as HTMLInputElement;
-    if (searchInput) {
-      searchInput.value = '';
-    }
-    this.filteredOptions = [...this.originalOptions];
-    // Re-highlight the current selection on open so reopening shows where it
-    // sits in the list (scrolled into view below).
-    this.highlightedIndex = this.getSelectedIndex();
+    // Reset the search box to match the (re)set query.
+    this.searchInputEl.value = initialQuery;
+    this.applyFilter(initialQuery);
     this.renderResults();
 
-    // Position the dropdown using fixed positioning to escape all parent overflow constraints
-    // Get the actual input element's position (not the wrapper)
+    // Position the dropdown using fixed positioning to escape all parent
+    // overflow constraints. Use the configured maxHeight + search input
+    // height as the initial height estimate.
     const inputRect = this.inputEl.getBoundingClientRect();
-    // Use configured maxHeight + search input height for a more accurate estimate
     const dropdownHeight = this.maxHeight + SEARCH_INPUT_HEIGHT;
-    const viewportHeight = window.innerHeight;
-    
+
     this.dropdownEl.style.position = 'fixed';
     this.dropdownEl.style.left = `${inputRect.left}px`;
     this.dropdownEl.style.width = `${inputRect.width}px`;
-    this.dropdownEl.style.zIndex = String(AUTOCOMPLETE_Z_INDEX);
+    this.dropdownEl.style.zIndex = String(DROPDOWN_Z_INDEX);
     this.dropdownEl.style.display = 'block';
-    
-    // Check if dropdown would overflow the bottom of the viewport
-    const spaceBelow = viewportHeight - inputRect.bottom;
-    const spaceAbove = inputRect.top;
-    
-    if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-      // Render above the input
-      this.dropdownEl.style.top = `${inputRect.top - dropdownHeight}px`;
-      this.dropdownEl.style.maxHeight = `${inputRect.top - 10}px`;
-    } else {
-      // Render below the input (default)
-      this.dropdownEl.style.top = `${inputRect.bottom}px`;
-      this.dropdownEl.style.maxHeight = `${dropdownHeight}px`;
-    }
-    
-    this.inputEl.setAttribute('aria-expanded', 'true');
+
+    const placement = computeDropdownPlacement(
+      inputRect,
+      dropdownHeight,
+      window.innerHeight,
+    );
+    this.applyPlacement(placement);
+    this.setTriggerExpanded(true);
 
     // Recalculate the position now that the dropdown is displayed, so the
     // actual rendered height (which may differ from the estimate) is used to
@@ -350,90 +428,108 @@ export class AutocompleteDropdown {
 
     // Focus search input
     setTimeout(() => {
-      searchInput.focus();
-      searchInput.select();
+      this.searchInputEl.focus();
+      this.searchInputEl.select();
     }, 10);
+  }
+
+  private applyPlacement(placement: DropdownPlacement): void {
+    this.dropdownEl.style.top = `${placement.top}px`;
+    this.dropdownEl.style.maxHeight = `${placement.maxHeight}px`;
   }
 
   private repositionDropdown(): void {
     if (!this.isOpen) return;
 
-    // Get the actual input element's position (not the wrapper)
     const inputRect = this.inputEl.getBoundingClientRect();
     // Use the actual rendered height of the dropdown if available, otherwise estimate
     const actualHeight = this.dropdownEl.offsetHeight;
-    const dropdownHeight = actualHeight > 0 ? actualHeight : this.maxHeight + SEARCH_INPUT_HEIGHT;
-    const viewportHeight = window.innerHeight;
-    
-    // Check if dropdown would overflow the bottom of the viewport
-    const spaceBelow = viewportHeight - inputRect.bottom;
-    const spaceAbove = inputRect.top;
-    
-    if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-      // Render above the input
-      this.dropdownEl.style.top = `${inputRect.top - dropdownHeight}px`;
-      this.dropdownEl.style.maxHeight = `${inputRect.top - 10}px`;
-    } else {
-      // Render below the input (default)
-      this.dropdownEl.style.top = `${inputRect.bottom}px`;
-      this.dropdownEl.style.maxHeight = `${dropdownHeight}px`;
-    }
+    const dropdownHeight =
+      actualHeight > 0 ? actualHeight : this.maxHeight + SEARCH_INPUT_HEIGHT;
+
+    const placement = computeDropdownPlacement(
+      inputRect,
+      dropdownHeight,
+      window.innerHeight,
+    );
+    this.applyPlacement(placement);
   }
 
   private close(): void {
-    this.isOpen = false;
+    // Guard: the document-level capture listener fires this on every page
+    // click; an already-closed dropdown must not re-run the reset work
+    // (option copy, selection scan, reducer dispatches).
+    if (!this.isOpen) return;
+
+    this.dispatch({ type: 'close' });
     this.dropdownEl.style.display = 'none';
-    this.inputEl.setAttribute('aria-expanded', 'false');
-    this.highlightedIndex = -1;
-    
+    this.setTriggerExpanded(false);
+
     // Clear the search input
-    const searchInput = this.dropdownEl.querySelector('.autocomplete-search-input') as HTMLInputElement;
+    const searchInput = this.dropdownEl.querySelector(
+      '.autocomplete-search-input',
+    ) as HTMLInputElement;
     if (searchInput) {
       searchInput.value = '';
     }
-    
+
     // Always reset to all options (don't keep filtered results)
-    this.filteredOptions = [...this.originalOptions];
-    
-    // If there's a selected value, remember its index so reopening the
-    // dropdown can highlight it.
-    this.highlightedIndex = this.getSelectedIndex();
+    this.filteredOptions = [...this.options];
+
+    // If focus is inside the dropdown (search box, clicked row), return it
+    // to the trigger so keyboard users keep their place in the tab order —
+    // clicking elsewhere leaves focus where the user put it.
+    if (this.dropdownEl.contains(document.activeElement)) {
+      this.inputEl.focus();
+    }
   }
 
-  /** Returns the index of the currently selected option in the full list. */
-  private getSelectedIndex(): number {
+  /**
+   * Trigger aria bookkeeping. The trigger is always a disclosure `button`;
+   * the `combobox` role and `aria-activedescendant` live on the search input
+   * while open. `aria-controls` is only advertised while the listbox is
+   * actually visible, so the IDREF never points at a hidden subtree.
+   */
+  private setTriggerExpanded(open: boolean): void {
+    this.inputEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      this.inputEl.setAttribute('aria-controls', `${this.uid}-list`);
+    } else {
+      this.inputEl.removeAttribute('aria-controls');
+    }
+  }
+
+  /**
+   * Index of the current selection (matched by visible label) within
+   * `list` — the full options on open, the filtered rows on hover reset.
+   */
+  private getSelectedIndex(
+    list: readonly AutocompleteOption[] = this.options,
+  ): number {
     const currentValue = this.inputEl.value;
     if (!currentValue) return -1;
-    return this.originalOptions.findIndex((o) => o.label === currentValue);
+    return list.findIndex((o) => o.label === currentValue);
   }
 
   private filterOptions(query: string): void {
-    const searchQuery = query.toLowerCase().trim();
-
-    if (!searchQuery) {
-      this.filteredOptions = [...this.options];
-    } else {
-      // Prioritize options that start with the query, then those that merely
-      // contain it. This keeps the list relevant when typing a single letter
-      // (e.g. "T" surfaces Thailand/Taiwan before Afghanistan).
-      const startsWith: AutocompleteOption[] = [];
-      const contains: AutocompleteOption[] = [];
-
-      for (const option of this.options) {
-        const label = option.label.toLowerCase();
-        const value = option.value.toLowerCase();
-        if (label.startsWith(searchQuery) || value.startsWith(searchQuery)) {
-          startsWith.push(option);
-        } else if (label.includes(searchQuery) || value.includes(searchQuery)) {
-          contains.push(option);
-        }
-      }
-
-      this.filteredOptions = [...startsWith, ...contains];
-    }
-
-    this.highlightedIndex = this.filteredOptions.length > 0 ? 0 : -1;
+    this.dispatch({ type: 'setQuery', query });
+    this.applyFilter(query);
+    this.dispatch({
+      type: 'setHighlight',
+      index: this.filteredOptions.length > 0 ? 0 : -1,
+    });
     this.renderResults();
+  }
+
+  /** Recomputes the filtered list from `query` (no state dispatch). */
+  private applyFilter(query: string): void {
+    // Options already satisfy the ComboboxItem shape ({ value, label }), so
+    // no conversion or identity round-trip is needed. `includeValuePrefixMatch`
+    // preserves the generic widget's original value-prefix/contains semantics;
+    // the country binding opts out to match React/Angular exact-code matching.
+    this.filteredOptions = comboboxFilter(this.options, query, {
+      includeValuePrefixMatch: this.includeValuePrefixMatch,
+    });
   }
 
   private renderResults(): void {
@@ -446,29 +542,47 @@ export class AutocompleteDropdown {
       noResults.setAttribute('role', 'option');
       noResults.setAttribute('aria-disabled', 'true');
       this.resultsEl.appendChild(noResults);
-      return;
+    } else {
+      this.filteredOptions.forEach((option, index) => {
+        const resultEl = this.createResultElement(option, index);
+        this.resultsEl.appendChild(resultEl);
+      });
     }
 
-    this.filteredOptions.forEach((option, index) => {
-      const resultEl = this.createResultElement(option, index);
-      this.resultsEl.appendChild(resultEl);
-    });
-    
+    this.updateStatus();
     this.updateHighlight();
-    
+
     // Reposition dropdown after results are rendered (height may have changed)
     this.repositionDropdown();
   }
 
-  private createResultElement(option: AutocompleteOption, index: number): HTMLElement {
+  /** Announce the result count (or the no-results copy) to screen readers. */
+  private updateStatus(): void {
+    if (!this.isOpen) return;
+    this.statusEl.textContent =
+      this.filteredOptions.length === 0
+        ? this.noResultsText
+        : CARD_FORM_TEXT_EN.optionsFound(this.filteredOptions.length);
+  }
+
+  private createResultElement(
+    option: AutocompleteOption,
+    index: number,
+  ): HTMLElement {
     const resultEl = document.createElement('div');
     resultEl.className = 'autocomplete-result';
     resultEl.setAttribute('role', 'option');
+    // Stable, per-instance id assigned up front so aria-activedescendant
+    // can reference the row the moment it is highlighted.
+    resultEl.id = `${this.uid}-option-${index}`;
     resultEl.setAttribute('data-index', index.toString());
-    resultEl.setAttribute('aria-selected', 'false');
     resultEl.setAttribute('aria-label', option.label);
     resultEl.setAttribute('data-value', option.value);
-    
+    // Position within the filtered set — same affordance the React and
+    // Angular rows expose.
+    resultEl.setAttribute('aria-setsize', String(this.filteredOptions.length));
+    resultEl.setAttribute('aria-posinset', String(index + 1));
+
     if (option.customRender) {
       // customRender output is inserted as trusted HTML — integrators must
       // escape any user/API-controlled data themselves.
@@ -476,77 +590,95 @@ export class AutocompleteDropdown {
     } else {
       const iconSpan = document.createElement('span');
       iconSpan.className = 'autocomplete-icon';
-      
+
       if (this.showIcons && option.icon) {
         iconSpan.textContent = option.icon;
       } else {
         iconSpan.style.display = 'none';
       }
-      
+
       const labelSpan = document.createElement('span');
       labelSpan.className = 'autocomplete-label';
       labelSpan.textContent = option.label;
-      
+
       resultEl.appendChild(iconSpan);
       resultEl.appendChild(labelSpan);
     }
-    
+
     return resultEl;
   }
 
   private highlightNext(): void {
     if (this.filteredOptions.length === 0) return;
-    
-    this.highlightedIndex = Math.min(
-      this.highlightedIndex + 1,
-      this.filteredOptions.length - 1
-    );
+
+    this.dispatch({
+      type: 'move',
+      direction: 'down',
+      count: this.filteredOptions.length,
+    });
     this.updateHighlight();
     this.scrollToHighlighted();
   }
 
   private highlightPrevious(): void {
     if (this.filteredOptions.length === 0) return;
-    
-    this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+
+    this.dispatch({
+      type: 'move',
+      direction: 'up',
+      count: this.filteredOptions.length,
+    });
     this.updateHighlight();
     this.scrollToHighlighted();
   }
 
   private updateHighlight(): void {
+    const selectedIndex = this.getSelectedIndex();
     const results = this.resultsEl.querySelectorAll('.autocomplete-result');
     results.forEach((el, index) => {
       if (index === this.highlightedIndex) {
         el.classList.add('highlighted');
-        el.setAttribute('aria-selected', 'true');
-        this.inputEl.setAttribute('aria-activedescendant', el.id || '');
-        if (!el.id) {
-          el.id = `autocomplete-option-${index}`;
-        }
       } else {
         el.classList.remove('highlighted');
-        el.setAttribute('aria-selected', 'false');
       }
+      // aria-selected stays reserved for the chosen option, matching the
+      // React/Angular bindings; the highlight itself is announced through
+      // aria-activedescendant below.
+      el.setAttribute('aria-selected', String(index === selectedIndex));
     });
+    // The active option is announced from the focused element — the search
+    // input — so the IDREF lives there, not on the closed-trigger button.
+    this.searchInputEl.setAttribute(
+      'aria-activedescendant',
+      this.highlightedIndex >= 0
+        ? (results[this.highlightedIndex]?.id ?? '')
+        : '',
+    );
   }
 
   private scrollToHighlighted(): void {
-    const highlighted = this.resultsEl.querySelector('.autocomplete-result.highlighted');
+    const highlighted = this.resultsEl.querySelector(
+      '.autocomplete-result.highlighted',
+    );
     if (highlighted) {
       highlighted.scrollIntoView({
         block: 'nearest',
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   }
 
   private selectOption(index: number): void {
     if (index < 0 || index >= this.filteredOptions.length) return;
-    
+
     const option = this.filteredOptions[index];
     this.inputEl.value = option.label;
     this.onSelect(option.value, option);
     this.close();
+    // close() restores focus only when it was inside the dropdown; after a
+    // mouse click on a row that was true, but guarantee it for every path
+    // so keyboard users advance to the next field on Tab, not to <body>.
+    this.inputEl.focus();
   }
 
   // Public methods for external control
@@ -567,13 +699,11 @@ export class AutocompleteDropdown {
 
   public updateOptions(newOptions: AutocompleteOption[]): void {
     this.options = [...newOptions];
-    this.originalOptions = [...newOptions];
     this.filteredOptions = [...this.options];
     this.renderResults();
   }
 
   public refreshOptions(): void {
-    this.options = [...this.originalOptions];
     this.filteredOptions = [...this.options];
     this.renderResults();
   }
@@ -582,6 +712,7 @@ export class AutocompleteDropdown {
     // Remove global event listeners to prevent memory leaks
     document.removeEventListener('click', this.documentClickHandler, true);
     window.removeEventListener('resize', this.windowResizeHandler);
+    window.removeEventListener('scroll', this.windowScrollHandler, true);
     this.resultsEl.removeEventListener('click', this.resultsClickHandler);
     this.resultsEl.removeEventListener('mousemove', this.resultsMouseMoveHandler);
 
@@ -590,7 +721,9 @@ export class AutocompleteDropdown {
       this.dropdownEl.remove();
     }
     // Remove the wrapper from container
-    const wrapper = this.container.querySelector('.autocomplete-dropdown-wrapper');
+    const wrapper = this.container.querySelector(
+      '.autocomplete-dropdown-wrapper',
+    );
     if (wrapper) {
       wrapper.remove();
     }

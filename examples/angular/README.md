@@ -4,7 +4,15 @@ This directory contains Angular integration examples for the `@keeratita/card` p
 
 ## Prerequisites
 
-Before running these examples, ensure you have built the library:
+This example is an **npm workspace** of the root package — install dependencies
+once from the repo root (there is no per-example lockfile, and you should not
+run `npm install` inside this directory):
+
+```bash
+npm install
+```
+
+Before running the example, build the library so `dist/` is up to date:
 
 ```bash
 npm run build
@@ -14,22 +22,16 @@ npm run build
 
 ### Using Angular CLI
 
-1. Navigate to the example directory:
-   ```bash
-   cd examples/angular
-   ```
+From the repo root, start the development server for this workspace:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm run start -w @keeratita/card-angular-examples
+```
 
-3. Start the development server:
-   ```bash
-   ng serve
-   ```
+(Or use the convenience script that builds the library first: `npm run demo:angular`.)
 
-4. Open your browser to `http://localhost:4200`
+Open your browser to `http://localhost:4201` (the dev-server port configured
+in `angular.json`).
 
 ## Demo Keys & Environment
 
@@ -68,24 +70,20 @@ A complete multi-step checkout flow with card details, billing address, and orde
 
 ## Library Reference
 
-All examples reference the library from the `dist` folder:
-
-```typescript
-import { createCardFormGroup, creditCardValidator, expiryValidator } from '../../dist/angular/index.mjs';
-import { StripeAdapter } from '../../dist/index.mjs';
-```
-
-For production use, install the package via npm:
-
-```bash
-npm install @keeratita/card
-```
-
-Then import from the package:
+All examples import from the package's public subpaths — nothing in this
+example reaches into the `dist` folder with relative paths:
 
 ```typescript
 import { createCardFormGroup, creditCardValidator, expiryValidator } from '@keeratita/card/angular';
 import { StripeAdapter } from '@keeratita/card';
+```
+
+In this workspace the package resolves to the repo itself (`"@keeratita/card":
+"file:../.."`), so the examples consume whatever `npm run build` last produced.
+In your own app, install the published package:
+
+```bash
+npm install @keeratita/card
 ```
 
 ## Module Setup
@@ -130,3 +128,4 @@ import { CardNumberDirective, CardExpiryDirective, CardCvcDirective } from '@kee
   templateUrl: './your-component.html'
 })
 export class YourComponent { }
+```

@@ -11,11 +11,44 @@ This document provides comprehensive guidance on integrating the @keeratita/card
 
 ## Table of Contents
 
-1. [Reactive Forms Integration](#reactive-forms-integration)
-2. [Manual Form Configuration](#manual-form-configuration)
-3. [Input Masking Directives](#input-masking-directives)
-4. [Validator Functions](#validator-functions)
-5. [Complete Example](#complete-example)
+1. [Styling](#styling)
+2. [Reactive Forms Integration](#reactive-forms-integration)
+3. [Manual Form Configuration](#manual-form-configuration)
+4. [Input Masking Directives](#input-masking-directives)
+5. [Validator Functions](#validator-functions)
+6. [Complete Example](#complete-example)
+7. [Country Selection Component](#country-selection-component)
+8. [Re-exported Utilities](#re-exported-utilities)
+9. [Best Practices](#best-practices)
+
+## Styling
+
+`CountrySelectComponent` carries its own inline styles, but the rest of the
+form chrome (`form-field`, optional-field markup, success panel) is styled by
+the shared stylesheet. Add it to your build in `angular.json`:
+
+```json
+{
+  "projects": {
+    "your-app": {
+      "architect": {
+        "build": {
+          "options": {
+            "styles": [
+              "node_modules/@keeratita/card/dist/vanilla/styles.css",
+              "src/styles.scss"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Then override any class in `src/styles.scss` to match your design system.
+
+---
 
 ## Reactive Forms Integration
 
@@ -171,7 +204,7 @@ The Angular package exports validator functions that produce specific error keys
 | `creditCardValidator()` | `creditCard` | Card number fails Luhn check (only when 13+ digits typed) |
 | `expiryValidator()` | `expiryInvalid` | Invalid MM/YY format or expired date |
 | `cvcValidator()` | `cvcInvalid` | CVC length doesn't match card brand (3 or 4 digits) |
-| `cardholderNameValidator()` | `cardholderNameInvalid` | Name doesn't contain first + last name |
+| `cardholderNameValidator()` | `cardholderNameInvalid` | Name is empty after sanitizing (no first + last name requirement) |
 | `emailValidator()` | `emailInvalid` | Invalid email format |
 | `phoneValidator()` | `phoneInvalid` | Phone number too short (need 8+ digits) |
 | `postalCodeValidator()` | `postalCodeInvalid` | Postal code too short (need 4+ chars) |
@@ -221,7 +254,8 @@ cvc: ['', [Validators.required, cvcValidator('cardNumber')]];
 
 ### `cardholderNameValidator()`
 
-Validates that the cardholder name contains at least a first name and a last name.
+Validates that the cardholder name is non-empty after sanitizing (the library
+does not require a separate first and last name).
 
 ```typescript
 cardholderName: ['', [Validators.required, cardholderNameValidator()]];
@@ -416,15 +450,15 @@ import { CountrySelectComponent } from '@keeratita/card/angular';
       controlName="shipCountry"
       [value]="selectedCountry"
       preset="billing"
-      (countryChange)="onCountryChange($event)">
+      (countrySelected)="onCountryChange($event)">
     </kg-country-select>
   `,
 })
 export class CheckoutComponent {
   selectedCountry = 'US';
 
-  onCountryChange(event: { name: string; value: string }) {
-    console.log('Selected country:', event.value);
+  onCountryChange(countryCode: string) {
+    console.log('Selected country:', countryCode);
   }
 }
 ```
@@ -438,8 +472,31 @@ export class CheckoutComponent {
 | `invalid` | `boolean` | `false` | Shows invalid border styling |
 | `required` | `boolean` | `true` | Marks the field as required |
 
-**Output:**
-- `countryChange` — Emits `{ name: string, value: string }` (form control name + country code)
+**Outputs:**
+- `countrySelected` — Emits the selected ISO country code as a plain `string` (recommended)
+- `countryChange` — *Deprecated* — Emits `{ name: string, value: string }` where `name` is the form control name; kept for backward compatibility. Prefer `countrySelected`.
+
+**Behavior:**
+
+- **Filtering**: matches country names (starts-with results first, then
+  contains) and ISO codes **exactly** — typing `t` surfaces Thailand by name
+  but never Chad (`TD`). The same rule applies in the React and vanilla
+  bindings.
+- **Keyboard**: ↑/↓ (or Enter/Space) open the list from a collapsed trigger,
+  arrows then move the highlight wrapping at both ends, Enter selects, Escape
+  closes and returns focus to the trigger, and typing a printable key while
+  collapsed opens the list with that key applied as the filter.
+- **Viewport aware**: the list is clamped to the space below the trigger and
+  keeps a usable minimum height; it recomputes on window resize.
+- **Accessibility**: combobox/listbox semantics with `aria-activedescendant`,
+  `aria-setsize`/`aria-posinset` on the rows, a live region announcing the
+  filtered result count, and a no-results message.
+
+> **Constraint — ancestor overflow:** the dropdown is positioned absolutely
+> inside `<kg-country-select>`. An ancestor with `overflow: hidden` (or a
+> scroll container) will clip it, and the component cannot escape that because
+> it has no portal. Render the control in an unclipped container, or give the
+> clipping ancestor enough height.
 
 ## Re-exported Utilities
 

@@ -1,3 +1,5 @@
+import { CVC_LENGTH_DEFAULT, MAX_CVC_LENGTH } from '../constants';
+
 export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'jcb' | 'discover' | 'diners' | 'unknown';
 
 const FIRST_DIGITS_MASTERCARD = new Set(['51', '52', '53', '54', '55', '22', '23', '24', '25', '26', '27']);
@@ -43,4 +45,15 @@ export function detectCardBrand(cardNumber: string): CardBrand {
   }
 
   return 'unknown';
+}
+
+/**
+ * How many digits a brand's CVC has: Amex prints 4, everyone else 3.
+ *
+ * Bindings must use this instead of re-deriving `brand === 'amex' ? 4 : 3`,
+ * which is how one React field ended up accepting 4 digits for a 3-digit
+ * brand while its sibling accepted only 3.
+ */
+export function getExpectedCvcLength(brand: CardBrand): number {
+  return brand === 'amex' ? MAX_CVC_LENGTH : CVC_LENGTH_DEFAULT;
 }

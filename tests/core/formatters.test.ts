@@ -1,53 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { generateExpiryDate, formatCardNumber, formatExpiry, formatCvc } from '../../src/core/formatters/card-formatter';
+import {
+  formatCardNumber,
+  formatCvc,
+  formatExpiry,
+  formatPhone,
+  isCardLengthValid,
+  reformatExpiryDate,
+  validateCardNumberLength,
+} from '../../src/core/formatters/card-formatter';
 
 describe('Core Formatters', () => {
-  describe('generateExpiryDate', () => {
-    it('should generate a valid future expiry date', () => {
-      const expiry = generateExpiryDate();
-      
-      // Should be in MM/YY format
-      expect(expiry).toMatch(/^\d{2}\/\d{2}$/);
-      
-      // Should be a future date (at least 1 year ahead)
-      const [month, year] = expiry.split('/').map(Number);
-      const now = new Date();
-      const currentYear = now.getFullYear() % 100;
-      const currentMonth = now.getMonth() + 1;
-      
-      // Year should be greater than current year, or equal to current year + 1
-      if (year > currentYear) {
-        // Valid
-      } else if (year === currentYear) {
-        // Month should be greater than current month
-        expect(month).toBeGreaterThan(currentMonth);
-      } else {
-        // Year should be at least 1 year in the future
-        expect(year).toBeGreaterThan(currentYear);
-      }
-    });
-    
-    it('should generate a date at least 1 year in the future', () => {
-      const expiry = generateExpiryDate();
-      const [month, year] = expiry.split('/').map(Number);
-      
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-      
-      const expiryYear = 2000 + year; // Convert 2-digit year to 4-digit
-      const expiryMonth = month;
-      
-      // The generated date should be at least 1 year in the future
-      expect(expiryYear).toBeGreaterThanOrEqual(currentYear + 1);
-      
-      // If it's the same year, the month should be in the future
-      if (expiryYear === currentYear + 1) {
-        expect(expiryMonth).toBeGreaterThanOrEqual(currentMonth);
-      }
-    });
-  });
-
   describe('Card Number Formatting', () => {
     it('should format Visa numbers with 4-4-4-4 spacing', () => {
       expect(formatCardNumber('4111111111111111')).toBe('4111 1111 1111 1111');
@@ -153,6 +115,75 @@ describe('Core Formatters', () => {
   });
 });
 
+describe('Additional Public Formatters', () => {
+  describe('formatPhone', () => {
+    it('preserves a leading plus only', () => {
+      expect(formatPhone('+668 1234 567')).toBe('+6681234567');
+      expect(formatPhone('068 123 4567')).toBe('0681234567');
+      expect(formatPhone('')).toBe('');
+    });
+  });
+
+  describe('reformatExpiryDate', () => {
+    it('normalizes separators to MM / YY', () => {
+      expect(reformatExpiryDate('1225')).toBe('12 / 25');
+      expect(reformatExpiryDate('12-25')).toBe('12 / 25');
+      // A 4-digit year is reduced to its last two digits, so backend-stored
+      // MM/YYYY normalizes to the same MM/YY the formatters use.
+      expect(reformatExpiryDate('12/2025')).toBe('12 / 25');
+      expect(reformatExpiryDate('1 / 2030')).toBe('01 / 30');
+    });
+  });
+
+  describe('isCardLengthValid', () => {
+    it('respects brand length ranges', () => {
+      expect(isCardLengthValid('4242424242424242')).toBe(true); // Visa 16
+      expect(isCardLengthValid('340000000000009')).toBe(true); // Amex 15
+      expect(isCardLengthValid('3400000000000000')).toBe(false); // Amex 16 invalid
+      expect(isCardLengthValid('4242')).toBe(false); // too short for any brand
+    });
+  });
+
+  describe('validateCardNumberLength', () => {
+    it('returns the brand, brand length range and actual length', () => {
+      expect(validateCardNumberLength('4242424242424242')).toEqual({
+        isValid: true,
+        brand: 'visa',
+        minLength: 13,
+        maxLength: 16,
+        actualLength: 16,
+      });
+      expect(validateCardNumberLength('340000000000009')).toEqual({
+        isValid: true,
+        brand: 'amex',
+        minLength: 15,
+        maxLength: 15,
+        actualLength: 15,
+      });
+    });
+
+    it('reports the detected brand for unrecognized BINs (unknown-brand fallback)', () => {
+      const result = validateCardNumberLength('999999999999999');
+      expect(result.brand).toBe('unknown');
+      expect(result.minLength).toBe(13);
+      expect(result.maxLength).toBe(19);
+      // An unrecognized brand has no brand-specific range, so the generic
+      // 13-19 bounds apply — a 15-digit number satisfies them. The result
+      // must agree with `isCardLengthValid`, which uses the same fallback.
+      expect(result.isValid).toBe(true);
+      expect(result.isValid).toBe(isCardLengthValid('999999999999999'));
+      expect(result.actualLength).toBe(15);
+    });
+
+    it('flags an unknown-brand number outside the generic bounds', () => {
+      const result = validateCardNumberLength('999999999999');
+      expect(result.brand).toBe('unknown');
+      expect(result.isValid).toBe(false);
+      expect(result.actualLength).toBe(12);
+    });
+  });
+});
+
 describe('Formatter Security Edge Cases', () => {
   describe('Card Number Formatting', () => {
     it('should handle XSS in card number', () => {
@@ -174,5 +205,22 @@ describe('Formatter Security Edge Cases', () => {
       // With 2 digits, formatExpiry returns just the month without year separator
       expect(formatExpiry("' OR '1'='1")).toBe('11');
     });
+  });
+});
+
+
+describe('all-brands length window', () => {
+  // Unrecognized brands fall back to MIN/MAX_CARD_NUMBER_LENGTH, which is the
+  // only thing standing between a truncated PAN and an accepted one.
+  it('bounds an unknown brand at 13-19 digits', () => {
+    const unknown = validateCardNumberLength('9876543210123');
+    expect(unknown.brand).toBe('unknown');
+    expect(unknown.minLength).toBe(13);
+    expect(unknown.maxLength).toBe(19);
+  });
+
+  it('truncates a CVC to the length its brand actually prints', () => {
+    expect(formatCvc('1234', '378282246310005')).toBe('1234'); // amex keeps 4
+    expect(formatCvc('1234', '4111111111111111')).toBe('123'); // visa keeps 3
   });
 });

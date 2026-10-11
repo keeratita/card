@@ -620,14 +620,6 @@ export class CountryDropdownDemoComponent {
     }
   }
 
-  onCountryChange(event: { name: string; value: string }): void {
-    this.form.get(event.name)?.setValue(event.value);
-    const country = COUNTRIES.find((c) => c.code === event.value);
-    if (country) {
-      this.selectedCountry.set(country);
-    }
-  }
-
   // Computed for filtered countries (used by both search sections)
   filteredCountries = computed(() => {
     // Use countrySearchQuery for the inline dropdown, searchQuery for the standalone section

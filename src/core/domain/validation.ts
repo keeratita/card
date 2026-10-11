@@ -1,6 +1,7 @@
 import { detectCardBrand } from './brand';
 import {
   MAX_CARD_NUMBER_LENGTH,
+  MIN_CARD_NUMBER_LENGTH,
   MAX_CVC_LENGTH,
   MAX_NAME_LENGTH,
   MAX_EMAIL_LENGTH,
@@ -13,7 +14,8 @@ import { sanitizeInput } from '../security';
 
 export function luhnCheck(cardNumber: string): boolean {
   const clean = cardNumber.replace(/\D/g, '').slice(0, MAX_CARD_NUMBER_LENGTH);
-  if (clean.length < 13 || clean.length > 19) return false;
+  if (clean.length < MIN_CARD_NUMBER_LENGTH || clean.length > MAX_CARD_NUMBER_LENGTH)
+    return false;
 
   let sum = 0;
   let shouldDouble = false;
@@ -99,7 +101,8 @@ export function validateCountry(country: string): boolean {
 
 export function validateCardNumber(cardNumber: string): boolean {
   const clean = cardNumber.replace(/\D/g, '').slice(0, MAX_CARD_NUMBER_LENGTH);
-  if (clean.length < 13 || clean.length > 19) return false;
+  if (clean.length < MIN_CARD_NUMBER_LENGTH || clean.length > MAX_CARD_NUMBER_LENGTH)
+    return false;
 
   // Note: brand is intentionally not required here. Rejecting unrecognized
   // brands (e.g. UnionPay, Maestro, newer ranges) would decline valid cards

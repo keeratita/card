@@ -414,9 +414,9 @@ describe('CountryAutocomplete Component', () => {
       // Press ArrowDown
       fireEvent.keyDown(mainInput, { key: 'ArrowDown' });
 
-      // First item should be highlighted
+      // First item must actually carry the highlight class
       const firstItem = document.querySelector('[data-index="0"].highlighted');
-      expect(firstItem).toBeDefined();
+      expect(firstItem).not.toBeNull();
     });
 
     it('should navigate with ArrowUp when dropdown is open', () => {
@@ -430,15 +430,61 @@ describe('CountryAutocomplete Component', () => {
 
       // Press ArrowDown to go to first item
       fireEvent.keyDown(mainInput, { key: 'ArrowDown' });
-      // Press ArrowUp to go back
+      // Press ArrowUp to wrap to the last rendered row
       fireEvent.keyDown(mainInput, { key: 'ArrowUp' });
 
-      // Last item should be highlighted
       const items = document.querySelectorAll('.country-autocomplete-item');
-      if (items.length > 0) {
-        const lastItem = document.querySelector(`[data-index="${items.length - 1}"].highlighted`);
-        expect(lastItem).toBeDefined();
+      expect(items.length).toBeGreaterThan(0);
+      const lastItem = document.querySelector(
+        `[data-index="${items.length - 1}"].highlighted`,
+      );
+      expect(lastItem).not.toBeNull();
+    });
+
+    it('should keep the highlight on rendered rows when arrowing after a filter', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+
+      const mainInput = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
+      fireEvent.click(mainInput);
+      const searchInput = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(searchInput, { target: { value: 'tha' } });
+
+      const rendered = () =>
+        document.querySelectorAll('.country-autocomplete-item').length;
+      for (let i = 0; i < rendered() + 1; i++) {
+        fireEvent.keyDown(searchInput, { key: 'ArrowDown' });
+        const highlighted = document.querySelector(
+          '.country-autocomplete-item.highlighted',
+        );
+        // A regression using the unfiltered count would highlight a row
+        // that was never rendered.
+        expect(highlighted).not.toBeNull();
       }
+    });
+
+    it('should grow the lazy window when the keyboard passes the rendered page', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+
+      const mainInput = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
+      fireEvent.click(mainInput);
+      const searchInput = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(searchInput, { target: { value: 'a' } });
+
+      // Arrow well past the 20-row page without any scroll event: every
+      // step must keep a visible, rendered highlight.
+      for (let i = 0; i < 25; i++) {
+        fireEvent.keyDown(searchInput, { key: 'ArrowDown' });
+        expect(
+          document.querySelector('.country-autocomplete-item.highlighted'),
+        ).not.toBeNull();
+      }
+      expect(
+        document.querySelectorAll('.country-autocomplete-item').length,
+      ).toBeGreaterThan(20);
     });
 
     it('should select highlighted country with Enter', () => {
@@ -459,6 +505,22 @@ describe('CountryAutocomplete Component', () => {
       expect(mockOnChange).toHaveBeenCalledWith('AF'); // First country alphabetically
     });
 
+    it('should select the filtered highlighted country with Enter from search', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+
+      const mainInput = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
+      fireEvent.click(mainInput);
+      const searchInput = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(searchInput, { target: { value: 'thailan' } });
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+      // Wrong-row regressions (originalOptions vs filtered) land here.
+      expect(mockOnChange).toHaveBeenCalledWith('TH');
+    });
+
     it('should open dropdown with ArrowDown when closed', () => {
       const { container } = render(
         <CountryAutocomplete value="" onChange={mockOnChange} />
@@ -470,7 +532,7 @@ describe('CountryAutocomplete Component', () => {
       fireEvent.keyDown(mainInput, { key: 'ArrowDown' });
 
       const dropdown = document.querySelector('.country-autocomplete-dropdown');
-      expect(dropdown).toBeDefined();
+      expect(dropdown).not.toBeNull();
     });
 
     it('should open dropdown with Enter when closed', () => {
@@ -484,7 +546,7 @@ describe('CountryAutocomplete Component', () => {
       fireEvent.keyDown(mainInput, { key: 'Enter' });
 
       const dropdown = document.querySelector('.country-autocomplete-dropdown');
-      expect(dropdown).toBeDefined();
+      expect(dropdown).not.toBeNull();
     });
 
     it('should open dropdown with Space when closed', () => {
@@ -498,7 +560,163 @@ describe('CountryAutocomplete Component', () => {
       fireEvent.keyDown(mainInput, { key: ' ' });
 
       const dropdown = document.querySelector('.country-autocomplete-dropdown');
-      expect(dropdown).toBeDefined();
+      expect(dropdown).not.toBeNull();
+    });
+
+    it('should open with a typed character and pre-apply it to the filter (type-ahead parity)', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+
+      const mainInput = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
+      const triggerValueBefore = mainInput.value;
+      fireEvent.keyDown(mainInput, { key: 't' });
+
+      const dropdown = document.querySelector('.country-autocomplete-dropdown');
+      expect(dropdown).not.toBeNull();
+      const searchInput = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      expect(searchInput.value).toBe('t');
+      // Thailand (starts with T) must be at the top; exact-code-only
+      // semantics mean Chad (TD) never appears for "t".
+      const codes = [...document.querySelectorAll('.country-autocomplete-item')].map(
+        (el) => el.getAttribute('data-code'),
+      );
+      expect(codes).toContain('TH');
+      expect(codes).not.toContain('TD');
+      // The readOnly trigger never accepts the typed character.
+      expect(mainInput.value).toBe(triggerValueBefore);
+    });
+
+    it('should keep the active filter when clicking the already-open trigger', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+
+      const mainInput = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
+      fireEvent.click(mainInput);
+      const searchInput = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(searchInput, { target: { value: 'Japan' } });
+
+      // Re-click the trigger to refocus — the filter must survive.
+      fireEvent.click(mainInput);
+
+      expect(
+        (document.querySelector('.country-autocomplete-search') as HTMLInputElement).value,
+      ).toBe('Japan');
+      expect(document.querySelector('[data-code="JP"]')).not.toBeNull();
+    });
+  });
+
+  describe('list semantics', () => {
+    it('exposes each row position within the filtered set', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+      fireEvent.click(container.querySelector('.country-autocomplete-input')!);
+      const search = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(search, { target: { value: 'land' } });
+
+      const rows = [...document.querySelectorAll('.country-autocomplete-item')];
+      expect(rows.length).toBeGreaterThan(1);
+      // The list lazily renders a page at a time, so aria-setsize reports the
+      // full filtered count (>= rendered rows) while aria-posinset is the
+      // row's position within it.
+      const sizes = rows.map((r) => Number(r.getAttribute('aria-setsize')));
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(rows.length);
+      expect(new Set(sizes).size).toBe(1);
+      rows.forEach((row, i) => {
+        expect(row.getAttribute('aria-posinset')).toBe(String(i + 1));
+      });
+    });
+
+    it('announces a no-results state inside the listbox', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+      fireEvent.click(container.querySelector('.country-autocomplete-input')!);
+      const search = document.querySelector('.country-autocomplete-search') as HTMLInputElement;
+      fireEvent.input(search, { target: { value: 'zzzzz' } });
+
+      const empty = document.querySelector('.country-autocomplete-empty');
+      expect(empty).not.toBeNull();
+      expect(empty?.textContent).toContain('zzzzz');
+      // Not selectable: it must never become the activedescendant target.
+      expect(empty?.getAttribute('aria-disabled')).toBe('true');
+      expect(
+        document.querySelector(
+          '.country-autocomplete-item:not(.country-autocomplete-empty)',
+        ),
+      ).toBeNull();
+    });
+
+    it('announces the filtered result count in a live region', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+      fireEvent.click(container.querySelector('.country-autocomplete-input')!);
+      const status = document.querySelector('.country-autocomplete-status');
+      expect(status?.getAttribute('aria-live')).toBe('polite');
+      expect(status?.textContent).toContain(String(COUNTRIES.length));
+    });
+  });
+
+  describe('placement', () => {
+    function stubRect(el: Element, rect: Partial<DOMRect>): void {
+      el.getBoundingClientRect = () => ({
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        width: 320,
+        height: 44,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+        ...rect,
+      }) as DOMRect;
+    }
+
+    function openWith(rect: Partial<DOMRect>, innerHeight: number) {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+      const input = container.querySelector('.country-autocomplete-input')!;
+      stubRect(input, rect);
+      vi.stubGlobal('innerHeight', innerHeight);
+      fireEvent.click(input);
+      return document.querySelector(
+        '.country-autocomplete-dropdown-container',
+      ) as HTMLElement;
+    }
+
+    it('renders below the trigger when there is room', () => {
+      const dropdown = openWith({ top: 100, bottom: 140 }, 800);
+      expect(dropdown.style.top).toBe('140px');
+      expect(dropdown.style.maxHeight).toBe('300px');
+      vi.unstubAllGlobals();
+    });
+
+    it('flips above the trigger when the bottom of the viewport is tight', () => {
+      // Space below (60px) is smaller than the list while space above (250px)
+      // is larger, so the list renders above the trigger, clamped to the top.
+      const dropdown = openWith({ top: 250, bottom: 290 }, 350);
+      expect(dropdown.style.top).toBe('0px');
+      expect(dropdown.style.maxHeight).toBe('240px');
+      const list = document.querySelector('.country-autocomplete-list') as HTMLElement;
+      expect(list.style.maxHeight).toBe('240px');
+      vi.unstubAllGlobals();
+    });
+
+    it('stays below and clamps the list when neither side fits the full height', () => {
+      // spaceBelow (190px) is smaller than the list but larger than
+      // spaceAbove (100px), so the dropdown stays below and clamps instead
+      // of flipping or collapsing.
+      const dropdown = openWith({ top: 100, bottom: 110 }, 300);
+      expect(dropdown.style.top).toBe('110px');
+      expect(dropdown.style.maxHeight).toBe('190px');
+      const list = document.querySelector('.country-autocomplete-list') as HTMLElement;
+      expect(list.style.maxHeight).toBe('190px');
+      vi.unstubAllGlobals();
     });
   });
 
@@ -572,13 +790,28 @@ describe('CountryAutocomplete Component', () => {
   });
 
   describe('accessibility', () => {
-    it('should have role="combobox" on the main input', () => {
+    it('should make the trigger a disclosure button that owns the listbox', () => {
       const { container } = render(
         <CountryAutocomplete value="" onChange={mockOnChange} />
       );
 
       const input = container.querySelector('.country-autocomplete-input');
-      expect(input?.getAttribute('role')).toBe('combobox');
+      // The trigger is never the combobox: while open the focused search
+      // input carries that role (same contract as Angular and vanilla).
+      expect(input?.getAttribute('role')).toBe('button');
+      expect(input?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('should make the search input the combobox while the list is open', () => {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />
+      );
+      fireEvent.click(container.querySelector('.country-autocomplete-input')!);
+
+      const search = document.querySelector('.country-autocomplete-search');
+      expect(search?.getAttribute('role')).toBe('combobox');
+      expect(search?.getAttribute('aria-expanded')).toBe('true');
+      expect(search?.getAttribute('aria-haspopup')).toBe('listbox');
     });
 
     it('should have aria-haspopup="listbox" on the main input', () => {
@@ -590,16 +823,25 @@ describe('CountryAutocomplete Component', () => {
       expect(input?.getAttribute('aria-haspopup')).toBe('listbox');
     });
 
-    it('should have aria-expanded reflecting open state', () => {
+    it('should expose aria-expanded on the focused combobox in each state', () => {
       const { container } = render(
         <CountryAutocomplete value="" onChange={mockOnChange} />
       );
 
+      // Closed: the disclosure trigger reports collapsed.
       const input = container.querySelector('.country-autocomplete-input');
       expect(input?.getAttribute('aria-expanded')).toBe('false');
 
+      // Open: both the trigger (disclosure) and the focused search input
+      // (combobox) report expanded, and both reference the live listbox.
       fireEvent.click(input!);
+      const search = document.querySelector('.country-autocomplete-search');
+      const list = document.querySelector('[role="listbox"]');
       expect(input?.getAttribute('aria-expanded')).toBe('true');
+      expect(input?.getAttribute('aria-controls')).toBe(list?.getAttribute('id'));
+      expect(search?.getAttribute('role')).toBe('combobox');
+      expect(search?.getAttribute('aria-expanded')).toBe('true');
+      expect(search?.getAttribute('aria-controls')).toBe(list?.getAttribute('id'));
     });
 
     it('should have role="listbox" on the dropdown list', () => {
@@ -701,6 +943,79 @@ describe('CountryAutocomplete Component', () => {
 
       const input = container.querySelector('.country-autocomplete-input') as HTMLInputElement;
       expect(input.value).toBe('🇺🇸 United States');
+    });
+  });
+
+  // Every close path must hand focus back to the trigger: the search input is
+  // unmounted on close, so without this focus lands on <body> and keyboard
+  // users lose their place. Same contract as the vanilla and Angular bindings.
+  describe('focus management', () => {
+    function openAndGetHandles() {
+      const { container } = render(
+        <CountryAutocomplete value="" onChange={mockOnChange} />,
+      );
+      const trigger = container.querySelector(
+        '.country-autocomplete-input',
+      ) as HTMLInputElement;
+      fireEvent.click(trigger);
+      const search = document.querySelector(
+        '.country-autocomplete-search',
+      ) as HTMLInputElement;
+      return { trigger, search };
+    }
+
+    it('returns focus to the trigger after a keyboard selection', () => {
+      const { trigger, search } = openAndGetHandles();
+      fireEvent.focus(search);
+      fireEvent.keyDown(search, { key: 'ArrowDown' });
+      fireEvent.keyDown(search, { key: 'Enter' });
+
+      expect(mockOnChange).toHaveBeenCalledWith('AF');
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('returns focus to the trigger after a pointer selection', () => {
+      const { trigger, search } = openAndGetHandles();
+      fireEvent.focus(search);
+      const row = document.querySelector(
+        '.country-autocomplete-item',
+      ) as HTMLElement;
+      fireEvent.click(row);
+
+      expect(mockOnChange).toHaveBeenCalled();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('returns focus to the trigger when an outside mousedown closes the list', () => {
+      const { trigger, search } = openAndGetHandles();
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+
+      // Real focus (not fireEvent.focus, which only dispatches an event):
+      // the handler reads document.activeElement.
+      search.focus();
+      expect(document.activeElement).toBe(search);
+      fireEvent.mouseDown(outside);
+
+      expect(document.activeElement).toBe(trigger);
+      outside.remove();
+    });
+
+    it('leaves focus alone when the outside click happened with nothing focused inside', () => {
+      const { search } = openAndGetHandles();
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      const other = document.createElement('button');
+      document.body.appendChild(other);
+      other.focus();
+
+      fireEvent.mouseDown(outside);
+
+      // Focus was never inside the widget: don't steal it.
+      expect(document.activeElement).toBe(other);
+      expect(search.isConnected).toBe(false);
+      other.remove();
+      outside.remove();
     });
   });
 });
