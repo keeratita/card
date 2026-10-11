@@ -59,6 +59,22 @@ suites. (Three Angular files were excluded from this hook while a decorator-lowe
 bug in the test toolchain made them fail; `experimentalDecorators` in
 `tsconfig.json` fixed that, so the exclusions are gone.)
 
+### Traps when validating in a browser
+
+The examples consume `dist`, so a green demo run only says something about your
+change if the served artifacts are actually current:
+
+- **Build before you serve.** Running `npm run build` while `ng serve` is
+  watching makes it rebuild the instant tsup deletes `dist/*.d.ts`, so it
+  reports `TS7016 Could not find a declaration file` and
+  `NG1010 'imports' must be an array of components` — then *caches* that
+  failure, and later rebuilds replay identical errors in 0.000s. Restart the
+  dev server; a build started mid-watch says nothing about your code.
+- **Bypass the HTTP cache.** Vite serves pre-bundled dependencies with
+  `Cache-Control: max-age=31536000, immutable`, so a demo can keep executing
+  pre-change modules even after a rebuild and an `.angular/cache` wipe. Reload
+  with the cache disabled before trusting browser verification.
+
 ## Architecture Principles
 
 1. **Keep `src/core` framework-agnostic.** Core modules must not import React, Angular, or DOM/framework APIs. Framework-specific behavior lives in `src/react`, `src/angular`, `src/vanilla` and delegates to core.
