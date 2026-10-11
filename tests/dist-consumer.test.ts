@@ -271,6 +271,25 @@ describeBuilt('published artifacts', () => {
     }
   });
 
+  it('generated dist manifest keeps the stylesheet subpaths in sync', async () => {
+    // `node_modules/@keeratita/card` symlinks to `dist`, so the workspace and
+    // the examples resolve `@keeratita/card/*` against this generated manifest
+    // rather than the root one. Dropping these subpaths from
+    // scripts/generate-dist-package-json.js leaves every other suite green and
+    // breaks the React example build with ERR_PACKAGE_PATH_NOT_EXPORTED.
+    const { readFile } = await import('node:fs/promises');
+    const manifest = (await JSON.parse(
+      await readFile(`${DIST}/package.json`, 'utf8'),
+    )) as { exports?: Record<string, unknown> };
+    const root = (await JSON.parse(
+      await readFile('package.json', 'utf8'),
+    )) as { exports: Record<string, unknown> };
+    for (const subpath of ['./vanilla/styles.css', './vanilla/styles.min.css']) {
+      expect(root.exports[subpath], `root ${subpath}`).toBeDefined();
+      expect(manifest.exports?.[subpath], `dist ${subpath}`).toBeDefined();
+    }
+  });
+
   it('shipped stylesheet contains the classes the bindings render', async () => {
     const { readFile } = await import('node:fs/promises');
     const css = await readFile(`${DIST}/vanilla/styles.css`, 'utf8');
