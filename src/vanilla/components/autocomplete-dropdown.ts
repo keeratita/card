@@ -22,6 +22,10 @@ import {
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../../core/form';
+import {
+  DROPDOWN_DEFAULT_MAX_HEIGHT,
+  DROPDOWN_Z_INDEX,
+} from '../../core/constants';
 import type {
   ComboboxAction,
   ComboboxState,
@@ -56,7 +60,6 @@ export interface AutocompleteDropdownConfig {
 }
 
 // Use a reasonable max z-index instead of the fragile Integer.MAX_VALUE
-const AUTOCOMPLETE_Z_INDEX = 9999;
 // Estimated search input height inside the dropdown
 const SEARCH_INPUT_HEIGHT = 50;
 
@@ -107,7 +110,7 @@ export class AutocompleteDropdown {
     this.placeholder = config.placeholder || 'Select...';
     this.searchPlaceholder = config.searchPlaceholder || 'Search...';
     this.noResultsText = config.noResultsText || 'No results found';
-    this.maxHeight = config.maxHeight || 300;
+    this.maxHeight = config.maxHeight || DROPDOWN_DEFAULT_MAX_HEIGHT;
     this.showIcons = config.showIcons !== false;
     this.includeValuePrefixMatch = config.includeValuePrefixMatch !== false;
 
@@ -402,7 +405,7 @@ export class AutocompleteDropdown {
     this.dropdownEl.style.position = 'fixed';
     this.dropdownEl.style.left = `${inputRect.left}px`;
     this.dropdownEl.style.width = `${inputRect.width}px`;
-    this.dropdownEl.style.zIndex = String(AUTOCOMPLETE_Z_INDEX);
+    this.dropdownEl.style.zIndex = String(DROPDOWN_Z_INDEX);
     this.dropdownEl.style.display = 'block';
 
     const placement = computeDropdownPlacement(

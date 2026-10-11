@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fails loudly instead of shipping. It skips itself when `dist/` is absent, so
   plain `npm test` still works on a fresh clone.
 
+- **New core export**: `getExpectedCvcLength(brand)` returns how many digits a
+  brand's CVC prints (Amex 4, everything else 3). The rule was being
+  re-derived at four call sites — one React field capped every brand at 4 —
+  so it now lives beside `detectCardBrand`.
+
 ### Changed
 
 - `addressLine2` is now consistently optional across all bindings: an empty
@@ -98,6 +103,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@keeratita/card/vanilla/styles.css` (React import, Angular `angular.json`
   `styles` entry).
 
+- **The country autocomplete key map has a single definition.**
+  `comboboxKeyCommand()` in core decides what each key does (open, close,
+  move, select, or nothing) and the three bindings only execute the returned
+  command. Each binding had hand-written the same switch, which is how
+  `ArrowUp` opened the list in vanilla while doing nothing in React or
+  Angular: **`ArrowUp` on a closed control now opens the list in all three
+  bindings.** Standardized in the same pass: the search input cannot drive a
+  closed list, closing from the search box hands focus back to the trigger,
+  and closing from the trigger leaves focus where it is.
+- **Popover geometry is shared.** `z-index` and the default list height come
+  from `DROPDOWN_Z_INDEX` / `DROPDOWN_DEFAULT_MAX_HEIGHT` in core rather than
+  a literal in each binding. The Angular list grows from 240px to 300px to
+  match the vanilla and React widgets, and its stacking level moved from its
+  inline stylesheet to a binding on the shared constant.
+- **Field length bounds come from `src/core/constants.ts`.** Card numbers are
+  gated by `MIN_CARD_NUMBER_LENGTH`/`MAX_CARD_NUMBER_LENGTH` (the values were
+  hardcoded `13`/`19` in three places), the expiry input's `maxLength` is
+  `MAX_EXPIRY_DISPLAY_LENGTH` (`MM / YY`), and CVC inputs size themselves with
+  `getExpectedCvcLength(brand)`.
+
 ### Deprecated
 
 - Angular `CountrySelectComponent.countryChange` — use `countrySelected`;
@@ -145,6 +170,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reformatExpiryDate`/`validateCardNumberLength` shipped behavior is now pinned
   by the artifact suite, not just the source suite, so a build-time regression
   (e.g. an Angular entry rebuilt from stale intermediates) cannot pass unnoticed.
+
+### Removed
+
+- Dead rules in the published stylesheet: `.form-section-header` was declared
+  twice with the earlier block fully shadowed by the later one, and
+  `.row-country .ios-input-row` was declared twice with identical
+  declarations. A compiled-CSS diff before and after confirms nothing else
+  changed.
 
 ## [3.0.0] - 2026-08-13
 

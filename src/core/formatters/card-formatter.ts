@@ -1,6 +1,12 @@
-import { detectCardBrand } from '../domain/brand';
+import {
+  detectCardBrand,
+  getExpectedCvcLength,
+} from '../domain/brand';
 import type { CardBrand } from '../domain/brand';
-import { MAX_CARD_NUMBER_LENGTH } from '../constants';
+import {
+  MAX_CARD_NUMBER_LENGTH,
+  MIN_CARD_NUMBER_LENGTH,
+} from '../constants';
 
 export function cleanDigits(value: string): string {
   return value.replace(/\D/g, '');
@@ -61,7 +67,7 @@ export function formatExpiry(value: string): string {
 export function formatCvc(value: string, cardNumber: string): string {
   const clean = cleanDigits(value);
   const brand = detectCardBrand(cardNumber);
-  const limit = brand === 'amex' ? 4 : 3;
+  const limit = getExpectedCvcLength(brand);
   return clean.substring(0, limit);
 }
 
@@ -72,7 +78,7 @@ const BRAND_LENGTH_RANGES: Record<string, [min: number, max: number]> = {
   jcb: [16, 17],
   mastercard: [16, 17],
   visa: [13, 16],
-  unknown: [13, 19],
+  unknown: [MIN_CARD_NUMBER_LENGTH, MAX_CARD_NUMBER_LENGTH],
 };
 
 export function formatPhone(value: string): string {
@@ -113,7 +119,10 @@ export function validateCardNumberLength(
   const brand = detectCardBrand(clean);
 
   // Brands absent from the table fall back to the all-brands bounds.
-  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [13, 19];
+  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [
+    MIN_CARD_NUMBER_LENGTH,
+    MAX_CARD_NUMBER_LENGTH,
+  ];
   const actualLength = clean.length;
 
   return {
@@ -128,6 +137,9 @@ export function validateCardNumberLength(
 export function isCardLengthValid(cardNumber: string): boolean {
   const clean = cleanDigits(cardNumber);
   const brand = detectCardBrand(clean);
-  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [13, 19];
+  const [minLength, maxLength] = BRAND_LENGTH_RANGES[brand] || [
+    MIN_CARD_NUMBER_LENGTH,
+    MAX_CARD_NUMBER_LENGTH,
+  ];
   return clean.length >= minLength && clean.length <= maxLength;
 }

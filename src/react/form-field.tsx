@@ -1,4 +1,5 @@
 import React from 'react';
+import { MAX_CVC_LENGTH } from '../core/constants';
 import { CardFormValues } from './useCardForm';
 
 /** Keypad hint shared by the internal config and the public props. */
@@ -90,7 +91,7 @@ export function FormField({
   const fieldAutoComplete = autoComplete || config.autoComplete;
 
   // Determine max length based on field type
-  const fieldMaxLength = maxLength ?? (name === 'cvc' ? 4 : undefined);
+  const fieldMaxLength = maxLength ?? (name === 'cvc' ? MAX_CVC_LENGTH : undefined);
 
   // Handle CVC-specific focus/blur for card flip
   const handleFocus = (_e: React.FocusEvent<HTMLInputElement>) => {

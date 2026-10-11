@@ -16,6 +16,7 @@ import {
   computeDropdownPlacement,
   INITIAL_COMBOBOX_STATE,
 } from '../core/form';
+import { DROPDOWN_DEFAULT_MAX_HEIGHT, DROPDOWN_Z_INDEX } from '../core/constants';
 import { CARD_FORM_TEXT_EN } from '../lang/en';
 
 export interface CountryAutocompleteProps {
@@ -33,8 +34,6 @@ export interface CountryAutocompleteProps {
 
 // Layout / paging constants (single source of truth for this binding;
 // mirrors the naming in the vanilla AutocompleteDropdown).
-const DROPDOWN_MAX_HEIGHT = 300;
-const DROPDOWN_Z_INDEX = 9999;
 const PAGE_SIZE = 20;
 const SCROLL_LOAD_THRESHOLD_PX = 50;
 
@@ -208,7 +207,7 @@ export function CountryAutocomplete({
     const rect = inputRef.current.getBoundingClientRect();
     const placement = computeDropdownPlacement(
       rect,
-      DROPDOWN_MAX_HEIGHT,
+      DROPDOWN_DEFAULT_MAX_HEIGHT,
       window.innerHeight,
     );
 
@@ -492,7 +491,7 @@ export function CountryAutocomplete({
               style={
                 dropdownPosition
                   ? {
-                      maxHeight: `${Math.min(DROPDOWN_MAX_HEIGHT, dropdownPosition.maxHeight)}px`,
+                      maxHeight: `${Math.min(DROPDOWN_DEFAULT_MAX_HEIGHT, dropdownPosition.maxHeight)}px`,
                     }
                   : undefined
               }

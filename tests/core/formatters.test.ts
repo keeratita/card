@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatCardNumber,
-  formatExpiry,
   formatCvc,
+  formatExpiry,
   formatPhone,
-  reformatExpiryDate,
   isCardLengthValid,
+  reformatExpiryDate,
   validateCardNumberLength,
 } from '../../src/core/formatters/card-formatter';
 
@@ -205,5 +205,22 @@ describe('Formatter Security Edge Cases', () => {
       // With 2 digits, formatExpiry returns just the month without year separator
       expect(formatExpiry("' OR '1'='1")).toBe('11');
     });
+  });
+});
+
+
+describe('all-brands length window', () => {
+  // Unrecognized brands fall back to MIN/MAX_CARD_NUMBER_LENGTH, which is the
+  // only thing standing between a truncated PAN and an accepted one.
+  it('bounds an unknown brand at 13-19 digits', () => {
+    const unknown = validateCardNumberLength('9876543210123');
+    expect(unknown.brand).toBe('unknown');
+    expect(unknown.minLength).toBe(13);
+    expect(unknown.maxLength).toBe(19);
+  });
+
+  it('truncates a CVC to the length its brand actually prints', () => {
+    expect(formatCvc('1234', '378282246310005')).toBe('1234'); // amex keeps 4
+    expect(formatCvc('1234', '4111111111111111')).toBe('123'); // visa keeps 3
   });
 });

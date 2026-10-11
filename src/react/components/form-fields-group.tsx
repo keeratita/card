@@ -1,5 +1,6 @@
 import React from 'react';
 import { CardFormPreset, OptionalCardField } from '../../core/domain/card';
+import { getExpectedCvcLength } from '../../core/domain/brand';
 import type { CardBrand } from '../../core/domain/brand';
 import {
   FIELD_METADATA,
@@ -75,7 +76,7 @@ export function FormFieldsGroup({
             onBlur={handleBlur}
             onFocus={handleCvcFocus}
             handleCvcBlur={handleCvcBlur}
-            maxLength={brand === 'amex' ? 4 : 3}
+            maxLength={getExpectedCvcLength(brand)}
           />
         </div>
 

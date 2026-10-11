@@ -243,3 +243,19 @@ describe('Security Edge Cases', () => {
     });
   });
 });
+
+
+describe('card number length gate', () => {
+  // Bounds come from MIN/MAX_CARD_NUMBER_LENGTH rather than the per-brand
+  // tables, so the extremes are pinned here by behavior.
+  it('accepts the shortest PAN any issued brand has (13 digits)', () => {
+    expect(validateCardNumber('4222222222222')).toBe(true);
+  });
+
+  it('rejects a 12-digit number as too short', () => {
+    // 422222222222 satisfies the checksum (it is the 13-digit PAN above minus
+    // its check digit's partner), so this can only fail through the length
+    // gate — lowering MIN_CARD_NUMBER_LENGTH to 12 turns it red.
+    expect(validateCardNumber('422222222222')).toBe(false);
+  });
+});

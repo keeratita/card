@@ -14,7 +14,7 @@ export type {
 } from './core/domain/card';
 export type { Token } from './core/domain/token';
 export type { CardBrand } from './core/domain/brand';
-export { detectCardBrand } from './core/domain/brand';
+export { detectCardBrand, getExpectedCvcLength } from './core/domain/brand';
 
 // Domain Validation
 export {

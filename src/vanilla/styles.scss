@@ -203,16 +203,6 @@ $border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* --- FORM SECTION (iOS STYLE GROUPED LIST) --- */
-.form-section-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: $text-secondary;
-  margin-left: 16px;
-  margin-top: 16px;
-  margin-bottom: 8px;
-}
 
 .ios-grouped-list {
   background-color: $card-bg;
@@ -409,14 +399,6 @@ $border-color: rgba(255, 255, 255, 0.08);
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-}
-
-// Row with country dropdown
-.row-country {
-  .ios-input-row {
-    display: flex;
-    align-items: center;
   }
 }
 

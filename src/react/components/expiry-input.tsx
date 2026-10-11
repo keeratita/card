@@ -1,5 +1,6 @@
 import React from 'react';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
+import { MAX_EXPIRY_DISPLAY_LENGTH } from '../../core/constants';
 import { FieldErrorText } from './field-error';
 
 export interface ExpiryInputProps {
@@ -47,7 +48,7 @@ export function ExpiryInput({
         inputMode="numeric"
         autoComplete="cc-exp"
         required
-        maxLength={7}
+        maxLength={MAX_EXPIRY_DISPLAY_LENGTH}
         aria-invalid={hasError}
         aria-describedby={error ? `${id}-error` : undefined}
       />

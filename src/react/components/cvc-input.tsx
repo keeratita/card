@@ -1,5 +1,6 @@
 import React from 'react';
 import { CARD_FORM_TEXT_EN } from '../../lang/en';
+import { CVC_LENGTH_DEFAULT } from '../../core/constants';
 import { FieldErrorText } from './field-error';
 
 export interface CvcInputProps {
@@ -25,7 +26,7 @@ export function CvcInput({
   onBlur,
   onFocus,
   handleCvcBlur,
-  maxLength = 3,
+  maxLength = CVC_LENGTH_DEFAULT,
   label = DEFAULT_LABEL,
   id = 'card-cvc',
   className = '',
