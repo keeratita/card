@@ -519,8 +519,10 @@ interface CountryAutocompleteProps {
   then contains) or by **exact** ISO code — typing `t` surfaces Thailand by
   name but never Chad (`TD`)
 - **Flag emojis**: Each country displays its Unicode flag emoji
-- **Keyboard navigation**: Arrow keys, Enter, Escape, plus type-ahead —
-  typing a letter while collapsed opens the list with that letter applied
+- **Keyboard navigation**: `ArrowDown`/`ArrowUp`, Enter or Space open the list
+  from a collapsed trigger; arrows move and wrap at the ends, Enter selects,
+  Escape closes and returns focus to the trigger, and a bare letter opens the
+  list with that letter already applied as the filter
 - **Lazy loading**: renders 20 countries at a time, growing the window as you
   scroll or arrow past the current page
 - **Auto-positioning**: the dropdown flips above/below the trigger to stay in
@@ -698,6 +700,7 @@ import {
   cleanDigits,
   formatCvc,
   formatPhone,
+  getExpectedCvcLength,
   reformatExpiryDate,
   validateCardNumberLength,
   isCardLengthValid,
@@ -709,6 +712,11 @@ cleanDigits('4242 4242 4242 4242'); // => "4242424242424242"
 // Format CVC (restricts length based on card brand)
 formatCvc('12345', '4242424242424242'); // => "123"
 formatCvc('1234', '340000000000009'); // => "1234" (AMEX allows 4)
+
+// How many digits a brand's CVC prints — use it to size the input
+getExpectedCvcLength('amex'); // => 4
+getExpectedCvcLength('visa'); // => 3
+getExpectedCvcLength('unknown'); // => 3
 
 // Format phone number
 formatPhone('+2345678901'); // => "+2345678901"
@@ -1116,7 +1124,7 @@ export function CountryDropdown() {
 
 1. **Always validate card numbers**: Use `luhnCheck()` to verify card numbers before tokenization
 2. **Format inputs in real-time**: Use `formatCardNumber()` and `formatExpiry()` for better UX
-3. **Detect card brand**: Use `detectCardBrand()` to show appropriate CVC length and card logos
+3. **Detect card brand**: Use `detectCardBrand()` for card logos and `getExpectedCvcLength(brand)` for the CVC field's `maxLength`
 4. **Handle errors gracefully**: Display validation errors inline with form fields
 5. **Use adapters for tokenization**: Never send raw card data to your own servers
 6. **Store tokens securely**: Store only the returned token IDs, never the card details

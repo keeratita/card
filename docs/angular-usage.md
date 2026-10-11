@@ -482,9 +482,10 @@ export class CheckoutComponent {
   contains) and ISO codes **exactly** — typing `t` surfaces Thailand by name
   but never Chad (`TD`). The same rule applies in the React and vanilla
   bindings.
-- **Keyboard**: ↑/↓ move the highlight (wrapping at both ends), Enter selects,
-  Escape closes and returns focus to the trigger, and typing a printable key
-  while collapsed opens the list with that key applied as the filter.
+- **Keyboard**: ↑/↓ (or Enter/Space) open the list from a collapsed trigger,
+  arrows then move the highlight wrapping at both ends, Enter selects, Escape
+  closes and returns focus to the trigger, and typing a printable key while
+  collapsed opens the list with that key applied as the filter.
 - **Viewport aware**: the list is clamped to the space below the trigger and
   keeps a usable minimum height; it recomputes on window resize.
 - **Accessibility**: combobox/listbox semantics with `aria-activedescendant`,
