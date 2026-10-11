@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   toFormUrlEncoded,
+  enforceHttps,
   PaymentGatewayError,
   NetworkError,
   ApiValidationError
@@ -29,6 +30,33 @@ describe('Adapter Base Utilities', () => {
       const params = new URLSearchParams(encoded);
       expect(params.get('keep')).toBe('yes');
       expect(params.has('drop')).toBe(false);
+    });
+  });
+
+  describe('enforceHttps', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should throw on plain-http origins outside the loopback allow-list', () => {
+      // jsdom's default location is http://localhost, which enforceHttps
+      // exempts — without this stub the guard never fires in tests.
+      vi.stubGlobal('location', { protocol: 'http:', hostname: 'evil.example' });
+      expect(() => enforceHttps()).toThrow(/require HTTPS/);
+    });
+
+    it.each([
+      ['http://localhost', 'http:', 'localhost'],
+      ['http://127.0.0.1', 'http:', '127.0.0.1'],
+      ['https://checkout.example', 'https:', 'checkout.example'],
+    ])('should allow %s', (_label, protocol, hostname) => {
+      vi.stubGlobal('location', { protocol, hostname });
+      expect(() => enforceHttps()).not.toThrow();
+    });
+
+    it('should be a no-op outside a browser environment (no window)', () => {
+      vi.stubGlobal('window', undefined);
+      expect(() => enforceHttps()).not.toThrow();
     });
   });
 

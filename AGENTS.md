@@ -54,13 +54,10 @@ Source layout rule: **code lives in `src/`, tests in `tests/`, mirroring the sam
 | `npm run deploy` | Build then `npm publish --access public` |
 | `npm run demo` / `demo:react` / `demo:angular` / `demo:all` | Run the demos for local validation |
 
-The Husky pre-commit hook runs `npm run lint` plus the test suite **excluding** the Angular directive/component/form-group tests:
-
-```
-npm run lint && npm test -- --exclude=tests/angular/directives.test.ts --exclude=tests/angular/components.test.ts --exclude=tests/angular/form-group.test.ts
-```
-
-Run the full suite locally before pushing.
+The Husky pre-commit hook runs `npm run lint && npm test` — the full suite, including the Angular
+suites. (Three Angular files were excluded from this hook while a decorator-lowering
+bug in the test toolchain made them fail; `experimentalDecorators` in
+`tsconfig.json` fixed that, so the exclusions are gone.)
 
 ## Architecture Principles
 

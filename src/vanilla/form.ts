@@ -744,7 +744,7 @@ export class CardForm {
         const listEl = this.formEl.querySelector(
           '.ios-grouped-list',
         ) as HTMLElement;
-        if (listEl) {
+        if (listEl && typeof listEl.animate === 'function') {
           listEl.animate(
             [
               { transform: 'translateX(0px)' },

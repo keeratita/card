@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StripeAdapter } from '../../src/core/adapters/stripe';
 import { OmiseAdapter } from '../../src/core/adapters/omise';
-import { Card } from '../../src/core/domain/card';
+import { Card, PaymentGateway } from '../../src/core/domain/card';
 import { ApiValidationError, NetworkError } from '../../src/core/adapters/base';
 
 describe('Payment Gateway Adapters', () => {
@@ -260,6 +260,167 @@ describe('Payment Gateway Adapters', () => {
       // The serialized raw payload must not contain card data
       expect(JSON.stringify(error)).not.toContain('4111');
       expect(JSON.stringify(error)).not.toContain('123');
+    });
+  });
+
+  // These guards run inside the adapters' tokenize() but were never actually
+  // exercised: jsdom's location is always http://localhost (which enforceHttps
+  // exempts), and every tokenize test used a valid card so the strict
+  // validator never fired. Both are security-relevant, so assert them here.
+  describe('tokenize() security guards', () => {
+    const validCard: Card = {
+      number: '4111 1111 1111 1111',
+      expMonth: '12',
+      expYear: '28',
+      cvc: '123',
+      name: 'John Doe',
+    };
+
+    const gateways: Array<{ name: string; build: () => PaymentGateway }> = [
+      {
+        name: 'StripeAdapter',
+        build: () => new StripeAdapter({ publicKey: 'pk_test_stripe_key' }),
+      },
+      {
+        name: 'OmiseAdapter',
+        build: () => new OmiseAdapter({ publicKey: 'pkey_test_omise_key' }),
+      },
+    ];
+
+    beforeEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    describe.each(gateways)('$name enforces HTTPS', ({ build }) => {
+      it('rejects tokenization on a plain-http, non-localhost origin', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('location', {
+          protocol: 'http:',
+          hostname: 'evil.example',
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(build().tokenize(validCard)).rejects.toThrow(
+          /require HTTPS/i,
+        );
+        // The PAN/CVC must never have been handed to the network layer.
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['http://localhost', 'http:', 'localhost'],
+        ['http://127.0.0.1', 'http:', '127.0.0.1'],
+        ['https://checkout.example', 'https:', 'checkout.example'],
+      ])(
+        'allows tokenization from %s (secure-context exemption)',
+        async (_label, protocol, hostname) => {
+          const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ id: 'tok_ok', object: 'token' }),
+          });
+          vi.stubGlobal('location', { protocol, hostname });
+          vi.stubGlobal('fetch', fetchMock);
+
+          const token = await build().tokenize(validCard);
+          expect(token.id).toBe('tok_ok');
+          expect(fetchMock).toHaveBeenCalledTimes(1);
+        },
+      );
+
+      it('is a no-op when there is no window (SSR), deferring to the vault', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ id: 'tok_ok', object: 'token' }),
+        });
+        vi.stubGlobal('window', undefined);
+        vi.stubGlobal('fetch', fetchMock);
+
+        const token = await build().tokenize(validCard);
+        expect(token.id).toBe('tok_ok');
+      });
+    });
+
+    describe('validateCardFieldsStrict rejects invalid fields before the network', () => {
+      // Each case breaks exactly one field of an otherwise-valid card, so the
+      // thrown ApiValidationError carries that field's code and fetch is
+      // never reached — a client-side gate that must not leak raw PAN data.
+      const invalidCases: Array<{
+        field: string;
+        patch: Partial<Card>;
+        code: string;
+      }> = [
+        {
+          field: 'luhn-failing PAN',
+          patch: { number: '4111 1111 1111 1112' },
+          code: 'invalid_card_number',
+        },
+        {
+          field: 'too-short PAN',
+          patch: { number: '4242' },
+          code: 'invalid_card_number',
+        },
+        {
+          field: 'expired expiry',
+          patch: { expMonth: '01', expYear: '20' },
+          code: 'invalid_expiry',
+        },
+        {
+          field: 'malformed expiry month',
+          patch: { expMonth: '13' },
+          code: 'invalid_expiry',
+        },
+        { field: 'short CVC', patch: { cvc: '12' }, code: 'invalid_cvc' },
+        { field: 'empty name', patch: { name: '' }, code: 'invalid_name' },
+      ];
+
+      it.each(invalidCases)(
+        'rejects $field with $code and never calls fetch',
+        async ({ patch, code }) => {
+          for (const { build } of gateways) {
+            const fetchMock = vi.fn();
+            vi.stubGlobal('fetch', fetchMock);
+
+            const error = await build()
+              .tokenize({ ...validCard, ...patch })
+              .then(
+                () => null,
+                (err: unknown) => err,
+              );
+
+            expect(error).toBeInstanceOf(ApiValidationError);
+            expect((error as ApiValidationError).code).toContain(code);
+            expect(fetchMock).not.toHaveBeenCalled();
+          }
+        },
+      );
+
+      it('reports every failing field at once in the code list', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+
+        const error = await new StripeAdapter({
+          publicKey: 'pk_test_stripe_key',
+        })
+          .tokenize({
+            ...validCard,
+            number: '4111 1111 1111 1112',
+            cvc: '1',
+          })
+          .then(
+            () => null,
+            (err: unknown) => err,
+          );
+
+        expect(error).toBeInstanceOf(ApiValidationError);
+        const codes = (error as ApiValidationError).code ?? '';
+        expect(codes).toContain('invalid_card_number');
+        expect(codes).toContain('invalid_cvc');
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
     });
   });
 });
